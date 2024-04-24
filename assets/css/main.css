@@ -2630,10 +2630,10 @@ input[type="radio"]+label:before {
 	position: absolute;
 	left: 0;
 	top: 0;
-	background-image: url("images/overlay.png");
+	background: #1d0d387c;
 	width: 100%;
 	height: 100%;
-	z-index: 1;
+	z-index: -4;
 }
 
 .image img {
@@ -3576,11 +3576,11 @@ body.landing #header {
 
 #banner {
 	background-attachment: fixed;
-	background-color: #272833;
-	background-image: url("../../images/banner.jpg");
+	background-color: rgba(39, 40, 51, 1);
+	background-image: url("../../images/banner.jpeg");
 	background-position: center center;
 	background-size: cover;
-	box-shadow: 0 0.25em 0.5em 0 rgba(0, 0, 0, 0.25);
+	box-shadow: 0 0.25em 0.5em 0 rgba(0, 0, 0, 0.9);
 	min-height: 100vh;
 	position: relative;
 	text-align: center;
@@ -3596,14 +3596,6 @@ body.landing #header {
 }
 
 #banner:after {
-	background-image: -moz-linear-gradient(top, rgba(23, 24, 32, 0.95), rgba(23, 24, 32, 0.95)), url("images/overlay.png");
-	;
-	background-image: -webkit-linear-gradient(top, rgba(23, 24, 32, 0.95), rgba(23, 24, 32, 0.95)), url("images/overlay.png");
-	;
-	background-image: -ms-linear-gradient(top, rgba(23, 24, 32, 0.95), rgba(23, 24, 32, 0.95)), url("images/overlay.png");
-	;
-	background-image: linear-gradient(top, rgba(23, 24, 32, 0.95), rgba(23, 24, 32, 0.95)), url("images/overlay.png");
-	;
 	content: '';
 	display: block;
 	height: 100%;
@@ -3643,6 +3635,7 @@ body.landing #header {
 	border-radius: 100%;
 	display: inline-block;
 	height: 18em;
+	background-color: transparent;
 	margin-left: 3em;
 	vertical-align: middle;
 	width: 18em;
@@ -4044,9 +4037,9 @@ body.is-touch #banner {
 	}
 
 	#titleBar .title {
-		color: #e3d2fe;
+		color:#ffe063;
 		display: block;
-		font-weight: 300;
+		font-weight: bold;
 		height: 44px;
 		line-height: 44px;
 		text-align: center;
