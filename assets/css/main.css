@@ -2293,12 +2293,12 @@ header.major {
 }
 
 header.major:after {
-	background: #e44c65;
+	background: #b5b13c;
 	content: '';
 	display: inline-block;
-	height: 0.2em;
-	max-width: 20em;
-	width: 75%;
+	height: 0.15em;
+	max-width: 30em;
+	width: 90%;
 }
 
 footer.major {
