@@ -1,7 +1,11 @@
 @import url("fontawesome-all.min.css");
 @import url("https://fonts.googleapis.com/css?family=Roboto:100,300,100italic,300italic");
 
-
+/*
+	Landed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+*/
 
 html,
 body,
@@ -3004,7 +3008,7 @@ input[type="submit"].primary,
 input[type="reset"].primary,
 input[type="button"].primary,
 .button.primary {
-	background-color: #e44c65;
+	background-color: #8b4ce4;
 	box-shadow: none;
 	color: #ffffff !important;
 }
@@ -3013,14 +3017,14 @@ input[type="submit"].primary:hover,
 input[type="reset"].primary:hover,
 input[type="button"].primary:hover,
 .button.primary:hover {
-	background-color: #e76278;
+	background-color: #ca62e7;
 }
 
 input[type="submit"].primary:active,
 input[type="reset"].primary:active,
 input[type="button"].primary:active,
 .button.primary:active {
-	background-color: #e13652;
+	background-color: #7236e1;
 }
 
 input[type="submit"].disabled,
@@ -3164,8 +3168,6 @@ input[type="button"]:disabled,
 }
 
 .spotlight:before {
-	background-image: url("images/overlay.png");
-	content: '';
 	display: block;
 	height: 100%;
 	left: 0;
@@ -3248,15 +3250,15 @@ input[type="button"]:disabled,
 }
 
 .spotlight.style1 .content {
-	border-color: #e44c65;
+	border-color: #7c36ff;
 }
 
 .spotlight.style2 .content {
-	border-color: #5480f1;
+	border-color: #b554f1;
 }
 
 .spotlight.style3 .content {
-	border-color: #39c088;
+	border-color: #4939c0;
 }
 
 .spotlight.inactive .content {
@@ -3310,7 +3312,7 @@ body.is-touch .spotlight {
 }
 
 .wrapper.style2 {
-	background: #e44c65;
+	background: #7c4ce4;
 }
 
 .wrapper.style2 input[type="text"]:focus,
@@ -3346,7 +3348,7 @@ body.is-touch .spotlight {
 .wrapper.style2 input[type="button"].primary,
 .wrapper.style2 .button.primary {
 	background-color: #ffffff;
-	color: #e44c65 !important;
+	color: #b44ce4 !important;
 }
 
 .wrapper.style2 input[type="submit"].primary:hover,
