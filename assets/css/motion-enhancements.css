@@ -1,0 +1,340 @@
+/* ==========================================================================
+   Anugruja Arts Studio — Motion Graphics, Preloader & Header Polish
+   ========================================================================== */
+
+/* --- 1. Studio Preloader & Motion Graphic --- */
+#studio-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #2e0847 0%, #130420 100%);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#studio-loader.loader-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.loader-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Orbiting Palette Spinner */
+.palette-ring {
+  width: 90px;
+  height: 90px;
+  position: relative;
+  border-radius: 50%;
+  border: 3px solid rgba(242, 215, 112, 0.2);
+  border-top-color: #F2D770;
+  border-bottom-color: rgb(223, 184, 254);
+  animation: spinRing 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 0 0 25px rgba(242, 215, 112, 0.3);
+}
+
+.paint-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+}
+
+.dot-1 {
+  background: #f0df2a;
+  box-shadow: 0 0 10px #f0df2a;
+  transform: rotate(0deg) translate(45px);
+}
+
+.dot-2 {
+  background: #ff5252;
+  box-shadow: 0 0 10px #ff5252;
+  transform: rotate(90deg) translate(45px);
+}
+
+.dot-3 {
+  background: #e040fb;
+  box-shadow: 0 0 10px #e040fb;
+  transform: rotate(180deg) translate(45px);
+}
+
+.dot-4 {
+  background: #00e5ff;
+  box-shadow: 0 0 10px #00e5ff;
+  transform: rotate(270deg) translate(45px);
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-brand {
+  font-family: 'Blippo', fantasy, sans-serif !important;
+  color: #F2D770 !important;
+  font-size: 2rem !important;
+  letter-spacing: 2px;
+  margin: 10px 0 0 0 !important;
+  text-shadow: 0 0 15px rgba(242, 215, 112, 0.4);
+  animation: pulseText 2s ease-in-out infinite alternate;
+}
+
+.loader-tagline {
+  font-family: 'Luminari', fantasy, sans-serif !important;
+  color: #ffe76c !important;
+  font-size: 1.1rem !important;
+  font-weight: 100;
+  margin: 0 !important;
+  opacity: 0.85;
+}
+
+.loader-progress-bar {
+  width: 180px;
+  height: 4px;
+  background: rgba(223, 184, 254, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.loader-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #F2D770, #e040fb, #00e5ff);
+  animation: progressFill 1.2s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulseText {
+  0% { opacity: 0.85; transform: scale(0.99); }
+  100% { opacity: 1; transform: scale(1.01); }
+}
+
+/* --- 2. Smooth Header & Fixed Navigation --- */
+#header {
+  height: 4.5em !important;
+  line-height: 4.5em !important;
+  background: rgba(22, 7, 34, 0.94) !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5) !important;
+  border-bottom: 1px solid rgba(242, 215, 112, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 2rem !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 10000 !important;
+  box-sizing: border-box !important;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.header-left .socials-title {
+  color: rgb(251, 240, 177);
+  font-family: 'Blippo', fantasy, sans-serif;
+  font-size: 1.2rem;
+  margin: 0;
+  padding-top: 2px;
+}
+
+.header-left a {
+  color: rgb(247, 236, 189);
+  font-size: 1.3rem;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.header-left a:hover {
+  color: #ffe76c;
+  transform: translateY(-2px) scale(1.2);
+}
+
+#header #logo {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 1rem !important;
+  text-align: center !important;
+  flex-grow: 1;
+  height: auto !important;
+  line-height: normal !important;
+}
+
+#header #logo a {
+  color: #F2D770 !important;
+  font-family: 'Blippo', fantasy, sans-serif !important;
+  letter-spacing: 1.5px;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+#header #logo a:hover {
+  color: #fff !important;
+  text-shadow: 0 0 15px rgba(242, 215, 112, 0.7);
+}
+
+#header #nav {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  flex-shrink: 0;
+}
+
+#header #nav > ul {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 100%;
+}
+
+#header #nav > ul > li {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+}
+
+#header #nav > ul > li > a,
+#header #nav > ul > li > span {
+  font-family: 'Blippo', fantasy, sans-serif !important;
+  color: rgb(233, 223, 40) !important;
+  font-size: 1.05rem !important;
+  font-weight: 500;
+  transition: color 0.25s ease, transform 0.25s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+#header #nav > ul > li > a:hover,
+#header #nav > ul > li > span:hover {
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+/* Dropotron Dropdown Menu */
+.dropotron {
+  background: rgba(45, 12, 70, 0.96) !important;
+  border: 1px solid rgba(223, 184, 254, 0.5) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6) !important;
+  padding: 0.6rem 0 !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.dropotron li a {
+  color: #F2D770 !important;
+  font-family: 'Blippo', fantasy, sans-serif !important;
+  font-size: 1rem !important;
+  padding: 0.6rem 1.4rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.dropotron li a:hover {
+  background: rgba(78, 20, 120, 0.9) !important;
+  color: #fff !important;
+  padding-left: 1.7rem !important;
+}
+
+/* Mobile Header Handling */
+@media screen and (max-width: 980px) {
+  #header {
+    display: none !important;
+  }
+}
+
+/* --- 3. Smooth Section Transitions & Scroll Physics --- */
+html {
+  scroll-behavior: smooth;
+}
+
+.spotlight, .wrapper {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroller {
+  display: flex !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  gap: 16px;
+  padding: 10px 4px 18px 4px !important;
+}
+
+.scroller::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scroller::-webkit-scrollbar-track {
+  background: rgba(55, 14, 85, 0.4);
+  border-radius: 4px;
+}
+
+.scroller::-webkit-scrollbar-thumb {
+  background: #d1a515;
+  border-radius: 4px;
+}
+
+.scroller img {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.scroller img:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(242, 215, 112, 0.35) !important;
+  border-color: #fff !important;
+}
+
+/* Button Pulse & Hover Transition */
+button, .button {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+button:hover, .button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(223, 184, 254, 0.4) !important;
+}
