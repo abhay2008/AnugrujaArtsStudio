@@ -2,14 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---------------------------------- */
-/* Self-hosted display fonts (49KB)   */
-/* ---------------------------------- */
+/* ---------------------------------------------------- */
+/* Self-hosted display & editorial luxury fonts (woff2) */
+/* ---------------------------------------------------- */
 @font-face {
   font-family: 'Cinzel';
   src: url('/fonts/cinzel-var.woff2') format('woff2');
   font-weight: 400 900;
   font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cinzel Decorative';
+  src: url('/fonts/cinzel-decorative-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-italic.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
   font-display: swap;
 }
 
@@ -33,13 +57,15 @@ html {
 
 body {
   color: #fdf5cf;
-  background: radial-gradient(circle at 50% 20%, #260a3a 0%, #100318 60%, #08010d 100%);
+  background: radial-gradient(circle at 50% 15%, #2e0847 0%, #170425 45%, #0e0217 80%, #08010d 100%);
   background-attachment: fixed;
   min-height: 100vh;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ------------------------------- */
@@ -55,12 +81,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #d1a515, #8a5a10);
+  background: linear-gradient(180deg, #f97316, #d1a515, #8a5a10);
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #f0df2a, #d1a515);
+  background: linear-gradient(180deg, #fb923c, #f0df2a, #d1a515);
 }
 
 /* ------------------------------- */
@@ -75,26 +101,44 @@ body {
 }
 
 /* ------------------------------- */
-/* Typography                      */
+/* Luxury Editorial & Display Fonts*/
 /* ------------------------------- */
+.font-decorative {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  letter-spacing: 0.04em;
+  font-feature-settings: 'liga' 1, 'dlig' 1;
+}
+
+.font-editorial {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.015em;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+}
+
 .font-blippo {
   font-family: 'Cinzel', 'Blippo', fantasy, serif;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.025em;
 }
 
 .font-luminari {
   font-family: 'Cinzel', 'Luminari', fantasy, serif;
+  letter-spacing: 0.02em;
 }
 
 .font-serif-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
 }
 
-/* Cinzel carries small caps elegance; slightly tighten at display sizes */
+/* Cinzel & Decorative display optimizations */
+.font-blippo.text-4xl,
 .font-blippo.text-5xl,
 .font-blippo.text-6xl,
-.font-blippo.text-7xl {
-  letter-spacing: 0.03em;
+.font-blippo.text-7xl,
+.font-decorative.text-4xl,
+.font-decorative.text-5xl,
+.font-decorative.text-6xl,
+.font-decorative.text-7xl {
+  letter-spacing: 0.04em;
 }
 
 /* ------------------------------- */
@@ -136,6 +180,29 @@ body {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 @keyframes heroRise {
@@ -230,6 +297,18 @@ body {
   animation: drawerIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.animate-slideInRight {
+  animation: slideInRight 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slideOutRight {
+  animation: slideOutRight 0.28s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+}
+
+.animate-fadeOut {
+  animation: fadeOut 0.28s ease-out both;
+}
+
 .animate-crossIn {
   animation: crossIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -262,7 +341,7 @@ body {
 }
 
 /* ------------------------------- */
-/* Gold shimmering headline        */
+/* Gold & Sunset Shimmer Headlines */
 /* ------------------------------- */
 .gold-shimmer {
   background: linear-gradient(
@@ -278,6 +357,127 @@ body {
   background-clip: text;
   color: transparent;
   animation: shimmer 5.5s linear infinite;
+}
+
+.gold-sunset-shimmer {
+  background: linear-gradient(
+    110deg,
+    #f2d770 15%,
+    #fb923c 34%,
+    #fff8d6 50%,
+    #f97316 66%,
+    #f0df2a 85%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 5s linear infinite;
+}
+
+/* ------------------------------- */
+/* Modern Glassmorphism System     */
+/* ------------------------------- */
+.glass-panel {
+  background: rgba(26, 6, 40, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(242, 215, 112, 0.25);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-sunset {
+  background: linear-gradient(135deg, rgba(38, 8, 58, 0.75) 0%, rgba(20, 4, 32, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(249, 115, 22, 0.32);
+  box-shadow: 0 16px 45px -10px rgba(249, 115, 22, 0.16), 0 0 25px rgba(242, 215, 112, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: rgba(22, 5, 34, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-card:hover {
+  background: rgba(43, 10, 66, 0.75);
+  border-color: rgba(242, 215, 112, 0.5);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5), 0 0 28px rgba(249, 115, 22, 0.22);
+  transform: translateY(-5px);
+}
+
+.glass-pill {
+  background: rgba(43, 8, 68, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(242, 215, 112, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), 0 0 15px rgba(249, 115, 22, 0.15);
+}
+
+.glass-nav {
+  background: rgba(18, 4, 28, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(242, 215, 112, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.glass-btn-sunset {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 45%, #9333ea 100%);
+  border: 1px solid rgba(254, 215, 170, 0.4);
+  box-shadow: 0 0 25px rgba(249, 115, 22, 0.4);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-btn-sunset:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 35px rgba(249, 115, 22, 0.65), 0 0 15px rgba(242, 215, 112, 0.4);
+}
+
+.glass-btn-gold {
+  background: linear-gradient(135deg, rgba(55, 14, 85, 0.85) 0%, rgba(38, 8, 58, 0.9) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(242, 215, 112, 0.65);
+  box-shadow: 0 0 20px rgba(242, 215, 112, 0.25);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-btn-gold:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #f0df2a;
+  box-shadow: 0 0 32px rgba(242, 215, 112, 0.5), 0 0 15px rgba(249, 115, 22, 0.25);
+}
+
+/* Touch targets: at least 44px by 44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Motion graphics entrance/exit */
+@keyframes preloaderExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: blur(6px);
+  }
+}
+
+.animate-preloader-exit {
+  animation: preloaderExit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* ------------------------------- */
@@ -360,7 +560,34 @@ body {
 }
 
 /* ------------------------------- */
+/* Fluid type scale — smooth      */
+/* scaling 360px → 1440px+        */
+/* ------------------------------- */
+:root {
+  /* Fluid scale (min → preferred → max) */
+  --fs-display: clamp(2.6rem, 3.2vw + 1.6rem, 5.25rem);
+  --fs-h1: clamp(2.1rem, 2.6vw + 1.3rem, 4rem);
+  --fs-h2: clamp(1.7rem, 1.8vw + 1.1rem, 3rem);
+  --fs-h3: clamp(1.35rem, 1.2vw + 0.95rem, 2.25rem);
+  --fs-lead: clamp(1.125rem, 0.5vw + 1rem, 1.4rem);
+  --fs-body: clamp(1rem, 0.3vw + 0.93rem, 1.125rem);
+  /* Header scales with viewport but never overflows the fixed bar */
+  --header-h: 4.4em;
+  --fs-brand: clamp(1.05rem, 1.1vw + 0.72rem, 1.6rem);
+  --fs-brand-sub: clamp(0.62rem, 0.4vw + 0.5rem, 0.8rem);
+  --fs-burger: clamp(1.05rem, 0.6vw + 0.9rem, 1.35rem);
+}
+
+.text-display { font-size: var(--fs-display); line-height: 1.08; }
+.text-h1 { font-size: var(--fs-h1); line-height: 1.12; }
+.text-h2 { font-size: var(--fs-h2); line-height: 1.18; }
+.text-h3 { font-size: var(--fs-h3); line-height: 1.25; }
+.text-lead { font-size: var(--fs-lead); }
+.text-body { font-size: 1rem; }
+
+/* ------------------------------- */
 /* Accessibility: reduced motion   */
+/* corruptions */
 /* ------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   html {

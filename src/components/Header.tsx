@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, Sparkles } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
 
 const socialLinks = [
@@ -32,10 +33,10 @@ export default function Header() {
   }, [pathname]);
 
   return (
-    <header className="fixed top-0 left-0 w-full h-[4.4em] z-50 bg-[#140620]/95 backdrop-blur-md border-b border-studio-gold/25 shadow-[0_4px_25px_rgba(0,0,0,0.55)] px-4 md:px-8 flex items-center justify-between">
+    <header className="fixed top-0 left-0 w-full h-[4.5em] z-50 glass-nav px-4 sm:px-6 md:px-8 flex items-center justify-between">
       {/* Left: Social Media Links (desktop only) */}
       <div className="hidden lg:flex items-center gap-3 flex-1">
-        <span className="font-blippo text-amber-200 text-base tracking-wide">Socials:</span>
+        <span className="font-blippo text-amber-200/90 text-sm tracking-wider uppercase">Socials:</span>
         {socialLinks.map((social) => (
           <a
             key={social.title}
@@ -43,10 +44,10 @@ export default function Header() {
             target="_blank"
             rel="noopener noreferrer"
             title={social.title}
-            className="text-amber-100 hover:text-studio-gold hover:scale-125 transition-all text-lg"
+            className="touch-target w-8 h-8 rounded-full flex items-center justify-center text-amber-100 hover:text-studio-sunset hover:scale-125 transition-all text-base"
           >
             <span className="sr-only">{social.title}</span>
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
               {social.title === 'WhatsApp' && (
                 <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
               )}
@@ -64,21 +65,29 @@ export default function Header() {
         ))}
       </div>
 
-      {/* Center: Brand Title */}
-      <h1 className="font-blippo text-center tracking-wider flex-grow lg:flex-grow-0">
-        <Link
-          href="/about"
-          className="nav-link text-studio-gold hover:text-white text-lg md:text-2xl font-bold transition-all hover:drop-shadow-[0_0_15px_rgba(242,215,112,0.7)]"
-        >
-          {studioMeta.founder}
+      {/* Center: Brand Title + Mini Emblem */}
+      <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-studio-gold/60 shadow-[0_0_12px_rgba(242,215,112,0.3)] bg-black/40 group-hover:border-studio-sunset transition-colors">
+            <Image
+              src="/images/logo.png"
+              alt=""
+              fill
+              sizes="36px"
+              className="object-contain p-1"
+            />
+          </div>
+          <span className="font-decorative font-bold text-base sm:text-xl md:text-2xl gold-sunset-shimmer tracking-wider">
+            {studioMeta.founder}
+          </span>
         </Link>
-      </h1>
+      </div>
 
       {/* Right: Desktop Navigation */}
       <nav className="hidden lg:flex items-center gap-6 flex-1 justify-end">
         <Link
           href="/"
-          className="nav-link font-blippo text-yellow-300 hover:text-white text-lg transition-transform hover:-translate-y-0.5"
+          className="nav-link font-blippo text-amber-200 hover:text-white text-base tracking-wide transition-transform hover:-translate-y-0.5"
         >
           Home
         </Link>
@@ -93,58 +102,58 @@ export default function Header() {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             aria-expanded={dropdownOpen}
             aria-haspopup="true"
-            className="nav-link font-blippo text-yellow-300 hover:text-white text-lg flex items-center gap-1 transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="nav-link font-blippo text-amber-200 hover:text-white text-base tracking-wide flex items-center gap-1 transition-transform hover:-translate-y-0.5 cursor-pointer"
           >
             Products &amp; Services
             <ChevronDown
               className={`w-4 h-4 transition-transform duration-300 ${
-                dropdownOpen ? 'rotate-180' : ''
+                dropdownOpen ? 'rotate-180 text-studio-sunset' : ''
               }`}
             />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute top-full right-0 mt-2 w-64 rounded-xl bg-[#280a40]/95 backdrop-blur-xl border border-purple-300/40 shadow-2xl py-2 flex flex-col z-50 animate-fadeSlideDown">
+            <div className="absolute top-full right-0 mt-2 w-64 rounded-2xl glass-panel-sunset border border-studio-sunset/30 shadow-2xl py-2.5 flex flex-col z-50 animate-fadeSlideDown">
               <Link
                 href="/sale"
-                className="px-4 py-2 text-studio-gold hover:bg-purple-900/60 hover:text-white font-blippo text-base transition-colors"
+                className="px-4 py-2 text-studio-gold hover:bg-studio-sunset/20 hover:text-white font-blippo text-sm tracking-wide transition-colors"
               >
                 Art for sale
               </Link>
               <Link
                 href="/#two"
-                className="px-4 py-2 text-studio-gold hover:bg-purple-900/60 hover:text-white font-blippo text-base transition-colors"
+                className="px-4 py-2 text-studio-gold hover:bg-studio-sunset/20 hover:text-white font-blippo text-sm tracking-wide transition-colors"
               >
-                Workshops
+                Workshops &amp; Exhibitions
               </Link>
               <Link
                 href="/sale#commission"
-                className="px-4 py-2 text-studio-gold hover:bg-purple-900/60 hover:text-white font-blippo text-base transition-colors"
+                className="px-4 py-2 text-studio-gold hover:bg-studio-sunset/20 hover:text-white font-blippo text-sm tracking-wide transition-colors"
               >
                 Commissioned artwork
               </Link>
               <Link
                 href="/classes"
-                className="px-4 py-2 text-studio-gold hover:bg-purple-900/60 hover:text-white font-blippo text-base transition-colors border-t border-purple-800/40 mt-1 pt-3"
+                className="px-4 py-2 text-studio-gold hover:bg-studio-sunset/20 hover:text-white font-blippo text-sm tracking-wide transition-colors border-t border-purple-800/40 mt-1 pt-2.5"
               >
                 Courses &amp; Classes
               </Link>
               <div className="pl-6 flex flex-col">
                 <Link
                   href="/classes#online"
-                  className="px-3 py-1.5 text-sm text-yellow-200/80 hover:text-white hover:bg-purple-900/40 font-blippo transition-colors"
+                  className="px-3 py-1.5 text-xs text-amber-100/80 hover:text-white hover:bg-studio-sunset/15 font-blippo transition-colors"
                 >
                   Online-Offline Classes
                 </Link>
                 <Link
                   href="/classes#water"
-                  className="px-3 py-1.5 text-sm text-yellow-200/80 hover:text-white hover:bg-purple-900/40 font-blippo transition-colors"
+                  className="px-3 py-1.5 text-xs text-amber-100/80 hover:text-white hover:bg-studio-sunset/15 font-blippo transition-colors"
                 >
                   Watercolour Courses
                 </Link>
                 <Link
                   href="/classes#short"
-                  className="px-3 py-1.5 text-sm text-yellow-200/80 hover:text-white hover:bg-purple-900/40 font-blippo transition-colors"
+                  className="px-3 py-1.5 text-xs text-amber-100/80 hover:text-white hover:bg-studio-sunset/15 font-blippo transition-colors"
                 >
                   Short Term Courses
                 </Link>
@@ -155,50 +164,55 @@ export default function Header() {
 
         <Link
           href="/about"
-          className="nav-link font-blippo text-yellow-300 hover:text-white text-lg transition-transform hover:-translate-y-0.5"
+          className="nav-link font-blippo text-amber-200 hover:text-white text-base tracking-wide transition-transform hover:-translate-y-0.5"
         >
           About us
         </Link>
       </nav>
 
-      {/* Mobile Menu Hamburger Button */}
+      {/* Mobile Menu Hamburger Button — 44px min touch target */}
       <button
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         aria-label="Toggle Navigation Menu"
         aria-expanded={mobileMenuOpen}
-        className="lg:hidden p-2 rounded-lg bg-studio-purple/60 border border-studio-gold/40 text-studio-gold hover:text-white hover:scale-105 transition-all"
+        className="lg:hidden touch-target min-w-[44px] min-h-[44px] p-2.5 rounded-xl glass-pill text-studio-gold hover:text-white active:scale-95 transition-all"
       >
-        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {mobileMenuOpen ? <X className="w-6 h-6 text-studio-sunset" /> : <Menu className="w-6 h-6" />}
       </button>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-[4.4em] left-0 w-full h-[calc(100vh-4.4em)] bg-[#150524]/98 backdrop-blur-2xl border-t border-studio-gold/30 p-6 flex flex-col gap-1 overflow-y-auto z-40 animate-drawerIn">
+        <div className="lg:hidden fixed top-[4.5em] left-0 w-full h-[calc(100vh-4.5em)] bg-[#12041d]/98 backdrop-blur-2xl border-t border-studio-gold/25 p-6 flex flex-col gap-2 overflow-y-auto z-40 animate-drawerIn">
           {mobileNavItems.map((item, i) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setMobileMenuOpen(false)}
-              style={{ animationDelay: `${i * 55}ms` }}
-              className="font-blippo text-2xl text-studio-gold hover:text-white border-b border-purple-800/40 py-4 hover:pl-2 transition-all animate-fadeSlideUp"
+              style={{ animationDelay: `${i * 50}ms` }}
+              className="touch-target min-h-[50px] font-decorative text-xl sm:text-2xl gold-sunset-shimmer border-b border-purple-800/30 py-3.5 hover:pl-2 transition-all flex items-center animate-fadeSlideUp"
             >
               {item.label}
             </Link>
           ))}
 
           {/* Socials inside mobile menu */}
-          <div className="mt-8 pt-6 border-t border-studio-gold/20 flex items-center justify-around">
-            {socialLinks.map((social) => (
-              <a
-                key={social.title}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-studio-gold text-base font-blippo hover:text-white hover:scale-110 transition-all"
-              >
-                {social.title}
-              </a>
-            ))}
+          <div className="mt-8 pt-6 border-t border-studio-gold/20">
+            <p className="font-blippo text-xs uppercase tracking-widest text-amber-200/70 mb-3 text-center">
+              Connect with Anugraha Arts
+            </p>
+            <div className="flex items-center justify-around">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.title}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="touch-target min-h-[44px] min-w-[44px] rounded-full glass-pill text-studio-gold text-sm font-blippo flex items-center justify-center hover:text-white hover:border-studio-sunset active:scale-95 transition-all"
+                >
+                  {social.title}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}

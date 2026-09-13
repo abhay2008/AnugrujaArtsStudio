@@ -80,9 +80,9 @@ export default function InteractiveSlideshow({
       <button
         onClick={prevSlide}
         aria-label="Previous artwork"
-        className="absolute left-2 md:-left-6 z-20 w-11 h-11 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold hover:text-white hover:scale-110 active:scale-95 flex items-center justify-center shadow-lg transition-all"
+        className="absolute left-1 sm:left-2 md:-left-6 z-20 touch-target w-11 h-11 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset hover:scale-110 active:scale-95 flex items-center justify-center shadow-xl transition-all"
       >
-        <ChevronLeft className="w-6 h-6" />
+        <ChevronLeft className="w-6 h-6 text-studio-sunset" />
       </button>
 
       {/* Slide Image — click opens gallery lightbox, swipe navigates */}
@@ -90,25 +90,25 @@ export default function InteractiveSlideshow({
         onClick={openInLightbox}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className="relative w-full h-[320px] md:h-[400px] rounded-2xl overflow-hidden border-[2.5px] border-studio-gold shadow-2xl bg-studio-dark/90 flex items-center justify-center cursor-pointer group touch-pan-y"
+        className="relative w-full h-[320px] md:h-[420px] rounded-3xl overflow-hidden border-2 border-studio-gold/80 shadow-2xl bg-studio-dark/95 flex items-center justify-center cursor-pointer group touch-pan-y"
       >
         <Image
           key={currentItem.id}
           src={currentItem.src}
           alt={currentItem.title}
           fill
-          sizes="(max-width: 768px) 90vw, 600px"
+          sizes="(max-width: 768px) 92vw, 650px"
           quality={85}
-          className="object-contain p-2 animate-crossIn transition-transform duration-500 group-hover:scale-105"
+          className="object-contain p-2 sm:p-3 animate-crossIn transition-transform duration-500 group-hover:scale-105"
           priority={currentIndex === 0}
         />
-        <div className="absolute bottom-2 right-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-studio-gold/40 text-xs text-studio-gold font-blippo">
+        <div className="absolute bottom-3 right-3 px-3.5 py-1.5 rounded-full glass-pill text-xs text-studio-gold font-blippo shadow-md">
           {currentIndex + 1} / {items.length}
         </div>
         {/* Zoom hint on hover (desktop) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-3 pointer-events-none">
-          <span className="text-xs text-studio-gold/90 font-blippo tracking-wide">
-            Click to view full size
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-3 pointer-events-none">
+          <span className="text-xs text-amber-200/90 font-blippo tracking-wider px-3 py-1 rounded-full glass-pill">
+            Click to view full size in gallery
           </span>
         </div>
       </div>
@@ -117,9 +117,9 @@ export default function InteractiveSlideshow({
       <button
         onClick={nextSlide}
         aria-label="Next artwork"
-        className="absolute right-2 md:-right-6 z-20 w-11 h-11 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold hover:text-white hover:scale-110 active:scale-95 flex items-center justify-center shadow-lg transition-all"
+        className="absolute right-1 sm:right-2 md:-right-6 z-20 touch-target w-11 h-11 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset hover:scale-110 active:scale-95 flex items-center justify-center shadow-xl transition-all"
       >
-        <ChevronRight className="w-6 h-6" />
+        <ChevronRight className="w-6 h-6 text-studio-sunset" />
       </button>
     </div>
   );

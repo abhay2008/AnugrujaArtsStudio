@@ -74,28 +74,28 @@ export default function LightboxModal() {
       onClick={closeLightbox}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/92 backdrop-blur-md p-4 animate-fadeIn"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/92 backdrop-blur-2xl p-3 sm:p-6 animate-fadeIn select-none"
       role="dialog"
       aria-modal="true"
       aria-label={activeTitle ? `Artwork: ${activeTitle}` : 'Artwork preview'}
     >
-      {/* Close button */}
+      {/* Close button — 44px min touch target */}
       <button
         onClick={closeLightbox}
         aria-label="Close Lightbox"
-        className="absolute top-5 right-5 z-50 p-2.5 rounded-full bg-studio-purple/80 hover:bg-studio-purple border border-studio-gold/60 text-studio-gold hover:text-white transition-all transform hover:scale-110 hover:rotate-90 shadow-lg"
+        className="touch-target min-w-[44px] min-h-[44px] absolute top-4 sm:top-6 right-4 sm:right-6 z-50 p-2.5 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset transition-all transform hover:scale-110 hover:rotate-90 active:scale-95 shadow-xl"
       >
-        <X className="w-6 h-6" />
+        <X className="w-6 h-6 text-studio-sunset" />
       </button>
 
       {/* Counter pill (gallery mode) */}
       {hasGallery && (
-        <div className="absolute top-5 left-5 z-50 px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-studio-gold/40 text-sm text-studio-gold font-blippo">
+        <div className="absolute top-4 sm:top-6 left-4 sm:left-6 z-50 px-4 py-2 rounded-full glass-pill text-sm text-studio-gold font-blippo shadow-lg">
           {activeIndex + 1} / {gallerySize}
         </div>
       )}
 
-      {/* Prev / Next buttons (gallery mode) */}
+      {/* Prev / Next buttons (gallery mode) — 48px min touch target */}
       {hasGallery && (
         <>
           <button
@@ -104,9 +104,9 @@ export default function LightboxModal() {
               prevImage();
             }}
             aria-label="Previous artwork"
-            className="absolute left-3 md:left-6 z-50 p-3 rounded-full bg-studio-purple/70 hover:bg-studio-purple border border-studio-gold/50 text-studio-gold hover:text-white transition-all hover:scale-110 shadow-xl"
+            className="touch-target min-w-[48px] min-h-[48px] absolute left-2 sm:left-6 z-50 p-3 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset transition-all hover:scale-110 active:scale-95 shadow-2xl"
           >
-            <ChevronLeft className="w-7 h-7" />
+            <ChevronLeft className="w-7 h-7 text-studio-sunset" />
           </button>
           <button
             onClick={(e) => {
@@ -114,39 +114,39 @@ export default function LightboxModal() {
               nextImage();
             }}
             aria-label="Next artwork"
-            className="absolute right-3 md:right-6 z-50 p-3 rounded-full bg-studio-purple/70 hover:bg-studio-purple border border-studio-gold/50 text-studio-gold hover:text-white transition-all hover:scale-110 shadow-xl"
+            className="touch-target min-w-[48px] min-h-[48px] absolute right-2 sm:right-6 z-50 p-3 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset transition-all hover:scale-110 active:scale-95 shadow-2xl"
           >
-            <ChevronRight className="w-7 h-7" />
+            <ChevronRight className="w-7 h-7 text-studio-sunset" />
           </button>
         </>
       )}
 
-      {/* Image + caption */}
+      {/* Image + caption in luxury glass frame */}
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative max-w-5xl w-full flex flex-col items-center"
       >
         <div
           key={activeImage}
-          className="relative w-full h-[78vh] max-w-4xl rounded-2xl overflow-hidden border-2 border-studio-gold shadow-[0_0_60px_rgba(242,215,112,0.15)] bg-studio-dark/80 animate-crossIn"
+          className="relative w-full h-[74vh] sm:h-[78vh] max-w-4xl rounded-3xl overflow-hidden border-2 border-studio-gold/80 shadow-[0_0_60px_rgba(249,115,22,0.25)] bg-studio-dark/95 animate-crossIn"
         >
           <Image
             src={activeImage}
             alt={activeTitle || 'Artwork Preview'}
             fill
             sizes="(max-width: 1024px) 100vw, 1200px"
-            className="object-contain p-2"
+            className="object-contain p-2 sm:p-4"
             priority
           />
         </div>
         {activeTitle && (
-          <p className="mt-4 text-studio-gold font-blippo text-lg tracking-wide text-center px-4">
+          <p className="mt-4 font-decorative gold-sunset-shimmer text-lg sm:text-xl font-bold tracking-wide text-center px-4">
             {activeTitle}
           </p>
         )}
         {hasGallery && (
-          <p className="mt-1 text-yellow-100/50 text-xs text-center hidden md:block">
-            Use ← → arrow keys or swipe to browse
+          <p className="mt-1 text-amber-100/60 font-serif-display text-xs text-center hidden md:block">
+            Use &larr; &rarr; arrow keys or swipe to browse
           </p>
         )}
       </div>

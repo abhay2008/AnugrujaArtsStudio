@@ -72,11 +72,11 @@ export default function AutoScroller({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Navigation Buttons — visible on desktop hover AND always on touch devices */}
+      {/* Desktop Navigation Buttons — visible on desktop hover */}
       <button
         onClick={() => scrollByAmount(-350)}
         aria-label="Scroll Left"
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold hover:text-white hover:scale-110 active:scale-95 shadow-lg transition-all duration-300 items-center justify-center hidden md:flex md:opacity-0 md:group-hover:opacity-100 cursor-pointer"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 touch-target w-11 h-11 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset hover:scale-110 active:scale-95 shadow-xl transition-all duration-300 items-center justify-center hidden md:flex md:opacity-0 md:group-hover:opacity-100 cursor-pointer"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
@@ -84,28 +84,10 @@ export default function AutoScroller({
       <button
         onClick={() => scrollByAmount(350)}
         aria-label="Scroll Right"
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold hover:text-white hover:scale-110 active:scale-95 shadow-lg transition-all duration-300 items-center justify-center hidden md:flex md:opacity-0 md:group-hover:opacity-100 cursor-pointer"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 touch-target w-11 h-11 rounded-full glass-pill text-studio-gold hover:text-white hover:border-studio-sunset hover:scale-110 active:scale-95 shadow-xl transition-all duration-300 items-center justify-center hidden md:flex md:opacity-0 md:group-hover:opacity-100 cursor-pointer"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
-
-      {/* Mobile navigation buttons (always visible below scroller) */}
-      <div className="flex md:hidden justify-center gap-4 mt-1">
-        <button
-          onClick={() => scrollByAmount(-350)}
-          aria-label="Scroll Left"
-          className="p-3 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold active:scale-95 shadow-lg transition-transform"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <button
-          onClick={() => scrollByAmount(350)}
-          aria-label="Scroll Right"
-          className="p-3 rounded-full bg-studio-purple/90 border border-studio-gold/60 text-studio-gold active:scale-95 shadow-lg transition-transform"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </button>
-      </div>
 
       {/* Scroller Container */}
       <div
@@ -116,7 +98,7 @@ export default function AutoScroller({
           <div
             key={item.id}
             onClick={() => openAt(idx)}
-            className={`relative flex-none ${itemHeight} w-auto min-w-[200px] max-w-[85vw] md:max-w-[420px] rounded-xl overflow-hidden border-2 border-studio-gold/80 hover:border-white shadow-xl hover:shadow-[0_10px_30px_rgba(242,215,112,0.4)] transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer bg-studio-dark/90 snap-center`}
+            className={`relative flex-none ${itemHeight} w-auto min-w-[180px] max-w-[85vw] md:max-w-[420px] rounded-2xl overflow-hidden glass-card border border-white/10 hover:border-studio-sunset/60 shadow-xl hover:shadow-[0_12px_35px_rgba(249,115,22,0.25)] transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer bg-studio-dark/90 snap-center`}
           >
             <Image
               src={item.src}
@@ -125,10 +107,31 @@ export default function AutoScroller({
               height={360}
               loading={idx < 4 ? 'eager' : 'lazy'}
               quality={80}
-              className="w-auto h-full object-contain mx-auto"
+              className="w-auto h-full object-contain mx-auto p-1"
             />
           </div>
         ))}
+      </div>
+
+      {/* Mobile navigation controls placed below scroller with 44px touch targets */}
+      <div className="flex md:hidden justify-center items-center gap-4 mt-2">
+        <button
+          onClick={() => scrollByAmount(-300)}
+          aria-label="Scroll Left"
+          className="touch-target min-w-[44px] min-h-[44px] p-2.5 rounded-full glass-pill text-studio-gold hover:text-white active:scale-95 shadow-md transition-transform"
+        >
+          <ChevronLeft className="w-5 h-5 text-studio-sunset" />
+        </button>
+        <span className="text-xs font-blippo text-amber-200/60 uppercase tracking-wider">
+          Swipe or Tap
+        </span>
+        <button
+          onClick={() => scrollByAmount(300)}
+          aria-label="Scroll Right"
+          className="touch-target min-w-[44px] min-h-[44px] p-2.5 rounded-full glass-pill text-studio-gold hover:text-white active:scale-95 shadow-md transition-transform"
+        >
+          <ChevronRight className="w-5 h-5 text-studio-sunset" />
+        </button>
       </div>
     </div>
   );

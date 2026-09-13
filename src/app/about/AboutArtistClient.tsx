@@ -5,42 +5,49 @@ import Image from 'next/image';
 import InteractiveSlideshow from '@/components/InteractiveSlideshow';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { achievementGallery } from '@/data/artData';
-import { Award, Globe, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Award, Globe, BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 export default function AboutArtistClient() {
   const [readMore, setReadMore] = useState(false);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 space-y-16">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-16">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="font-blippo text-4xl md:text-6xl text-[#ffe76c] font-black tracking-wide">
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-pill text-xs text-studio-sunset mb-1">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Biography &amp; Studio Journey</span>
+        </div>
+        <h1 className="font-decorative text-4xl sm:text-6xl gold-sunset-shimmer font-bold tracking-wide">
           About us
         </h1>
-        <p className="font-blippo text-xl md:text-2xl text-[#fdf5cf] font-bold">
-          Anuradha Govarthanan — A Professional Artist
+        <p className="font-editorial text-xl sm:text-3xl text-amber-200 font-medium tracking-wide">
+          Anuradha Govarthanan &mdash; Master Artist &amp; Founder
         </p>
       </div>
 
-      {/* Artist Biography */}
-      <section className="p-6 md:p-10 rounded-2xl bg-[#1b0629]/85 border border-studio-gold/30 shadow-2xl backdrop-blur-sm space-y-6">
-        <h2 className="font-luminari text-2xl md:text-3xl text-[#f0ae2a]">
-          About Artist
-        </h2>
+      {/* Artist Biography in Glassmorphic Panel */}
+      <section className="glass-panel-sunset p-6 sm:p-10 rounded-3xl space-y-8 relative overflow-hidden shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-studio-sunset/20 pb-4">
+          <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
+            About Artist
+          </h2>
+        </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          <div className="relative w-44 h-44 md:w-56 md:h-56 flex-shrink-0 mx-auto rounded-3xl overflow-hidden border-2 border-studio-gold shadow-xl">
+        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+          <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0 rounded-3xl overflow-hidden border-2 border-studio-gold shadow-[0_0_35px_rgba(249,115,22,0.25)] bg-black/40">
             <Image
               src="/images/image.png"
               alt="Anuradha Govarthanan Portrait"
               fill
+              sizes="(max-width: 768px) 192px, 224px"
               className="object-cover"
               priority
             />
           </div>
 
-          <div className="flex-1 space-y-4 text-yellow-50/90 leading-relaxed text-base md:text-lg">
-            <p className="text-justify">
+          <div className="flex-1 space-y-4 font-editorial text-base sm:text-lg text-yellow-50/95 leading-relaxed">
+            <p className="text-justify sm:text-left">
               Anuradha Govarthanan was born and brought up in Chennai, Tamil Nadu. After completing
               her Bachelor&apos;s of Engineering degree from Vellore Institute of Technology (VIT)
               in Tamil Nadu, India, Anuradha embarked on a new chapter in her life as she entered
@@ -54,7 +61,7 @@ export default function AboutArtistClient() {
             </p>
 
             {readMore && (
-              <div className="space-y-4 pt-2 text-justify animate-fadeIn">
+              <div className="space-y-4 pt-2 text-justify sm:text-left animate-fadeIn">
                 <p>
                   Seeing her immense passion for arts, her husband suggested pursuing some
                   art-related courses. Anuradha decided to do a diploma in fashion designing. After a
@@ -77,7 +84,7 @@ export default function AboutArtistClient() {
                 <p>
                   Simultaneously she was in the learning phase to master the Realistic style in
                   watercolor. After going through various stages of learning, she decided to open her
-                  own art studio: <strong>Anugruja Arts Studio</strong>. Anuradha gained deep
+                  own art studio: <strong>Anugraha Arts Studio</strong>. Anuradha gained deep
                   confidence in arts and started receiving recognition from renowned artists worldwide.
                   Finding balance between her roles as a wife, mother, and master artist, she embarked
                   on a journey of self-discovery where love, creativity, and fulfillment intertwine to
@@ -88,61 +95,65 @@ export default function AboutArtistClient() {
 
             <button
               onClick={() => setReadMore(!readMore)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-studio-purple hover:bg-purple-800 border border-purple-300 text-yellow-200 font-medium transition-all shadow-md cursor-pointer"
+              className="touch-target min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl glass-btn-gold text-studio-gold font-blippo text-sm transition-all cursor-pointer"
             >
               <span>{readMore ? 'Read Less' : 'Read More'}</span>
-              {readMore ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {readMore ? <ChevronUp className="w-4 h-4 text-studio-sunset" /> : <ChevronDown className="w-4 h-4 text-studio-sunset" />}
             </button>
           </div>
         </div>
       </section>
 
-      {/* Achievements */}
+      {/* Achievements & Honours */}
       <section className="space-y-6">
         <div className="flex items-center gap-3">
-          <Award className="w-8 h-8 text-[#f0df2a]" />
-          <h2 className="font-luminari text-2xl md:text-4xl text-[#f0df2a]">
+          <Award className="w-8 h-8 text-studio-sunset" />
+          <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
             Achievements &amp; Honours
           </h2>
         </div>
-        <p className="text-yellow-100/80 text-lg">
+        <p className="font-editorial text-amber-100/90 text-lg sm:text-xl">
           With more than 7+ years of dedicated studio practice, Anuradha Govarthanan has received
           numerous awards and nationwide critical acclaim:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl bg-[#1d082c] border border-studio-gold/30 flex items-start gap-3">
-            <span className="text-studio-gold text-xl font-bold">•</span>
-            <p className="font-medium text-[#f6ffa1]">
-              <strong>Best Paintings Award 2022</strong> given by Kalakaar Foundation, New Delhi.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-[#1d082c] border border-studio-gold/30 flex items-start gap-3">
-            <span className="text-studio-gold text-xl font-bold">•</span>
-            <p className="font-medium text-[#f6ffa1]">
-              <strong>Sri PV Narasimha Rao Excellency Award 2022</strong>.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-[#1d082c] border border-studio-gold/30 flex items-start gap-3">
-            <span className="text-studio-gold text-xl font-bold">•</span>
-            <p className="font-medium text-[#f6ffa1]">
-              <strong>Finalist Award</strong> from Teravana International Online Juried Exhibition 2024.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-[#1d082c] border border-studio-gold/30 flex items-start gap-3">
-            <span className="text-studio-gold text-xl font-bold">•</span>
-            <p className="font-medium text-[#f6ffa1]">
-              <strong>Golden Award</strong> from National All India Competition by Shiny Colours, Bangalore.
-            </p>
-          </div>
+          {[
+            {
+              title: 'Best Paintings Award 2022',
+              desc: 'Given by Kalakaar Foundation, New Delhi.',
+            },
+            {
+              title: 'Sri PV Narasimha Rao Excellency Award 2022',
+              desc: 'Awarded for extraordinary contributions to fine arts.',
+            },
+            {
+              title: 'Finalist Award 2024',
+              desc: 'Teravana International Online Juried Exhibition.',
+            },
+            {
+              title: 'Golden Award',
+              desc: 'National All India Competition organized by Shiny Colours, Bangalore.',
+            },
+          ].map((honor, idx) => (
+            <div
+              key={idx}
+              className="glass-card p-5 rounded-2xl border border-white/10 flex items-start gap-3.5 hover:border-studio-sunset/50 transition-all"
+            >
+              <span className="text-studio-sunset text-xl font-bold mt-0.5">•</span>
+              <p className="font-serif-display text-sm sm:text-base text-yellow-50/95 leading-relaxed">
+                <strong className="text-studio-gold">{honor.title}</strong> &mdash; {honor.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Exhibitions */}
+      {/* Selected Exhibitions */}
       <section className="space-y-6">
         <div className="flex items-center gap-3">
-          <Globe className="w-8 h-8 text-[#f0df2a]" />
-          <h2 className="font-luminari text-2xl md:text-4xl text-[#f0df2a]">
+          <Globe className="w-8 h-8 text-studio-sunset" />
+          <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
             Selected Exhibitions
           </h2>
         </div>
@@ -157,7 +168,7 @@ export default function AboutArtistClient() {
           ].map((item, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-xl bg-[#160523] border border-yellow-500/20 text-[#e8eb48] font-semibold text-center hover:border-studio-gold transition-all"
+              className="glass-card p-4 rounded-xl border border-white/10 text-amber-100 font-serif-display font-medium text-center text-sm sm:text-base hover:border-studio-gold/60 transition-all"
             >
               {item}
             </div>
@@ -168,20 +179,34 @@ export default function AboutArtistClient() {
       {/* Art Workshops Gallery */}
       <section className="space-y-8">
         <div className="flex items-center gap-3">
-          <BookOpen className="w-8 h-8 text-[#f0df2a]" />
-          <h2 className="font-luminari text-2xl md:text-4xl text-[#f0df2a]">
+          <BookOpen className="w-8 h-8 text-studio-sunset" />
+          <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
             Art Workshops &amp; Masterclasses
           </h2>
         </div>
 
-        <blockquote className="p-6 rounded-2xl bg-[#230935]/80 border-l-4 border-studio-gold space-y-2 text-yellow-100/90 text-lg italic">
-          <p>• Conducted workshops for students of foreign exchange program in University of Hyderabad</p>
-          <p>• Conducted corporate workshops in multinational corporations (MNC)</p>
-          <p>• Mentored hundreds of students spanning beginners, teenagers to senior citizens</p>
-          <p>• Participated in Residential Workshop of Kashmir, witnessed by Cultural Minister</p>
-        </blockquote>
+        <div className="glass-panel-sunset p-6 sm:p-8 rounded-3xl border border-studio-sunset/30 space-y-3 font-editorial text-base sm:text-xl text-yellow-50/95 italic">
+          <p className="flex items-start gap-2">
+            <span className="text-studio-sunset not-italic">•</span>
+            <span>Conducted workshops for students of foreign exchange program in University of Hyderabad</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="text-studio-sunset not-italic">•</span>
+            <span>Conducted corporate workshops in multinational corporations (MNC)</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="text-studio-sunset not-italic">•</span>
+            <span>Mentored hundreds of students spanning beginners, teenagers to senior citizens</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <span className="text-studio-sunset not-italic">•</span>
+            <span>Participated in Residential Workshop of Kashmir, witnessed by Cultural Minister</span>
+          </p>
+        </div>
 
-        <InteractiveSlideshow items={achievementGallery} />
+        <div className="glass-panel rounded-3xl p-3 sm:p-6 shadow-2xl">
+          <InteractiveSlideshow items={achievementGallery} />
+        </div>
       </section>
 
       {/* Contact buttons */}
