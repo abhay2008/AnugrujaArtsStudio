@@ -1,0 +1,795 @@
+{
+  "meta": {
+    "title": "Anugruja Arts Studio — Anuradha Govarthanan",
+    "description": "Commercial web platform and fine arts portfolio for Anugruja Arts Studio, featuring original watercolor paintings, fine arts diploma courses, workshops, and custom art commissions.",
+    "favicon": "/images/logo.png"
+  },
+  "brand": {
+    "name": "Anugruja Arts Studio",
+    "tagline": "Discover ourselves through colors",
+    "subtitle": "Learn and buy art!",
+    "founder": "Anuradha Govarthanan",
+    "phoneDisplay": "+91 96112 55949",
+    "phoneRaw": "919611255949",
+    "whatsapp": "https://wa.link/ghtuox",
+    "email": "anugruja@gmail.com",
+    "locationLabel": "Bengaluru & Chennai"
+  },
+  "social": [
+    {
+      "network": "whatsapp",
+      "url": "https://wa.link/ghtuox",
+      "color": "green"
+    },
+    {
+      "network": "facebook",
+      "url": "https://www.facebook.com/profile.php?id=100063772818685",
+      "color": "blue"
+    },
+    {
+      "network": "instagram",
+      "url": "https://instagram.com/anugruja_arts",
+      "color": "violet"
+    },
+    {
+      "network": "instagram-sale",
+      "url": "https://www.instagram.com/anugruja_painting4sale",
+      "color": "amber"
+    },
+    {
+      "network": "youtube",
+      "url": "https://www.youtube.com/@anugrujaarts202",
+      "color": "red"
+    }
+  ],
+  "galleries": {
+    "featured": [
+      {
+        "id": "g1",
+        "src": "/images/g1.jpeg",
+        "title": "Artwork #1",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g2",
+        "src": "/images/g2.jpeg",
+        "title": "Artwork #2",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g3",
+        "src": "/images/g3.jpeg",
+        "title": "Artwork #3",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g4",
+        "src": "/images/g4.jpeg",
+        "title": "Artwork #4",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g5",
+        "src": "/images/g5.jpeg",
+        "title": "Artwork #5",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g6",
+        "src": "/images/g6.jpeg",
+        "title": "Artwork #6",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g7",
+        "src": "/images/g7.jpeg",
+        "title": "Artwork #7",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g8",
+        "src": "/images/g8.jpeg",
+        "title": "Artwork #8",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g9",
+        "src": "/images/g9.jpeg",
+        "title": "Artwork #9",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g10",
+        "src": "/images/g10.jpeg",
+        "title": "Artwork #10",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g11",
+        "src": "/images/g11.jpeg",
+        "title": "Artwork #11",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g12",
+        "src": "/images/g12.jpeg",
+        "title": "Artwork #12",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g13",
+        "src": "/images/g13.jpeg",
+        "title": "Artwork #13",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g14",
+        "src": "/images/g14.jpeg",
+        "title": "Artwork #14",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g15",
+        "src": "/images/g15.jpeg",
+        "title": "Artwork #15",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g16",
+        "src": "/images/g16.jpeg",
+        "title": "Artwork #16",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g17",
+        "src": "/images/g17.jpeg",
+        "title": "Artwork #17",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g18",
+        "src": "/images/g18.jpeg",
+        "title": "Artwork #18",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g19",
+        "src": "/images/g19.jpeg",
+        "title": "Artwork #19",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g20",
+        "src": "/images/g20.jpeg",
+        "title": "Artwork #20",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g21",
+        "src": "/images/g21.jpeg",
+        "title": "Artwork #21",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g22",
+        "src": "/images/g22.jpeg",
+        "title": "Artwork #22",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g23",
+        "src": "/images/g23.jpeg",
+        "title": "Artwork #23",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g24",
+        "src": "/images/g24.jpeg",
+        "title": "Artwork #24",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g25",
+        "src": "/images/g25.jpeg",
+        "title": "Artwork #25",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g26",
+        "src": "/images/g26.jpeg",
+        "title": "Artwork #26",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g27",
+        "src": "/images/g27.jpeg",
+        "title": "Artwork #27",
+        "category": "Featured Collection"
+      }
+    ],
+    "workshop": [
+      {
+        "id": "w1",
+        "src": "/images/w1.jpeg",
+        "title": "Workshop Exhibition #1"
+      },
+      {
+        "id": "w2",
+        "src": "/images/w2.jpeg",
+        "title": "Workshop Exhibition #2"
+      },
+      {
+        "id": "w3",
+        "src": "/images/w3.jpeg",
+        "title": "Workshop Exhibition #3"
+      },
+      {
+        "id": "w4",
+        "src": "/images/w4.jpeg",
+        "title": "Workshop Exhibition #4"
+      },
+      {
+        "id": "w5",
+        "src": "/images/w5.jpeg",
+        "title": "Workshop Exhibition #5"
+      },
+      {
+        "id": "w6",
+        "src": "/images/w6.jpeg",
+        "title": "Workshop Exhibition #6"
+      },
+      {
+        "id": "w7",
+        "src": "/images/w7.jpeg",
+        "title": "Workshop Exhibition #7"
+      },
+      {
+        "id": "w8",
+        "src": "/images/w8.jpeg",
+        "title": "Workshop Exhibition #8"
+      },
+      {
+        "id": "w9",
+        "src": "/images/w9.jpeg",
+        "title": "Workshop Exhibition #9"
+      },
+      {
+        "id": "w10",
+        "src": "/images/w10.jpeg",
+        "title": "Workshop Exhibition #10"
+      },
+      {
+        "id": "w11",
+        "src": "/images/w11.jpeg",
+        "title": "Workshop Exhibition #11"
+      },
+      {
+        "id": "w12",
+        "src": "/images/w12.jpeg",
+        "title": "Workshop Exhibition #12"
+      },
+      {
+        "id": "cl5",
+        "src": "/images/cl5.jpeg",
+        "title": "Workshop Exhibition #13"
+      },
+      {
+        "id": "w13",
+        "src": "/images/w13.jpeg",
+        "title": "Workshop Exhibition #14"
+      },
+      {
+        "id": "w14",
+        "src": "/images/w14.jpeg",
+        "title": "Workshop Exhibition #15"
+      }
+    ],
+    "testimonial": [
+      {
+        "id": "t1",
+        "src": "/images/t1.jpeg",
+        "title": "Student Work #1"
+      },
+      {
+        "id": "t2",
+        "src": "/images/t2.jpeg",
+        "title": "Student Work #2"
+      },
+      {
+        "id": "t3",
+        "src": "/images/t3.jpeg",
+        "title": "Student Work #3"
+      },
+      {
+        "id": "t4",
+        "src": "/images/t4.jpeg",
+        "title": "Student Work #4"
+      },
+      {
+        "id": "t5",
+        "src": "/images/t5.jpeg",
+        "title": "Student Work #5"
+      },
+      {
+        "id": "t6",
+        "src": "/images/t6.jpeg",
+        "title": "Student Work #6"
+      },
+      {
+        "id": "t7",
+        "src": "/images/t7.jpeg",
+        "title": "Student Work #7"
+      },
+      {
+        "id": "t8",
+        "src": "/images/t8.jpeg",
+        "title": "Student Work #8"
+      },
+      {
+        "id": "t9",
+        "src": "/images/t9.jpeg",
+        "title": "Student Work #9"
+      },
+      {
+        "id": "t10",
+        "src": "/images/t10.jpeg",
+        "title": "Student Work #10"
+      },
+      {
+        "id": "t11",
+        "src": "/images/t11.jpeg",
+        "title": "Student Work #11"
+      },
+      {
+        "id": "t12",
+        "src": "/images/t12.jpeg",
+        "title": "Student Work #12"
+      }
+    ],
+    "achievement": [
+      {
+        "id": "ach1",
+        "src": "/images/achieve_1.jpeg",
+        "title": "Kalakaar Foundation Award"
+      },
+      {
+        "id": "ach2",
+        "src": "/images/achieve_2.jpeg",
+        "title": "State Art Gallery Honour"
+      },
+      {
+        "id": "ach3",
+        "src": "/images/achieve_3.jpeg",
+        "title": "Excellency Award"
+      },
+      {
+        "id": "ach4",
+        "src": "/images/achieve_4.jpeg",
+        "title": "Golden Award Shiny Colours"
+      },
+      {
+        "id": "w3",
+        "src": "/images/w3.jpeg",
+        "title": "Workshop at University of Hyderabad"
+      },
+      {
+        "id": "w14",
+        "src": "/images/w14.jpeg",
+        "title": "MNC Corporate Workshop"
+      }
+    ],
+    "classes": [
+      {
+        "id": "cl0",
+        "src": "/images/cl0.jpeg",
+        "title": "Class Session"
+      },
+      {
+        "id": "cl00",
+        "src": "/images/cl00.jpeg",
+        "title": "Art Workshop Group"
+      },
+      {
+        "id": "cl1",
+        "src": "/images/cl1.jpeg",
+        "title": "Student Class Artwork #1"
+      },
+      {
+        "id": "cl2",
+        "src": "/images/cl2.jpeg",
+        "title": "Student Class Artwork #2"
+      },
+      {
+        "id": "cl3",
+        "src": "/images/cl3.jpeg",
+        "title": "Student Class Artwork #3"
+      },
+      {
+        "id": "cl4",
+        "src": "/images/cl4.jpeg",
+        "title": "Student Class Artwork #4"
+      },
+      {
+        "id": "cl5",
+        "src": "/images/cl5.jpeg",
+        "title": "Student Class Artwork #5"
+      },
+      {
+        "id": "cl6",
+        "src": "/images/cl6.jpeg",
+        "title": "Student Class Artwork #6"
+      },
+      {
+        "id": "cl7",
+        "src": "/images/cl7.jpeg",
+        "title": "Student Class Artwork #7"
+      },
+      {
+        "id": "cl8",
+        "src": "/images/cl8.jpeg",
+        "title": "Student Class Artwork #8"
+      },
+      {
+        "id": "cl9",
+        "src": "/images/cl9.jpeg",
+        "title": "Student Class Artwork #9"
+      },
+      {
+        "id": "cl10",
+        "src": "/images/cl10.jpeg",
+        "title": "Student Class Artwork #10"
+      },
+      {
+        "id": "cl11",
+        "src": "/images/cl11.jpeg",
+        "title": "Student Class Artwork #11"
+      },
+      {
+        "id": "cl12",
+        "src": "/images/cl12.jpeg",
+        "title": "Student Class Artwork #12"
+      }
+    ],
+    "watercolor": [
+      {
+        "id": "wt1",
+        "src": "/images/wt1.jpeg",
+        "title": "Watercolor Masterclass 1"
+      },
+      {
+        "id": "wt2",
+        "src": "/images/wt2.jpeg",
+        "title": "Watercolor Technique Study 2"
+      },
+      {
+        "id": "wt3",
+        "src": "/images/wt3.jpeg",
+        "title": "Watercolor Landscape 3"
+      }
+    ],
+    "sale": [
+      {
+        "id": "p1",
+        "src": "/images/p1.jpeg",
+        "title": "Original Fine Art Painting #1",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p2",
+        "src": "/images/p2.jpeg",
+        "title": "Original Fine Art Painting #2",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p3",
+        "src": "/images/p3.jpeg",
+        "title": "Original Fine Art Painting #3",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p4",
+        "src": "/images/p4.jpeg",
+        "title": "Original Fine Art Painting #4",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p5",
+        "src": "/images/p5.jpeg",
+        "title": "Original Fine Art Painting #5",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p6",
+        "src": "/images/p6.jpeg",
+        "title": "Original Fine Art Painting #6",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p7",
+        "src": "/images/p7.jpeg",
+        "title": "Original Fine Art Painting #7",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p8",
+        "src": "/images/p8.jpeg",
+        "title": "Original Fine Art Painting #8",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p9",
+        "src": "/images/p9.jpeg",
+        "title": "Original Fine Art Painting #9",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p10",
+        "src": "/images/p10.jpeg",
+        "title": "Original Fine Art Painting #10",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p11",
+        "src": "/images/p11.jpeg",
+        "title": "Original Fine Art Painting #11",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p12",
+        "src": "/images/p12.jpeg",
+        "title": "Original Fine Art Painting #12",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p13",
+        "src": "/images/p13.jpeg",
+        "title": "Original Fine Art Painting #13",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p14",
+        "src": "/images/p14.jpeg",
+        "title": "Original Fine Art Painting #14",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p15",
+        "src": "/images/p15.jpeg",
+        "title": "Original Fine Art Painting #15",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p16",
+        "src": "/images/p16.jpeg",
+        "title": "Original Fine Art Painting #16",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p17",
+        "src": "/images/p17.jpeg",
+        "title": "Original Fine Art Painting #17",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p18",
+        "src": "/images/p18.jpeg",
+        "title": "Original Fine Art Painting #18",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p19",
+        "src": "/images/p19.jpeg",
+        "title": "Original Fine Art Painting #19",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p20",
+        "src": "/images/p20.jpeg",
+        "title": "Original Fine Art Painting #20",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p21",
+        "src": "/images/p21.jpeg",
+        "title": "Original Fine Art Painting #21",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p22",
+        "src": "/images/p22.jpeg",
+        "title": "Original Fine Art Painting #22",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p23",
+        "src": "/images/p23.jpeg",
+        "title": "Original Fine Art Painting #23",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p24",
+        "src": "/images/p24.jpeg",
+        "title": "Original Fine Art Painting #24",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p25",
+        "src": "/images/p25.jpeg",
+        "title": "Original Fine Art Painting #25",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p26",
+        "src": "/images/p26.jpeg",
+        "title": "Original Fine Art Painting #26",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p27",
+        "src": "/images/p27.jpeg",
+        "title": "Original Fine Art Painting #27",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p28",
+        "src": "/images/p28.jpeg",
+        "title": "Original Fine Art Painting #28",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p29",
+        "src": "/images/p29.jpeg",
+        "title": "Original Fine Art Painting #29",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p30",
+        "src": "/images/p30.jpeg",
+        "title": "Original Fine Art Painting #30",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p31",
+        "src": "/images/p31.jpeg",
+        "title": "Original Fine Art Painting #31",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p32",
+        "src": "/images/p32.jpeg",
+        "title": "Original Fine Art Painting #32",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p33",
+        "src": "/images/p33.jpeg",
+        "title": "Original Fine Art Painting #33",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p34",
+        "src": "/images/p34.jpeg",
+        "title": "Original Fine Art Painting #34",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p35",
+        "src": "/images/p35.jpeg",
+        "title": "Original Fine Art Painting #35",
+        "category": "Paintings for Sale"
+      },
+      {
+        "id": "p36",
+        "src": "/images/p36.jpeg",
+        "title": "Original Fine Art Painting #36",
+        "category": "Paintings for Sale"
+      }
+    ],
+    "commission": [
+      {
+        "id": "c1",
+        "src": "/images/c1.jpeg",
+        "title": "Commissioned Artwork #1",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c2",
+        "src": "/images/c2.jpeg",
+        "title": "Commissioned Artwork #2",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c3",
+        "src": "/images/c3.jpeg",
+        "title": "Commissioned Artwork #3",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c4",
+        "src": "/images/c4.jpeg",
+        "title": "Commissioned Artwork #4",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c5",
+        "src": "/images/c5.jpeg",
+        "title": "Commissioned Artwork #5",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c6",
+        "src": "/images/c6.jpeg",
+        "title": "Commissioned Artwork #6",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c7",
+        "src": "/images/c7.jpeg",
+        "title": "Commissioned Artwork #7",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c8",
+        "src": "/images/c8.jpeg",
+        "title": "Commissioned Artwork #8",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c9",
+        "src": "/images/c9.jpeg",
+        "title": "Commissioned Artwork #9",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c10",
+        "src": "/images/c10.jpeg",
+        "title": "Commissioned Artwork #10",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c11",
+        "src": "/images/c11.jpeg",
+        "title": "Commissioned Artwork #11",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c12",
+        "src": "/images/c12.jpeg",
+        "title": "Commissioned Artwork #12",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c13",
+        "src": "/images/c13.jpeg",
+        "title": "Commissioned Artwork #13",
+        "category": "Custom Commission"
+      },
+      {
+        "id": "c14",
+        "src": "/images/c14.jpeg",
+        "title": "Commissioned Artwork #14",
+        "category": "Custom Commission"
+      }
+    ]
+  },
+  "sections": {
+    "banner": {
+      "title": "Anugruja Arts Studio",
+      "subtitle": "Learn and buy art!",
+      "quote": "\"Discover ourselves through colors\"",
+      "badge": "Fine Arts Studio & Master Academy",
+      "bgImage": "/images/banner.jpeg",
+      "logo": "/images/logo.png"
+    },
+    "aboutArtist": {
+      "portraitImage": "/images/image.png",
+      "portraitAlt": "Anuradha Govarthanan Portrait",
+      "headline": "Anuradha Govarthanan — A Professional Artist",
+      "subheading": "Water Colour Paintings and Realistic Artwork"
+    },
+    "courses": {
+      "title": "Classes & Courses",
+      "subtitle": "Online-Offline, Watercolour & Comprehensive Fine Arts Courses"
+    }
+  }
+}

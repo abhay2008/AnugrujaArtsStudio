@@ -1,0 +1,387 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------- */
+/* Self-hosted display fonts (49KB)   */
+/* ---------------------------------- */
+@font-face {
+  font-family: 'Cinzel';
+  src: url('/fonts/cinzel-var.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-var.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 17, 3, 28;
+  --background-end-rgb: 10, 2, 16;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #fdf5cf;
+  background: radial-gradient(circle at 50% 20%, #260a3a 0%, #100318 60%, #08010d 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* ------------------------------- */
+/* Custom Scrollbar                */
+/* ------------------------------- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(38, 10, 58, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d1a515, #8a5a10);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f0df2a, #d1a515);
+}
+
+/* ------------------------------- */
+/* Custom smooth horizontal scroller */
+/* ------------------------------- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------------------- */
+/* Typography                      */
+/* ------------------------------- */
+.font-blippo {
+  font-family: 'Cinzel', 'Blippo', fantasy, serif;
+  letter-spacing: 0.02em;
+}
+
+.font-luminari {
+  font-family: 'Cinzel', 'Luminari', fantasy, serif;
+}
+
+.font-serif-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Cinzel carries small caps elegance; slightly tighten at display sizes */
+.font-blippo.text-5xl,
+.font-blippo.text-6xl,
+.font-blippo.text-7xl {
+  letter-spacing: 0.03em;
+}
+
+/* ------------------------------- */
+/* Keyframe animation library      */
+/* ------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drawerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes crossIn {
+  from {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(242, 215, 112, 0.25), 0 0 40px rgba(242, 215, 112, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(242, 215, 112, 0.45), 0 0 60px rgba(242, 215, 112, 0.22);
+  }
+}
+
+@keyframes progressFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ------------------------------- */
+/* Animation utility classes       */
+/* ------------------------------- */
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+.animate-fadeSlideUp {
+  animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fadeSlideDown {
+  animation: fadeSlideDown 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-drawerIn {
+  animation: drawerIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-crossIn {
+  animation: crossIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 14s linear infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 3.6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 3.2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: floatY 4.5s ease-in-out infinite;
+}
+
+/* Hero entrance orchestration */
+.hero-rise {
+  opacity: 0;
+  animation: heroRise 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-zoom {
+  opacity: 0;
+  animation: heroZoom 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ------------------------------- */
+/* Gold shimmering headline        */
+/* ------------------------------- */
+.gold-shimmer {
+  background: linear-gradient(
+    110deg,
+    #f0df2a 25%,
+    #fff7c2 42%,
+    #f2d770 50%,
+    #fff7c2 58%,
+    #f0df2a 75%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 5.5s linear infinite;
+}
+
+/* ------------------------------- */
+/* Scroll-reveal system (JS-driven)*/
+/* ------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(34px) scale(0.995);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal-l {
+  transform: translateX(-44px);
+}
+
+.reveal-r {
+  transform: translateX(44px);
+}
+
+.reveal-zoom {
+  transform: scale(0.94);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Soft edge fades for horizontal scrollers */
+.edge-fade {
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
+
+/* Elegant underline sweep for nav links */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f2d770, #e040fb);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Card hover lift used across sections */
+.card-lift {
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.4s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45), 0 0 30px rgba(242, 215, 112, 0.18);
+}
+
+/* Preloader progress bar */
+.preloader-progress {
+  transform-origin: left;
+  animation: progressFill 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ------------------------------- */
+/* Accessibility: reduced motion   */
+/* ------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal,
+  .hero-rise,
+  .hero-zoom {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .gold-shimmer {
+    animation: none;
+    -webkit-text-fill-color: #f0df2a;
+    color: #f0df2a;
+  }
+}
