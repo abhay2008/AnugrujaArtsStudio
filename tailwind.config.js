@@ -1,32 +1,35 @@
+const path = require('path');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // Absolute globs so JIT still works when `next dev` is launched with cwd=/
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    path.join(__dirname, 'src/pages/**/*.{js,ts,jsx,tsx,mdx}'),
+    path.join(__dirname, 'src/components/**/*.{js,ts,jsx,tsx,mdx}'),
+    path.join(__dirname, 'src/app/**/*.{js,ts,jsx,tsx,mdx}'),
   ],
   theme: {
     extend: {
       colors: {
         studio: {
-          bg: "#100318",
-          dark: "#190626",
-          card: "#260a3a",
-          purple: "#4d1d6f",
-          royal: "#2b0844",
-          deep: "#140420",
-          gold: "#F2D770",
-          yellow: "#f0df2a",
-          amber: "#d1a515",
-          highlight: "#ffe76c",
-          accent: "#e040fb",
+          bg: "var(--color-studio-bg)",
+          dark: "var(--color-studio-dark)",
+          card: "var(--color-studio-card)",
+          purple: "var(--color-studio-purple)",
+          royal: "var(--color-studio-royal)",
+          deep: "var(--color-studio-deep)",
+          gold: "var(--color-gold)",
+          yellow: "var(--color-gold-bright)",
+          amber: "var(--color-gold-deep)",
+          highlight: "var(--color-gold-bright)",
+          accent: "var(--color-accent-magenta)",
           sunset: {
-            light: "#fb923c",
-            DEFAULT: "#f97316",
-            deep: "#ea580c",
-            dark: "#c2410c",
+            light: "var(--color-sunset-light)",
+            DEFAULT: "var(--color-sunset)",
+            deep: "var(--color-sunset-deep)",
+            dark: "var(--color-sunset-dark)",
           },
-          border: "rgba(242, 215, 112, 0.35)",
+          border: "var(--border-soft)",
         },
       },
       fontFamily: {

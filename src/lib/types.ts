@@ -8,6 +8,26 @@ export interface ArtItem {
   description?: string;
   medium?: string;
   dateAdded?: string;
+  /** Acquisition status surfaced as a badge on the card. */
+  status?: 'Available' | 'Reserved' | 'Sold';
+  /** Halo colour rendered behind the active plate in the 3D showcase. */
+  accentGlow?: string;
+  dimensions?: string;
+}
+
+/**
+ * Metadata for the home-page scroll shortcut chips ("Buy Paintings",
+ * "Courses", etc.) so they can be managed like any other content.
+ */
+export interface PageListing {
+  id: string;
+  /** lucide icon key understood by QuickNav (palette, tag, graduation, user) */
+  icon: string;
+  label: string;
+  /** target hash on the home page, e.g. "/#buy-paintings" */
+  href: string;
+  title: string;
+  subtitle: string;
 }
 
 export interface SocialLink {
@@ -63,6 +83,9 @@ export interface SiteSections {
   courses: {
     title: string;
     subtitle: string;
+  };
+  pageMeta?: {
+    quickNav?: PageListing[];
   };
 }
 

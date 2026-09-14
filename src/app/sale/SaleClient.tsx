@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
+import Carousel3D from '@/components/Carousel3D';
 import AutoScroller from '@/components/AutoScroller';
-import InteractiveSlideshow from '@/components/InteractiveSlideshow';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { saleGallery, commissionGallery, studioMeta } from '@/data/artData';
 import { useLightbox } from '@/components/LightboxContext';
-import { ShoppingBag, Sparkles, ExternalLink, Grid, LayoutList } from 'lucide-react';
+import { formatPrice } from '@/lib/price';
+import { ShoppingBag, Sparkles, ExternalLink } from 'lucide-react';
 
 export default function SaleClient() {
   const { openLightbox } = useLightbox();
-  const [viewMode, setViewMode] = useState<'grid' | 'slideshow'>('grid');
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-16">
@@ -32,8 +31,8 @@ export default function SaleClient() {
         </p>
       </div>
 
-      {/* 1. Painting Catalog for Sale */}
-      <section className="space-y-6">
+      {/* 1. Painting Catalog for Sale — 3D carousel with full catalog grid below */}
+      <section className="space-y-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-studio-gold/30 pb-4">
           <div className="flex items-center gap-2.5">
             <ShoppingBag className="w-6 h-6 text-studio-sunset" />
@@ -41,64 +40,40 @@ export default function SaleClient() {
               Available Paintings ({saleGallery.length} Pieces)
             </h2>
           </div>
-
-          {/* Toggle between Grid and Slideshow view — 44px min touch target */}
-          <div className="inline-flex rounded-xl glass-pill p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`touch-target min-h-[44px] flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-blippo transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-studio-sunset text-white shadow-lg'
-                  : 'text-amber-100/70 hover:text-white'
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-              <span>Full Grid</span>
-            </button>
-            <button
-              onClick={() => setViewMode('slideshow')}
-              className={`touch-target min-h-[44px] flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-blippo transition-all ${
-                viewMode === 'slideshow'
-                  ? 'bg-studio-sunset text-white shadow-lg'
-                  : 'text-amber-100/70 hover:text-white'
-              }`}
-            >
-              <LayoutList className="w-4 h-4" />
-              <span>Slideshow</span>
-            </button>
-          </div>
         </div>
 
-        {/* View Mode: Interactive Grid with Next.js fast lazy-loading */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-            {saleGallery.map((art, idx) => (
-              <div
-                key={art.id}
-                onClick={() => openLightbox(art.src, art.title)}
-                className="group relative h-48 sm:h-56 rounded-2xl overflow-hidden glass-card border border-white/10 hover:border-studio-sunset/60 shadow-md hover:shadow-[0_12px_30px_rgba(249,115,22,0.25)] transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer bg-studio-dark/90"
-              >
-                <Image
-                  src={art.src}
-                  alt={art.title}
-                  fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
-                  loading={idx < 6 ? 'eager' : 'lazy'}
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
-                  <span className="text-xs font-decorative font-bold text-studio-gold truncate">
-                    {art.title}
+        {/* 3D coverflow carousel with name + price plates */}
+        <Carousel3D items={saleGallery} variant="spotlight" autoAdvanceIntervalMs={4600} />
+
+        {/* Browsable full-catalog grid (lazy loaded, tap to zoom) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          {saleGallery.map((art, idx) => (
+            <div
+              key={art.id}
+              onClick={() => openLightbox(art.src, art.title)}
+              className="group relative h-48 sm:h-56 rounded-2xl overflow-hidden glass-card border border-theme hover:border-studio-sunset/60 shadow-md hover:shadow-[0_12px_30px_rgba(249,115,22,0.25)] transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-studio-dark/90"
+            >
+              <Image
+                src={art.src}
+                alt={art.title}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
+                loading={idx < 6 ? 'eager' : 'lazy'}
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col gap-0.5 p-2.5">
+                <span className="text-xs font-decorative font-bold text-studio-gold truncate">
+                  {art.title}
+                </span>
+                {art.price && (
+                  <span className="text-[11px] font-mono font-bold text-emerald-300">
+                    {formatPrice(art.price)}
                   </span>
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="glass-panel rounded-3xl p-3 sm:p-6 shadow-2xl">
-            <InteractiveSlideshow items={saleGallery} />
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
         {/* Instagram catalog link */}
         <div className="text-center pt-4">
@@ -130,7 +105,7 @@ export default function SaleClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-white/10 space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
           <ul className="space-y-2.5">
             <li>• <strong className="text-studio-gold">Portraits:</strong> Single portrait, couple portraits, family portrait commissions available.</li>
             <li>• <strong className="text-studio-gold">Mediums:</strong> Acrylic, pencil, charcoal, oil, and transparent watercolors.</li>

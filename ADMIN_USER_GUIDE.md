@@ -40,13 +40,18 @@ Welcome to the **Anugruja Arts Studio Admin Console & CMS**. This portal is patt
 ### 2. Gallery Manager (`/admin` -> Manage Galleries & Artworks)
 * Switch between 8 galleries with live artwork counts and badges.
 * **Filter & Search Bar**: Search artworks across the selected collection by title, medium, or price in real-time.
-* **Card Editor**: In-place inline title, category, and price editing.
+* **Card Editor**: In-place inline title, category, price, medium, and description editing. Every painting's name and description are displayed on the public carousel — edit them here to update the live site.
 * **Jump to Position**: Direct numeric slot input to move an artwork to any position (e.g. move #24 to #1).
 * **Steppers**: Move artwork to First, Left, Right, or Last positions with single clicks.
 * **Quick Arrange (Table / List Mode)**: Lightweight compact view for rapidly reordering large collections.
 * **Delete Modal**: Safe confirmation dialog with alert styling before removal.
 
-### 3. Brand & SEO Settings (`/admin` -> Brand & SEO)
+### 3. Pages & Listings (`/admin` -> Pages & Listings)
+* Manage the home-page scroll shortcut chips (Buy Paintings, Gallery, Workshops, etc.).
+* Add, edit, reorder, or remove shortcuts that visitors see while scrolling.
+* Each shortcut has a label, icon, link target, title, and subtitle.
+
+### 4. Brand & SEO Settings (`/admin` -> Brand & SEO)
 * Update founder name, tagline, contact number, WhatsApp link, and social handles.
 * Update SEO browser titles and meta descriptions with live diff detection.
 * Apply and commit changes directly to the repository.

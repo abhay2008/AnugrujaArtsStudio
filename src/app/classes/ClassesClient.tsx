@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import InteractiveSlideshow from '@/components/InteractiveSlideshow';
+import Carousel3D from '@/components/Carousel3D';
 import AutoScroller from '@/components/AutoScroller';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { classGallery, watercolorGallery } from '@/data/artData';
@@ -41,7 +41,7 @@ export default function ClassesClient() {
 
         {/* Course highlights in glass cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-2 hover:border-studio-sunset/50 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
             <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
               <CheckCircle className="w-5 h-5 text-studio-sunset" />
               <span>Global Accessibility</span>
@@ -51,7 +51,7 @@ export default function ClassesClient() {
             </p>
           </div>
 
-          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-2 hover:border-studio-sunset/50 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
             <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
               <Clock className="w-5 h-5 text-studio-sunset" />
               <span>Age-specific Schedule</span>
@@ -61,7 +61,7 @@ export default function ClassesClient() {
             </p>
           </div>
 
-          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-2 hover:border-studio-sunset/50 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
             <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
               <Users className="w-5 h-5 text-studio-sunset" />
               <span>All Age Groups (7 to 70+)</span>
@@ -71,7 +71,7 @@ export default function ClassesClient() {
             </p>
           </div>
 
-          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-2 hover:border-studio-sunset/50 transition-all">
+          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
             <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
               <Brush className="w-5 h-5 text-studio-sunset" />
               <span>Mediums by Age Group</span>
@@ -88,9 +88,7 @@ export default function ClassesClient() {
           <p className="text-center text-studio-gold font-decorative text-xl sm:text-2xl mb-4">
             Student Works &amp; Class Milestones
           </p>
-          <div className="glass-panel rounded-3xl p-3 sm:p-6 shadow-2xl">
-            <InteractiveSlideshow items={classGallery} />
-          </div>
+          <Carousel3D items={classGallery} showInfo={false} />
         </div>
       </section>
 
@@ -110,7 +108,7 @@ export default function ClassesClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-white/10 space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
           <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Unzipping Watercolor Course</p>
           <ul className="space-y-2">
             <li>• <strong className="text-studio-gold">Course Options:</strong> Choose between 3 months foundational or 6 months comprehensive mastery.</li>
@@ -157,7 +155,7 @@ export default function ClassesClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-white/10 space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
           <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Art Fundamental and Sketching Program</p>
           <ul className="space-y-2">
             <li>• <strong className="text-studio-gold">Course Duration:</strong> 2 months intensive curriculum.</li>

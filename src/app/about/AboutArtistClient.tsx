@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import InteractiveSlideshow from '@/components/InteractiveSlideshow';
+import Carousel3D from '@/components/Carousel3D';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { achievementGallery } from '@/data/artData';
 import { Award, Globe, BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
@@ -138,7 +138,7 @@ export default function AboutArtistClient() {
           ].map((honor, idx) => (
             <div
               key={idx}
-              className="glass-card p-5 rounded-2xl border border-white/10 flex items-start gap-3.5 hover:border-studio-sunset/50 transition-all"
+              className="glass-card p-5 rounded-2xl border border-theme flex items-start gap-3.5 hover:border-studio-sunset/50 transition-all"
             >
               <span className="text-studio-sunset text-xl font-bold mt-0.5">•</span>
               <p className="font-serif-display text-sm sm:text-base text-yellow-50/95 leading-relaxed">
@@ -168,7 +168,7 @@ export default function AboutArtistClient() {
           ].map((item, idx) => (
             <div
               key={idx}
-              className="glass-card p-4 rounded-xl border border-white/10 text-amber-100 font-serif-display font-medium text-center text-sm sm:text-base hover:border-studio-gold/60 transition-all"
+              className="glass-card p-4 rounded-xl border border-theme text-amber-100 font-serif-display font-medium text-center text-sm sm:text-base hover:border-studio-gold/60 transition-all"
             >
               {item}
             </div>
@@ -204,8 +204,8 @@ export default function AboutArtistClient() {
           </p>
         </div>
 
-        <div className="glass-panel rounded-3xl p-3 sm:p-6 shadow-2xl">
-          <InteractiveSlideshow items={achievementGallery} />
+        <div className="rounded-3xl">
+          <Carousel3D items={achievementGallery} showInfo={false} />
         </div>
       </section>
 

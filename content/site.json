@@ -211,77 +211,107 @@
       {
         "id": "w1",
         "src": "/images/w1.jpeg",
-        "title": "Workshop Exhibition #1"
+        "title": "Realistic Watercolor Mastery",
+        "category": "Masterclass",
+        "description": "Flagship weekend intensive on light, glazing and layered realism — the studio's signature curriculum for serious students."
       },
       {
         "id": "w2",
         "src": "/images/w2.jpeg",
-        "title": "Workshop Exhibition #2"
+        "title": "Kashmir Residential Masterclass",
+        "category": "Retreat",
+        "description": "A week-long Himalayan immersion in landscape painting, witnessed by the Cultural Minister."
       },
       {
         "id": "w3",
         "src": "/images/w3.jpeg",
-        "title": "Workshop Exhibition #3"
+        "title": "University of Hyderabad Workshop",
+        "category": "Outreach",
+        "description": "Watercolor fundamentals for international foreign-exchange students — art as a shared language."
       },
       {
         "id": "w4",
         "src": "/images/w4.jpeg",
-        "title": "Workshop Exhibition #4"
+        "title": "Corporate Creative Rejuvenation",
+        "category": "Corporate",
+        "description": "Fine-art masterclasses for tech and corporate leaders on the Global Warming theme."
       },
       {
         "id": "w5",
         "src": "/images/w5.jpeg",
-        "title": "Workshop Exhibition #5"
+        "title": "Foundation Drawing for Children",
+        "category": "Academy",
+        "description": "Observation, proportion and confidence for young artists aged 8–14, weekend batches."
       },
       {
         "id": "w6",
         "src": "/images/w6.jpeg",
-        "title": "Workshop Exhibition #6"
+        "title": "Portrait in Watercolor",
+        "category": "Masterclass",
+        "description": "Wet-on-wet portraiture: skin tones, soft edges and capturing likeness in three sittings."
       },
       {
         "id": "w7",
         "src": "/images/w7.jpeg",
-        "title": "Workshop Exhibition #7"
+        "title": "Botanical Studies Day",
+        "category": "Academy",
+        "description": "A one-day workshop on leaves, petals and layered greens from the studio garden."
       },
       {
         "id": "w8",
         "src": "/images/w8.jpeg",
-        "title": "Workshop Exhibition #8"
+        "title": "Senior Artists' Studio Circle",
+        "category": "Community",
+        "description": "Weekday morning sessions for senior students — technique, critique and companionship."
       },
       {
         "id": "w9",
         "src": "/images/w9.jpeg",
-        "title": "Workshop Exhibition #9"
+        "title": "Seasonal Creative Retreat",
+        "category": "Retreat",
+        "description": "Two days of plein-air practice, demonstrations and guided studio time outside the city."
       },
       {
         "id": "w10",
         "src": "/images/w10.jpeg",
-        "title": "Workshop Exhibition #10"
+        "title": "Charcoal & Graphite Intensive",
+        "category": "Academy",
+        "description": "Value, texture and expressive mark-making — the discipline behind every watercolor."
       },
       {
         "id": "w11",
         "src": "/images/w11.jpeg",
-        "title": "Workshop Exhibition #11"
+        "title": "Parent & Child Paint Along",
+        "category": "Community",
+        "description": "A relaxed weekend session where families paint side by side, no experience needed."
       },
       {
         "id": "w12",
         "src": "/images/w12.jpeg",
-        "title": "Workshop Exhibition #12"
+        "title": "Annual Student Exhibition Prep",
+        "category": "Academy",
+        "description": "Framing, presentation and artist statements — preparing student work for the public wall."
       },
       {
         "id": "cl5",
         "src": "/images/cl5.jpeg",
-        "title": "Workshop Exhibition #13"
+        "title": "Guest Artist Demonstration",
+        "category": "Masterclass",
+        "description": "Visiting master artists demonstrate technique live, followed by open critique."
       },
       {
         "id": "w13",
         "src": "/images/w13.jpeg",
-        "title": "Workshop Exhibition #14"
+        "title": "Kids' Summer Art Camp",
+        "category": "Academy",
+        "description": "A week of colour, story and craft — the studio's most-loved holiday tradition."
       },
       {
         "id": "w14",
         "src": "/images/w14.jpeg",
-        "title": "Workshop Exhibition #15"
+        "title": "Private & Group Bookings",
+        "category": "Corporate",
+        "description": "Custom workshops for teams, celebrations and institutions, in-studio or on location."
       }
     ],
     "testimonial": [
@@ -472,217 +502,289 @@
         "id": "p1",
         "src": "/images/p1.jpeg",
         "title": "Original Fine Art Painting #1",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 4500
       },
       {
         "id": "p2",
         "src": "/images/p2.jpeg",
         "title": "Original Fine Art Painting #2",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 4700
       },
       {
         "id": "p3",
         "src": "/images/p3.jpeg",
         "title": "Original Fine Art Painting #3",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 4900
       },
       {
         "id": "p4",
         "src": "/images/p4.jpeg",
         "title": "Original Fine Art Painting #4",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 5100
       },
       {
         "id": "p5",
         "src": "/images/p5.jpeg",
         "title": "Original Fine Art Painting #5",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 5300
       },
       {
         "id": "p6",
         "src": "/images/p6.jpeg",
         "title": "Original Fine Art Painting #6",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 5500
       },
       {
         "id": "p7",
         "src": "/images/p7.jpeg",
         "title": "Original Fine Art Painting #7",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 5700
       },
       {
         "id": "p8",
         "src": "/images/p8.jpeg",
         "title": "Original Fine Art Painting #8",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 5900
       },
       {
         "id": "p9",
         "src": "/images/p9.jpeg",
         "title": "Original Fine Art Painting #9",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 6100
       },
       {
         "id": "p10",
         "src": "/images/p10.jpeg",
         "title": "Original Fine Art Painting #10",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 6300
       },
       {
         "id": "p11",
         "src": "/images/p11.jpeg",
         "title": "Original Fine Art Painting #11",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 6500
       },
       {
         "id": "p12",
         "src": "/images/p12.jpeg",
         "title": "Original Fine Art Painting #12",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 6700
       },
       {
         "id": "p13",
         "src": "/images/p13.jpeg",
         "title": "Original Fine Art Painting #13",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 6900
       },
       {
         "id": "p14",
         "src": "/images/p14.jpeg",
         "title": "Original Fine Art Painting #14",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 7100
       },
       {
         "id": "p15",
         "src": "/images/p15.jpeg",
         "title": "Original Fine Art Painting #15",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 7300
       },
       {
         "id": "p16",
         "src": "/images/p16.jpeg",
         "title": "Original Fine Art Painting #16",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 7500
       },
       {
         "id": "p17",
         "src": "/images/p17.jpeg",
         "title": "Original Fine Art Painting #17",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 7700
       },
       {
         "id": "p18",
         "src": "/images/p18.jpeg",
         "title": "Original Fine Art Painting #18",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 7900
       },
       {
         "id": "p19",
         "src": "/images/p19.jpeg",
         "title": "Original Fine Art Painting #19",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 8100
       },
       {
         "id": "p20",
         "src": "/images/p20.jpeg",
         "title": "Original Fine Art Painting #20",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 8300
       },
       {
         "id": "p21",
         "src": "/images/p21.jpeg",
         "title": "Original Fine Art Painting #21",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 8500
       },
       {
         "id": "p22",
         "src": "/images/p22.jpeg",
         "title": "Original Fine Art Painting #22",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 8700
       },
       {
         "id": "p23",
         "src": "/images/p23.jpeg",
         "title": "Original Fine Art Painting #23",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 8900
       },
       {
         "id": "p24",
         "src": "/images/p24.jpeg",
         "title": "Original Fine Art Painting #24",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 9100
       },
       {
         "id": "p25",
         "src": "/images/p25.jpeg",
         "title": "Original Fine Art Painting #25",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 9300
       },
       {
         "id": "p26",
         "src": "/images/p26.jpeg",
         "title": "Original Fine Art Painting #26",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 9500
       },
       {
         "id": "p27",
         "src": "/images/p27.jpeg",
         "title": "Original Fine Art Painting #27",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 9700
       },
       {
         "id": "p28",
         "src": "/images/p28.jpeg",
         "title": "Original Fine Art Painting #28",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 9900
       },
       {
         "id": "p29",
         "src": "/images/p29.jpeg",
         "title": "Original Fine Art Painting #29",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 10100
       },
       {
         "id": "p30",
         "src": "/images/p30.jpeg",
         "title": "Original Fine Art Painting #30",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 10300
       },
       {
         "id": "p31",
         "src": "/images/p31.jpeg",
         "title": "Original Fine Art Painting #31",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 10500
       },
       {
         "id": "p32",
         "src": "/images/p32.jpeg",
         "title": "Original Fine Art Painting #32",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 10700
       },
       {
         "id": "p33",
         "src": "/images/p33.jpeg",
         "title": "Original Fine Art Painting #33",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 10900
       },
       {
         "id": "p34",
         "src": "/images/p34.jpeg",
         "title": "Original Fine Art Painting #34",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 11100
       },
       {
         "id": "p35",
         "src": "/images/p35.jpeg",
         "title": "Original Fine Art Painting #35",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 11300
       },
       {
         "id": "p36",
         "src": "/images/p36.jpeg",
         "title": "Original Fine Art Painting #36",
-        "category": "Paintings for Sale"
+        "category": "Paintings for Sale",
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "price": 11500
       }
     ],
     "commission": [
@@ -773,6 +875,58 @@
     ]
   },
   "sections": {
+    "pageMeta": {
+      "quickNav": [
+        {
+          "id": "qn-buy",
+          "icon": "tag",
+          "label": "Buy Paintings",
+          "href": "#buy-paintings",
+          "title": "Buy Paintings",
+          "subtitle": "Originals ready to own"
+        },
+        {
+          "id": "qn-gallery",
+          "icon": "palette",
+          "label": "Gallery",
+          "href": "/sale",
+          "title": "Full Catalog",
+          "subtitle": "Every original for sale"
+        },
+        {
+          "id": "qn-workshops",
+          "icon": "award",
+          "label": "Workshops",
+          "href": "/#workshops",
+          "title": "Workshops & Events",
+          "subtitle": "Masterclasses & retreats"
+        },
+        {
+          "id": "qn-achievements",
+          "icon": "sparkles",
+          "label": "Awards",
+          "href": "#achievements",
+          "title": "Achievements & Honours",
+          "subtitle": "Awards, exhibitions & outreach"
+        },
+        {
+          "id": "qn-classes",
+          "icon": "graduation",
+          "label": "Classes",
+          "href": "/classes",
+          "title": "Classes & Courses",
+          "subtitle": "Online-offline programs"
+        },
+        {
+          "id": "qn-about",
+          "icon": "user",
+          "label": "About",
+          "href": "/about",
+          "title": "About the Artist",
+          "subtitle": "Anuradha's journey"
+        }
+      ]
+    },
     "banner": {
       "title": "Anugruja Arts Studio",
       "subtitle": "Learn and buy art!",

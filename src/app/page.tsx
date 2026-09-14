@@ -1,241 +1,135 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import AnimeHeroGraphics from '@/components/AnimeHeroGraphics';
-import InteractiveSlideshow from '@/components/InteractiveSlideshow';
-import AutoScroller from '@/components/AutoScroller';
-import ContactActionButtons from '@/components/ContactActionButtons';
+import LandingHero from '@/components/LandingHero';
+import Carousel3D from '@/components/Carousel3D';
+import QuickNav from '@/components/QuickNav';
 import Reveal from '@/components/Reveal';
+import ArtistJourneySection from '@/components/ArtistJourneySection';
+import AccoladesSection from '@/components/AccoladesSection';
 import {
-  featuredGallery,
   workshopGallery,
   testimonialGallery,
+  saleGallery,
+  buyShowcaseItems,
+  quickNavListings,
   studioMeta,
 } from '@/data/artData';
-import { ChevronDown, Sparkles, ExternalLink, Palette, Award, HeartHandshake } from 'lucide-react';
+import {
+  Sparkles,
+  ExternalLink,
+  Award,
+  HeartHandshake,
+  ShoppingBag,
+} from 'lucide-react';
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col w-full overflow-x-hidden">
-      {/* 1. Hero Banner with motion graphic & logo */}
+    <div className="landing-page relative flex flex-col w-full overflow-x-hidden">
+      <LandingHero />
+
+      {/* 2. BUY PAINTINGS — height-locked 100dvh showcase (zero page scroll) */}
       <section
-        id="banner"
-        className="relative min-h-[88vh] flex items-center justify-center py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat overflow-hidden"
-        style={{ backgroundImage: "url('/images/banner.jpeg')" }}
+        id="buy-paintings"
+        className="landing-section relative mx-auto flex min-h-0 sm:h-[100dvh] sm:max-h-[100dvh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
       >
-        {/* Dark overlay with royal purple and warm sunset vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#180424]/90 via-[#100318]/80 to-[#100318]" />
-        {/* Ambient warm sunset radial illumination */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[550px] h-[350px] bg-gradient-to-r from-studio-sunset/10 via-purple-600/15 to-studio-gold/10 blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
-          {/* Hero text — staggered entrance */}
-          <div className="flex-1 space-y-5 max-w-xl">
-            <div
-              className="hero-rise inline-flex items-center gap-2 px-4 py-2 rounded-full glass-pill text-amber-200 text-xs sm:text-sm font-medium"
-              style={{ animationDelay: '0.05s' }}
-            >
-              <Sparkles className="w-4 h-4 text-studio-sunset animate-pulse" />
-              <span className="tracking-wide">Fine Arts Studio &amp; Master Academy</span>
-            </div>
-
-            <h1
-              className="hero-rise font-decorative text-4xl sm:text-6xl lg:text-7xl font-bold gold-sunset-shimmer tracking-wider leading-tight drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]"
-              style={{ animationDelay: '0.15s' }}
-            >
-              Anugraha Arts Studio
-            </h1>
-
-            <h2
-              className="hero-rise font-blippo text-xl sm:text-3xl lg:text-4xl font-semibold text-studio-gold tracking-wide drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)]"
-              style={{ animationDelay: '0.28s' }}
-            >
-              Learn and buy art!
-            </h2>
-
-            <p
-              className="hero-rise font-editorial italic text-lg sm:text-2xl text-amber-100/90 tracking-wide"
-              style={{ animationDelay: '0.4s' }}
-            >
-              &ldquo;Discover ourselves through colors&rdquo;
-            </p>
-
-            <div
-              className="hero-rise flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-4 pt-4"
-              style={{ animationDelay: '0.52s' }}
-            >
-              <Link
-                href="/sale"
-                className="glass-btn-sunset min-h-[48px] px-8 py-3.5 rounded-2xl text-white font-bold text-lg text-center flex items-center justify-center gap-2 active:scale-95"
-              >
-                <Palette className="w-5 h-5 text-amber-200" />
-                <span>Art for Sale!</span>
-              </Link>
-              <Link
-                href="/classes"
-                className="glass-btn-gold min-h-[48px] px-8 py-3.5 rounded-2xl text-studio-gold font-bold text-lg text-center flex items-center justify-center gap-2 active:scale-95"
-              >
-                <Award className="w-5 h-5 text-studio-sunset" />
-                <span>Explore Classes</span>
-              </Link>
-            </div>
+        <Reveal className="showcase-head shrink-0 space-y-1.5 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full glass-pill px-3 py-1 text-section-kicker text-studio-sunset">
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>Originals Ready to Own</span>
           </div>
-
-          {/* Hero Motion Graphic and Studio Logo */}
-          <div className="relative flex items-center justify-center">
-            <AnimeHeroGraphics />
-            <div className="hero-zoom absolute inset-0 flex items-center justify-center" style={{ animationDelay: '0.3s' }}>
-              <div className="relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full overflow-hidden border-2 border-studio-gold/80 shadow-[0_0_45px_rgba(242,215,112,0.45)] bg-black/50 animate-float backdrop-blur-sm">
-                <Image
-                  src="/images/logo.png"
-                  alt="Anugraha Arts Studio Logo"
-                  fill
-                  priority
-                  fetchPriority="high"
-                  className="object-contain p-2 sm:p-3"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll down indicator */}
-        <a
-          href="#one"
-          aria-label="Scroll to next section"
-          className="hero-rise absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 touch-target p-2.5 rounded-full glass-pill text-studio-gold hover:text-white hover:scale-110 active:scale-95 transition-all animate-bounce"
-          style={{ animationDelay: '0.7s' }}
-        >
-          <ChevronDown className="w-5 h-5 text-studio-gold" />
-        </a>
-      </section>
-
-      {/* 2. Spotlight Section One: Art Gallery Featured Collection */}
-      <section id="one" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-10">
-        <Reveal className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-xs text-studio-sunset mb-1">
-            <Palette className="w-3.5 h-3.5" />
-            <span>Curated Masterworks</span>
-          </div>
-          <h2 className="font-decorative text-3xl sm:text-5xl lg:text-6xl text-studio-gold font-bold tracking-wide">
-            Art Gallery
+          <h2 className="showcase-title font-decorative font-bold tracking-wide text-studio-gold">
+            Buy Paintings
           </h2>
-          <p className="font-editorial text-xl sm:text-3xl text-amber-200/90 italic">
-            Take a look at our artworks
+          <p className="mx-auto max-w-xl font-editorial text-[clamp(0.82rem,1.6vh,1.05rem)] italic text-theme-muted">
+            Handcrafted watercolours &amp; realistic art, straight from the studio
           </p>
-          <p className="max-w-2xl mx-auto font-serif-display text-yellow-100/80 text-base sm:text-lg leading-relaxed">
-            We have art done in watercolours and other mediums too! We have realistic art, floral
-            art, nature art, landscape art, and more handcrafted fine arts collections.
+          <p className="mx-auto hidden max-w-2xl font-sans-ui text-[clamp(0.72rem,1.4vh,0.9rem)] text-theme-muted sm:block">
+            Three works in view — the centre piece takes the spotlight. Swipe or use the arrows,
+            tap to inspect, then inquire on WhatsApp.
           </p>
         </Reveal>
 
-        {/* Interactive Slideshow with 27 Featured Works in a frosted glass frame */}
-        <Reveal delay={120}>
-          <div className="glass-panel rounded-3xl p-3 sm:p-6 shadow-2xl">
-            <InteractiveSlideshow items={featuredGallery} />
+        <Reveal variant="fade" delay={120} className="flex min-h-0 w-full flex-1 items-stretch">
+          {/* Catalog spotlight — disjoint from the hero flagship rail by construction. */}
+          <Carousel3D items={buyShowcaseItems} variant="spotlight" autoAdvanceIntervalMs={4600} />
+        </Reveal>
+      </section>
+
+      {/* 4. The Master's Journey — sticky, scroll-driven narrative timeline */}
+      <ArtistJourneySection />
+
+      <hr className="ornate-rule" />
+
+      {/* 5. Workshops & Events — every image carries its story */}
+      <section
+        id="workshops"
+        className="landing-section section-atelier mx-auto w-full max-w-7xl space-y-8 px-4 py-[clamp(2.5rem,7vh,4.5rem)] scroll-mt-20 sm:px-8"
+      >
+        <Reveal className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-section-kicker text-studio-sunset">
+            <Award className="w-3.5 h-3.5 text-studio-sunset" />
+            <span>Global Honors &amp; Masterclasses</span>
           </div>
+          <h2 className="font-decorative text-section-title text-studio-gold font-bold">
+            Workshops &amp; Exhibitions
+          </h2>
+          <span className="section-accent" aria-hidden />
+          <p className="font-editorial text-section-lead max-w-3xl mx-auto">
+            Master Artist Anuradha Govarthanan has led numerous prestigious workshops and exhibited
+            in world-class art showcases. Shuffle the deck to walk through the halls.
+          </p>
         </Reveal>
 
-        <Reveal className="text-center pt-4" delay={180}>
-          <Link
-            href="/sale"
-            className="glass-btn-sunset inline-flex items-center justify-center gap-2 min-h-[48px] px-10 py-4 rounded-2xl text-white font-bold text-lg sm:text-xl active:scale-95 shadow-xl"
+        <Reveal delay={100} variant="fade">
+          <Carousel3D items={workshopGallery} variant="deck" />
+        </Reveal>
+
+        <Reveal className="text-center" delay={180}>
+          <a
+            href={studioMeta.eventsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="glass-btn-gold inline-flex items-center gap-2 min-h-[48px] px-8 py-3.5 rounded-2xl text-studio-gold font-bold text-base sm:text-lg active:scale-95"
           >
-            <span>Browse Art for sale</span>
-            <ExternalLink className="w-5 h-5 text-amber-200" />
-          </Link>
+            <span>New events &amp; masterclasses</span>
+            <ExternalLink className="w-4 h-4 text-studio-sunset" />
+          </a>
         </Reveal>
       </section>
 
-      <hr className="border-t border-studio-gold/20 max-w-5xl mx-auto w-full" />
+      <hr className="ornate-rule" />
 
-      {/* 3. Spotlight Section Two: Workshops & World-Class Exhibitions */}
-      <section id="two" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-10">
-        <div className="flex flex-col md:flex-row items-start justify-between gap-10">
-          <Reveal variant="left" className="flex-1 space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-xs text-amber-300">
-              <Award className="w-3.5 h-3.5 text-studio-sunset" />
-              <span>Global Honors &amp; Masterclasses</span>
-            </div>
+      {/* Achievements, honours & global footprint (studioData-driven) */}
+      <AccoladesSection />
 
-            <h2 className="font-decorative text-3xl sm:text-5xl text-studio-gold font-bold">
-              Workshops &amp; Exhibitions
-            </h2>
-            <p className="font-editorial text-xl sm:text-2xl text-amber-100/95 leading-relaxed">
-              Master Artist Anuradha Govarthanan has led numerous prestigious workshops and exhibited in world-class art showcases.
-            </p>
-
-            {/* Bulleted achievements with verified historical events in glass card */}
-            <div className="glass-card rounded-2xl p-5 sm:p-6 border border-white/10 space-y-3">
-              <ul className="space-y-3 text-left font-serif-display text-sm sm:text-base text-yellow-100/90">
-                {[
-                  'Corporate workshop in MNC Hyderabad and Bangalore on Theme Global Warming.',
-                  'Art exhibition in State Art Gallery on the theme Ganesha 2023.',
-                  'Exhibited artwork for Telangana Formation Day 2021.',
-                  'Exhibition in State Art Gallery by Hyderabad Art Festival 2023.',
-                  'Golden Award in international art competition organised by Shiny Colours Bangalore.',
-                  'Art workshop as a part of foreign exchange program in University of Hyderabad 2019.',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="text-studio-sunset text-base mt-0.5">•</span>
-                    <span className="leading-snug">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="pt-2">
-              <a
-                href={studioMeta.eventsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="glass-btn-gold inline-flex items-center gap-2 min-h-[48px] px-8 py-3.5 rounded-2xl text-studio-gold font-bold text-base sm:text-lg active:scale-95"
-              >
-                <span>New events &amp; masterclasses</span>
-                <ExternalLink className="w-4 h-4 text-studio-sunset" />
-              </a>
-            </div>
-          </Reveal>
-
-          {/* Scroller for Workshops with glass container */}
-          <Reveal variant="right" className="w-full md:w-1/2" delay={150}>
-            <div className="glass-panel rounded-3xl p-3 sm:p-5 shadow-2xl">
-              <AutoScroller items={workshopGallery} itemHeight="h-72" />
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <hr className="border-t border-studio-gold/20 max-w-5xl mx-auto w-full" />
-
-      {/* 4. Spotlight Section Three: Testimonies & Student Success */}
-      <section id="three" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-8">
-        <Reveal className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-xs text-studio-sunset mb-1">
+      {/* 6. Testimonies — student wall, fully user-driven */}
+      <section
+        id="three"
+        className="landing-section section-wall mx-auto w-full max-w-7xl space-y-8 px-4 py-[clamp(2.5rem,7vh,4.5rem)] scroll-mt-20 sm:px-8"
+      >
+        <Reveal className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-section-kicker text-studio-sunset mb-1">
             <HeartHandshake className="w-3.5 h-3.5" />
             <span>Community &amp; Mentorship</span>
           </div>
-          <h2 className="font-decorative text-3xl sm:text-5xl text-studio-gold font-bold">
+          <h2 className="font-decorative text-section-title text-studio-gold font-bold">
             Testimonies
           </h2>
-          <p className="font-editorial text-lg sm:text-2xl text-amber-100/90 italic">
-            The students are very happy with the results that they have gotten through Anugraha Art School.
+          <span className="section-accent" aria-hidden />
+          <p className="font-editorial text-section-lead italic max-w-2xl mx-auto">
+            The students are very happy with the results that they have gotten through Anugruja Art School.
           </p>
         </Reveal>
 
-        {/* Student Testimonial Artwork Scroller */}
-        <Reveal delay={100}>
-          <div className="glass-panel rounded-3xl p-3 sm:p-5 shadow-2xl">
-            <AutoScroller items={testimonialGallery} itemHeight="h-64" />
-          </div>
+        <Reveal delay={100} variant="fade">
+          <Carousel3D items={testimonialGallery} variant="polaroid" />
         </Reveal>
 
-        {/* Highlighted Quote Block with Sunset Glassmorphism */}
+        {/* Highlighted Quote Block */}
         <Reveal delay={150}>
           <div className="glass-panel-sunset max-w-4xl mx-auto p-6 sm:p-10 rounded-3xl relative overflow-hidden shadow-2xl">
             <span className="absolute -top-4 left-6 text-7xl sm:text-8xl text-studio-sunset/20 font-serif-display leading-none select-none pointer-events-none">
               &ldquo;
             </span>
-            <p className="relative z-10 font-editorial text-base sm:text-xl text-yellow-50/95 leading-relaxed text-justify sm:text-left italic">
+            <p className="relative z-10 font-editorial text-base sm:text-xl text-theme-muted leading-relaxed text-justify sm:text-left italic">
               Under Teacher Anuradha&apos;s tutelage for three years, I&apos;ve grown through group
               sessions, diverse workshops, and private classes. Her unparalleled expertise fosters a
               supportive learning environment, offering constructive criticism and encouragement.
@@ -248,18 +142,45 @@ export default function HomePage() {
         </Reveal>
       </section>
 
-      {/* 5. Direct Contact Action Bridge */}
+      {/* 7. Direct Contact Action Bridge */}
       <section className="py-12 px-4 text-center">
         <Reveal>
           <h3 className="font-decorative text-2xl sm:text-3xl gold-sunset-shimmer mb-2">
             Get in Touch with Master Artist Anuradha
           </h3>
-          <p className="font-serif-display text-amber-100/80 text-sm sm:text-base mb-6">
+          <p className="font-serif-display text-theme-muted text-sm sm:text-base mb-6">
             Direct inquiries for painting sales, workshops, or custom commissions
           </p>
-          <ContactActionButtons />
+          {/* ContactActionButtons inlined (Gmail + WhatsApp) */}
+          <div className="w-full max-w-md mx-auto my-6 px-0">
+            <div className="glass-panel-sunset rounded-3xl p-2.5 sm:p-3 border border-studio-sunset/30 shadow-2xl flex items-center justify-between gap-3 sm:gap-4">
+              <a
+                href={`mailto:${studioMeta.email}`}
+                className="contact-action-primary touch-target flex-1 min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-blippo text-sm sm:text-base font-bold transition-all transform hover:scale-105 active:scale-95 shadow-md"
+              >
+                <svg className="w-5 h-5 fill-current text-studio-sunset" viewBox="0 0 24 24">
+                  <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                </svg>
+                <span>Gmail</span>
+              </a>
+              <a
+                href={studioMeta.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="touch-target flex-1 min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-emerald-950/70 hover:bg-emerald-900/90 border border-emerald-500/40 text-emerald-200 hover:text-white font-blippo text-sm sm:text-base font-bold transition-all transform hover:scale-105 active:scale-95 shadow-md"
+              >
+                <svg className="w-5 h-5 fill-current text-emerald-400" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                </svg>
+                <span>WhatsApp</span>
+              </a>
+            </div>
+          </div>
         </Reveal>
       </section>
+
+      {/* Sticky quick-nav shortcuts (slides up after the banner) */}
+      <QuickNav items={quickNavListings} />
     </div>
   );
 }

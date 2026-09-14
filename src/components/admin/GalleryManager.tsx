@@ -29,7 +29,14 @@ export default function GalleryManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [jumpTargetItem, setJumpTargetItem] = useState<{ id: string; title: string; currentPos: number } | null>(null);
   const [jumpPosInput, setJumpPosInput] = useState('');
-  const [editingItem, setEditingItem] = useState<{ id: string; title: string; price: string; category: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    title: string;
+    price: string;
+    category: string;
+    medium: string;
+    description: string;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArtItem | null>(null);
 
   const galleryDef = GALLERY_DEFINITIONS.find((g) => g.key === selectedGallery) || GALLERY_DEFINITIONS[0];
@@ -55,6 +62,8 @@ export default function GalleryManager() {
       title: editingItem.title,
       price: editingItem.price,
       category: editingItem.category,
+      medium: editingItem.medium || undefined,
+      description: editingItem.description || undefined,
     });
     setEditingItem(null);
   };
@@ -239,9 +248,30 @@ export default function GalleryManager() {
                       <input
                         type="text"
                         value={editingItem.price}
-                        placeholder="e.g. ₹4,500"
+                        placeholder="e.g. 4500 (₹ shown automatically)"
+                        inputMode="numeric"
                         onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
                         className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-yellow-200/60">Medium (shown on card)</label>
+                      <input
+                        type="text"
+                        value={editingItem.medium}
+                        placeholder="e.g. Watercolour on paper"
+                        onChange={(e) => setEditingItem({ ...editingItem, medium: e.target.value })}
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-yellow-200/60">Description</label>
+                      <textarea
+                        value={editingItem.description}
+                        placeholder="Size, year, story behind the piece…"
+                        rows={2}
+                        onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300 resize-y"
                       />
                     </div>
                     <div className="flex gap-2 justify-end pt-1">
@@ -319,6 +349,8 @@ export default function GalleryManager() {
                             title: item.title,
                             price: String(item.price || ''),
                             category: item.category || galleryDef.defaultCategory,
+                            medium: item.medium || '',
+                            description: item.description || '',
                           })
                         }
                         className="p-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-800 text-yellow-200 border border-purple-900/60 transition-colors"

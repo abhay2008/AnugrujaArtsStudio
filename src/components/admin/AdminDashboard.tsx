@@ -18,16 +18,20 @@ import {
   Layers,
   ChevronRight,
   Clock,
+  ListTree,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import { GALLERY_DEFINITIONS, GalleryKey } from '@/lib/types';
 import MassUploadStudio from './MassUploadStudio';
 import GalleryManager from './GalleryManager';
 import GeneralSettings from './GeneralSettings';
+import QuickNavManager from './QuickNavManager';
 
 export default function AdminDashboard() {
   const { content, signOut, editor, getPendingChanges } = useSite();
-  const [activeTab, setActiveTab] = useState<'upload' | 'galleries' | 'settings'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'galleries' | 'quicknav' | 'settings'>(
+    'upload'
+  );
 
   // Compute live portfolio statistics
   const stats = useMemo(() => {
@@ -227,6 +231,18 @@ export default function AdminDashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('quicknav')}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all shrink-0 ${
+              activeTab === 'quicknav'
+                ? 'bg-studio-purple text-studio-gold border border-studio-gold/70 shadow-[0_0_15px_rgba(242,215,112,0.25)]'
+                : 'text-yellow-100/70 hover:text-white hover:bg-purple-950/60 border border-transparent'
+            }`}
+          >
+            <ListTree className="w-4 h-4" />
+            <span>Pages &amp; Listings</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('settings')}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all shrink-0 ${
               activeTab === 'settings'
@@ -243,6 +259,7 @@ export default function AdminDashboard() {
         <div className="pb-24">
           {activeTab === 'upload' && <MassUploadStudio />}
           {activeTab === 'galleries' && <GalleryManager />}
+          {activeTab === 'quicknav' && <QuickNavManager />}
           {activeTab === 'settings' && <GeneralSettings />}
         </div>
       </div>

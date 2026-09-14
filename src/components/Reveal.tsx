@@ -5,8 +5,8 @@ import React, { CSSProperties, ReactNode, ElementType } from 'react';
 interface RevealProps {
   children: ReactNode;
   className?: string;
-  /** Animation variant: up (default), left, right, zoom */
-  variant?: 'up' | 'left' | 'right' | 'zoom';
+  /** Animation variant: up (default), left, right, zoom, fade */
+  variant?: 'up' | 'left' | 'right' | 'zoom' | 'fade';
   /** Stagger delay in ms */
   delay?: number;
   as?: ElementType;
@@ -17,6 +17,7 @@ const variantClass: Record<string, string> = {
   left: 'reveal-l',
   right: 'reveal-r',
   zoom: 'reveal-zoom',
+  fade: 'reveal-fade',
 };
 
 /** Declarative scroll-reveal wrapper (uses the ScrollReveal engine). */

@@ -12,14 +12,14 @@ const quickLinks = [
 
 export default function Footer() {
   return (
-    <footer className="w-full py-12 px-4 border-t border-studio-gold/25 bg-gradient-to-b from-[#0e0216] to-[#08010d] relative overflow-hidden">
+    <footer className="site-footer w-full py-12 px-4 border-t border-[var(--border-soft)] relative overflow-hidden">
       {/* Subtle sunset ambient glow */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-studio-sunset/10 blur-[80px] pointer-events-none" />
 
       <Reveal className="max-w-4xl mx-auto flex flex-col items-center gap-5 text-center relative z-10">
         {/* Mini logo + name */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-11 h-11 rounded-full overflow-hidden border border-studio-gold/60 group-hover:border-studio-sunset transition-colors shadow-[0_0_15px_rgba(242,215,112,0.25)]">
+          <div className="logo-chrome relative w-11 h-11 rounded-full overflow-hidden border group-hover:border-studio-sunset transition-colors">
             <Image
               src="/images/logo.png"
               alt="Anugraha Arts Studio"
@@ -33,7 +33,7 @@ export default function Footer() {
           </span>
         </Link>
 
-        <p className="font-editorial italic text-amber-100/70 text-base md:text-lg">
+        <p className="font-editorial italic text-theme-muted text-base md:text-lg">
           &ldquo;{studioMeta.tagline}&rdquo;
         </p>
 
@@ -43,7 +43,7 @@ export default function Footer() {
             <Link
               key={link.href}
               href={link.href}
-              className="nav-link touch-target px-3 min-h-[44px] text-amber-100/80 hover:text-studio-sunset text-sm font-blippo transition-colors"
+              className="nav-link touch-target px-3 min-h-[44px] text-theme-muted hover:text-studio-sunset text-sm font-blippo transition-colors"
             >
               {link.label}
             </Link>
@@ -59,10 +59,10 @@ export default function Footer() {
 
         <div className="h-px w-48 bg-gradient-to-r from-transparent via-studio-gold/40 to-transparent" />
 
-        <p className="font-serif-display text-yellow-100/60 text-xs sm:text-sm">
+        <p className="font-serif-display text-theme-subtle text-xs sm:text-sm">
           &copy; {new Date().getFullYear()} {studioMeta.name}. All rights reserved.
         </p>
-        <p className="font-serif-display text-sm font-medium text-amber-200/80">
+        <p className="font-serif-display text-sm font-medium text-theme-muted">
           Crafted with artistic devotion for Master Artist Anuradha &bull;{' '}
           <a
             href={studioMeta.developerGithub}

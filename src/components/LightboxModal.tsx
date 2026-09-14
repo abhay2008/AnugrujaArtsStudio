@@ -9,6 +9,7 @@ export default function LightboxModal() {
   const {
     activeImage,
     activeTitle,
+    activeDescription,
     activeIndex,
     gallerySize,
     slides,
@@ -124,28 +125,35 @@ export default function LightboxModal() {
       {/* Image + caption in luxury glass frame */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative max-w-5xl w-full flex flex-col items-center"
+        className="relative flex w-full max-w-[min(96vw,1500px)] flex-col items-center"
       >
         <div
           key={activeImage}
-          className="relative w-full h-[74vh] sm:h-[78vh] max-w-4xl rounded-3xl overflow-hidden border-2 border-studio-gold/80 shadow-[0_0_60px_rgba(249,115,22,0.25)] bg-studio-dark/95 animate-crossIn"
+          className="relative w-full overflow-hidden rounded-2xl border border-[rgba(212,175,55,0.35)] bg-studio-dark/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] animate-crossIn"
+          style={{ height: 'min(78vh, 88vw)' }}
         >
           <Image
             src={activeImage}
             alt={activeTitle || 'Artwork Preview'}
             fill
-            sizes="(max-width: 1024px) 100vw, 1200px"
-            className="object-contain p-2 sm:p-4"
+            sizes="100vw"
+            quality={90}
+            className="object-contain p-2 sm:p-3"
             priority
           />
         </div>
         {activeTitle && (
-          <p className="mt-4 font-decorative gold-sunset-shimmer text-lg sm:text-xl font-bold tracking-wide text-center px-4">
+          <p className="mt-4 text-center font-serifDisplay text-xl font-medium tracking-[0.04em] text-[#f7efe0] sm:text-2xl">
             {activeTitle}
           </p>
         )}
+        {activeDescription && (
+          <p className="mx-auto mt-1.5 max-w-2xl px-4 text-center font-editorial text-sm italic leading-relaxed text-[rgba(240,232,218,0.72)] sm:text-base">
+            {activeDescription}
+          </p>
+        )}
         {hasGallery && (
-          <p className="mt-1 text-amber-100/60 font-serif-display text-xs text-center hidden md:block">
+          <p className="mt-2 hidden text-center font-serif-display text-xs text-amber-100/50 md:block">
             Use &larr; &rarr; arrow keys or swipe to browse
           </p>
         )}
