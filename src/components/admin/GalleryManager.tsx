@@ -19,11 +19,23 @@ import {
   MoveRight,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
-import { GALLERY_DEFINITIONS, GalleryKey, ArtItem } from '@/lib/types';
+import {
+  GALLERY_CATALOG,
+  GalleryKey,
+  ArtItem,
+  galleryCatalogEntry,
+} from '@/lib/types';
 import DeleteArtworkModal from './DeleteArtworkModal';
 
 export default function GalleryManager() {
-  const { content, reorderGallery, moveArtworkToPosition, updateArtwork, removeArtwork } = useSite();
+  const {
+    content,
+    reorderGallery,
+    moveArtworkToPosition,
+    updateArtwork,
+    removeArtwork,
+    moveArtworkToGallery,
+  } = useSite();
   const [selectedGallery, setSelectedGallery] = useState<GalleryKey>('featured');
   const [viewMode, setViewMode] = useState<'cards' | 'quick'>('cards');
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,10 +48,12 @@ export default function GalleryManager() {
     category: string;
     medium: string;
     description: string;
+    status: string;
+    moveGallery: GalleryKey;
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArtItem | null>(null);
 
-  const galleryDef = GALLERY_DEFINITIONS.find((g) => g.key === selectedGallery) || GALLERY_DEFINITIONS[0];
+  const galleryDef = galleryCatalogEntry(selectedGallery);
   const allItems = content.galleries[selectedGallery] || [];
 
   // Filter items if search query is present
@@ -58,13 +72,29 @@ export default function GalleryManager() {
 
   const handleSaveEdit = () => {
     if (!editingItem) return;
-    updateArtwork(selectedGallery, editingItem.id, {
-      title: editingItem.title,
-      price: editingItem.price,
-      category: editingItem.category,
-      medium: editingItem.medium || undefined,
-      description: editingItem.description || undefined,
-    });
+    // Move to a different collection if the admin changed it; otherwise
+    // update in place. Blank price on a sellable piece = price on request.
+    if (editingItem.moveGallery !== selectedGallery) {
+      moveArtworkToGallery(selectedGallery, editingItem.id, editingItem.moveGallery);
+      const destEntry = galleryCatalogEntry(editingItem.moveGallery);
+      updateArtwork(editingItem.moveGallery, editingItem.id, {
+        title: editingItem.title,
+        category: editingItem.category || destEntry.defaultCategory,
+        medium: editingItem.medium || undefined,
+        description: editingItem.description || undefined,
+        price: destEntry.sellable && editingItem.price ? editingItem.price : undefined,
+        status: destEntry.sellable && editingItem.status ? (editingItem.status as ArtItem['status']) : undefined,
+      });
+    } else {
+      updateArtwork(selectedGallery, editingItem.id, {
+        title: editingItem.title,
+        price: galleryDef.sellable && editingItem.price ? editingItem.price : undefined,
+        category: editingItem.category,
+        medium: editingItem.medium || undefined,
+        description: editingItem.description || undefined,
+        status: galleryDef.sellable && editingItem.status ? (editingItem.status as ArtItem['status']) : undefined,
+      });
+    }
     setEditingItem(null);
   };
 
@@ -83,7 +113,7 @@ export default function GalleryManager() {
     <div className="space-y-6">
       {/* Gallery Selector Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-studio-gold/20 pb-4">
-        {GALLERY_DEFINITIONS.map((def) => {
+        {GALLERY_CATALOG.map((def) => {
           const count = (content.galleries[def.key] || []).length;
           const isActive = def.key === selectedGallery;
           return (
@@ -118,7 +148,7 @@ export default function GalleryManager() {
               {allItems.length} total
             </span>
           </div>
-          <p className="text-sm text-yellow-100/70 mt-0.5">{galleryDef.description}</p>
+          <p className="text-sm text-yellow-100/70 mt-0.5">{galleryDef.purpose}</p>
         </div>
 
         {/* Search & View Mode Switcher */}
@@ -243,17 +273,23 @@ export default function GalleryManager() {
                         className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300"
                       />
                     </div>
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-yellow-200/60">Price (optional)</label>
-                      <input
-                        type="text"
-                        value={editingItem.price}
-                        placeholder="e.g. 4500 (₹ shown automatically)"
-                        inputMode="numeric"
-                        onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
-                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300"
-                      />
-                    </div>
+                    {galleryDef.sellable ? (
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-yellow-200/60">Price (blank = on request)</label>
+                        <input
+                          type="text"
+                          value={editingItem.price}
+                          placeholder="e.g. 4500 (₹ shown automatically)"
+                          inputMode="numeric"
+                          onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                          className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-yellow-200/50 -mt-1">
+                        Showcase piece — no price needed. Move it to “Art for Sale” below to sell it.
+                      </p>
+                    )}
                     <div>
                       <label className="text-[10px] uppercase font-bold text-yellow-200/60">Medium (shown on card)</label>
                       <input
@@ -273,6 +309,36 @@ export default function GalleryManager() {
                         onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
                         className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300 resize-y"
                       />
+                    </div>
+                    {galleryDef.sellable && (
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-yellow-200/60">Availability</label>
+                        <select
+                          value={editingItem.status || 'Available'}
+                          onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })}
+                          className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300 cursor-pointer"
+                        >
+                          <option value="Available">Available</option>
+                          <option value="Reserved">Reserved</option>
+                          <option value="Sold">Sold</option>
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-yellow-200/60">Show this in</label>
+                      <select
+                        value={editingItem.moveGallery}
+                        onChange={(e) =>
+                          setEditingItem({ ...editingItem, moveGallery: e.target.value as GalleryKey })
+                        }
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/40 text-xs text-yellow-100 focus:outline-none focus:border-yellow-300 cursor-pointer"
+                      >
+                        {GALLERY_CATALOG.map((def) => (
+                          <option key={def.key} value={def.key} className="bg-[#190626]">
+                            {def.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="flex gap-2 justify-end pt-1">
                       <button
@@ -351,6 +417,8 @@ export default function GalleryManager() {
                             category: item.category || galleryDef.defaultCategory,
                             medium: item.medium || '',
                             description: item.description || '',
+                            status: item.status || (galleryDef.sellable ? 'Available' : ''),
+                            moveGallery: selectedGallery,
                           })
                         }
                         className="p-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-800 text-yellow-200 border border-purple-900/60 transition-colors"

@@ -31,9 +31,12 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-plgate/types/**/*.ts",
+    ".next-plv/types/**/*.ts",
+    ".next-preview/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-preview/types/**/*.ts"
+    ".next-gate2/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

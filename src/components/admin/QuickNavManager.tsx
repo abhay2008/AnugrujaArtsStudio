@@ -271,7 +271,11 @@ export default function QuickNavManager() {
                     </button>
                     <button
                       title="Delete shortcut"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => {
+                        if (window.confirm(`Delete the "${item.label}" shortcut? This is staged as an unsaved change and can still be discarded before commit.`)) {
+                          removeItem(item.id);
+                        }
+                      }}
                       className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-900/50"
                     >
                       <Trash2 className="w-4 h-4" />

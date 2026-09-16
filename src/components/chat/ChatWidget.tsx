@@ -285,52 +285,58 @@ export default function ChatWidget() {
     <div
       role="dialog"
       aria-label="Chat with Chitra, the studio assistant"
-      className="fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-studio-gold/30 bg-[#160523]/98 shadow-2xl backdrop-blur-xl
-                 bottom-36 right-4 w-[min(calc(100vw-2rem),380px)] h-[min(70dvh,560px)] max-h-[calc(100dvh-10.5rem)]
-                 sm:bottom-40 sm:right-6"
+      className="chat-panel fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-studio-gold/30 bg-[#160523]/98 shadow-2xl backdrop-blur-xl
+                 inset-x-3 bottom-3 max-h-[min(78dvh,620px)] h-[min(78dvh,620px)]
+                 sm:inset-x-auto sm:bottom-40 sm:right-6 sm:w-[min(calc(100vw-3rem),400px)] sm:h-[min(72dvh,580px)] sm:max-h-[calc(100dvh-11rem)]"
       style={{ boxShadow: '0 0 40px rgba(242,215,112,0.15), 0 20px 60px rgba(0,0,0,0.6)' }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-studio-gold/20 bg-gradient-to-r from-purple-900/80 via-[#1d062e] to-amber-900/40 px-4 py-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400 shadow-md">
-          <Sparkles className="h-4 w-4 text-purple-950" />
+      <div className="relative flex items-center gap-3 border-b border-studio-gold/20 bg-gradient-to-r from-purple-900/80 via-[#1d062e] to-amber-900/40 px-4 py-3.5">
+        <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400 shadow-md">
+          <Sparkles className="h-5 w-5 text-purple-950" />
+          <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#1d062e]" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-blippo text-sm leading-none text-[#ffe76c]">Chitra</p>
-          <p className="mt-1 text-[10px] text-yellow-100/60">Studio assistant · AI-powered</p>
+          <p className="font-blippo text-base leading-none text-[#ffe76c]">Chitra</p>
+          <p className="mt-1.5 text-[11px] font-medium tracking-wide text-emerald-300/90">Online · replies instantly</p>
         </div>
         <a
           href={WHATSAPP_URL}
           target="_blank"
           rel="noopener noreferrer"
           title="Chat on WhatsApp instead"
-          className="rounded-lg border border-emerald-500/40 bg-emerald-900/40 px-2 py-1 text-[10px] font-bold text-emerald-200 hover:bg-emerald-800/60"
+          className="rounded-lg border border-emerald-500/40 bg-emerald-900/40 px-2.5 py-1.5 text-[11px] font-bold text-emerald-200 transition-colors hover:bg-emerald-800/60"
         >
           WhatsApp
         </a>
         <button
           onClick={() => setOpen(false)}
           aria-label="Close chat"
-          className="rounded-lg p-1.5 text-yellow-100/70 hover:bg-purple-900/60 hover:text-white"
+          className="rounded-lg p-2 text-yellow-100/70 transition-all hover:rotate-90 hover:bg-purple-900/60 hover:text-white"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="chat-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div
+            key={i}
+            className={`chat-msg flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+              className={`chat-bubble max-w-[86%] px-4 py-3 text-[14px] leading-relaxed sm:text-[14.5px] ${
                 m.role === 'user'
-                  ? 'rounded-br-md bg-gradient-to-br from-amber-500 to-yellow-500 font-medium text-purple-950'
-                  : 'rounded-bl-md border border-studio-gold/20 bg-purple-950/70 text-yellow-50'
+                  ? 'chat-bubble--user bg-gradient-to-br from-amber-500 to-yellow-500 font-medium text-purple-950'
+                  : 'chat-bubble--bot border border-studio-gold/20 bg-purple-950/70 text-yellow-50'
               }`}
             >
               {m.content ? renderRich(m.content) : m.pending ? (
-                <span className="flex items-center gap-1.5 py-0.5 text-yellow-100/50">
-                  <Loader2 className="h-3 w-3 animate-spin" /> thinking…
+                <span className="chat-typing flex items-center gap-1 py-0.5" aria-label="Chitra is typing">
+                  <span className="chat-dot" />
+                  <span className="chat-dot" style={{ animationDelay: '0.15s' }} />
+                  <span className="chat-dot" style={{ animationDelay: '0.3s' }} />
                 </span>
               ) : null}
             </div>
@@ -338,12 +344,13 @@ export default function ChatWidget() {
         ))}
 
         {showChips && config.suggestedPrompts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {config.suggestedPrompts.slice(0, 6).map((p) => (
+          <div className="flex flex-wrap gap-2 pt-1.5">
+            {config.suggestedPrompts.slice(0, 6).map((p, i) => (
               <button
                 key={p}
                 onClick={() => void send(p)}
-                className="rounded-full border border-studio-gold/30 bg-purple-950/60 px-3 py-1.5 text-[11px] text-yellow-100/80 transition-all hover:border-studio-gold/60 hover:bg-purple-900 hover:text-white active:scale-95"
+                style={{ animationDelay: `${0.35 + i * 0.07}s` }}
+                className="chat-chip rounded-full border border-studio-gold/30 bg-purple-950/60 px-3.5 py-2 text-[12px] font-medium text-yellow-100/90 transition-all hover:-translate-y-0.5 hover:border-studio-gold/70 hover:bg-purple-900 hover:text-white hover:shadow-[0_4px_14px_rgba(242,215,112,0.18)] active:scale-95"
               >
                 {p}
               </button>
@@ -361,15 +368,15 @@ export default function ChatWidget() {
           placeholder="Ask about art, prices, classes…"
           maxLength={1000}
           aria-label="Type your message"
-          className="min-w-0 flex-1 rounded-xl border border-studio-gold/30 bg-purple-950/50 px-3.5 py-2.5 text-[13px] text-yellow-50 placeholder-yellow-100/30 focus:border-studio-gold/70 focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-studio-gold/30 bg-purple-950/50 px-4 py-3 text-[14px] text-yellow-50 placeholder-yellow-100/35 transition-colors focus:border-studio-gold/70 focus:bg-purple-950/80 focus:outline-none focus:shadow-[0_0_0_3px_rgba(242,215,112,0.12)]"
         />
         <button
           type="submit"
           disabled={!input.trim() || streaming}
           aria-label="Send message"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 text-purple-950 shadow-md transition-all hover:from-amber-400 hover:to-yellow-400 disabled:opacity-40"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 text-purple-950 shadow-md transition-all hover:scale-105 hover:from-amber-400 hover:to-yellow-400 hover:shadow-[0_4px_16px_rgba(242,215,112,0.35)] active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
         >
-          {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
         </button>
       </form>
     </div>
@@ -387,16 +394,14 @@ export default function ChatWidget() {
         }}
         aria-label={open ? 'Close chat' : 'Chat with the studio assistant'}
         aria-expanded={open}
-        className="fixed bottom-20 right-4 z-[59] flex h-14 w-14 items-center justify-center rounded-full border border-studio-gold/50 bg-gradient-to-br from-purple-800 via-purple-900 to-[#2a0a3f] shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:bottom-24 sm:right-6 motion-reduce:hover:scale-100"
+        className="chat-fab fixed bottom-5 right-4 z-[59] flex h-14 w-14 items-center justify-center rounded-full border border-studio-gold/50 bg-gradient-to-br from-purple-800 via-purple-900 to-[#2a0a3f] shadow-2xl transition-all hover:scale-110 hover:border-studio-gold active:scale-95 sm:bottom-24 sm:right-6 motion-reduce:hover:scale-100"
         style={{ boxShadow: '0 0 24px rgba(242,215,112,0.25), 0 8px 30px rgba(0,0,0,0.5)' }}
       >
-        {open ? (
-          <X className="h-6 w-6 text-studio-gold" />
-        ) : (
-          <MessageCircle className="h-6 w-6 text-studio-gold" />
-        )}
+        <span className={`transition-transform duration-300 ${open ? 'rotate-90 scale-75' : 'rotate-0 scale-100'}`}>
+          {open ? <X className="h-6 w-6 text-studio-gold" /> : <MessageCircle className="h-6 w-6 text-studio-gold" />}
+        </span>
         {!open && unread && (
-          <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-purple-950" />
+          <span className="chat-unread absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-purple-950" />
         )}
         {!open && (
           <span className="absolute inset-0 -z-10 animate-pulse-slow rounded-full bg-studio-gold/20 blur-md" aria-hidden />

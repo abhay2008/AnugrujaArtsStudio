@@ -1,7 +1,8 @@
 import { getSiteContentSync } from '@/lib/serverContent';
 import { formatPrice } from '@/lib/price';
 import { studioData } from '@/data/studioData';
-import type { SiteContent, StudioEvent } from '@/lib/types';
+import { galleryCatalogEntry } from '@/lib/types';
+import type { SiteContent, StudioEvent, GalleryKey } from '@/lib/types';
 
 /**
  * Live studio context for the AI chat assistant.
@@ -99,6 +100,8 @@ export function buildStudioContext(): string {
   // ── Sale catalog: prices & acquisition status ──────────────────────────
   const sale = content.galleries?.sale ?? [];
   if (sale.length > 0) {
+    const available = sale.filter((p) => (p.status ?? 'Available') !== 'Sold');
+    const sold = sale.filter((p) => (p.status ?? 'Available') === 'Sold');
     const lines = sale.map((p) => {
       const status = p.status ?? 'Available';
       const price = p.price !== undefined && p.price !== '' ? formatPrice(p.price) : 'price on request';
@@ -109,6 +112,28 @@ export function buildStudioContext(): string {
       return bits.join(' | ');
     });
     sections.push(['PAINTINGS FOR SALE (live catalog — trust statuses & prices exactly):', ...lines].join('\n'));
+    sections.push(
+      `CATALOG SUMMARY: ${available.length} painting${available.length === 1 ? '' : 's'} currently available, ${sold.length} sold. When asked what is available, recommend only pieces whose status is Available or has no price (price on request).`
+    );
+  }
+
+  // ── Newest additions across every gallery ──────────────────────────────
+  // The admin can drop new work into any collection; the bot should know the
+  // freshest pieces wherever they live. Items carry dateAdded from upload.
+  const recentAll: { title: string; gallery: string; dateAdded?: string }[] = [];
+  for (const [gKey, items] of Object.entries(content.galleries ?? {})) {
+    for (const item of items.slice(0, 5)) {
+      recentAll.push({ title: item.title, gallery: gKey, dateAdded: item.dateAdded });
+    }
+  }
+  recentAll.sort((a, b) => (b.dateAdded ?? '').localeCompare(a.dateAdded ?? ''));
+  if (recentAll.length > 0) {
+    const lines = recentAll
+      .slice(0, 8)
+      .map((r) => `- "${r.title}" (${r.gallery})`);
+    sections.push(
+      ['RECENT ADDITIONS (latest uploads across the site — mention these when asked about new work):', ...lines].join('\n')
+    );
   }
 
   // ── Commission gallery (sold/custom showcase) ──────────────────────────
@@ -120,6 +145,20 @@ export function buildStudioContext(): string {
     sections.push(
       ['COMMISSIONED WORKS SHOWCASE (custom pieces already delivered — ask for a similar custom order):', ...lines].join('\n')
     );
+  }
+
+  // ── Site catalog overview: what each gallery is for ────────────────────
+  // So the bot can tell visitors where things live without guessing.
+  const catalogLines = (Object.entries(content.galleries ?? {}) as [string, { title: string }[]][])
+    .filter(([, items]) => items.length > 0)
+    .map(([gKey, items]) => {
+      const entry = galleryCatalogEntry(gKey as GalleryKey);
+      const label = entry ? entry.label : gKey;
+      const note = entry ? entry.chatbotNote : 'Studio gallery.';
+      return `- ${label}: ${items.length} piece${items.length === 1 ? '' : 's'} — ${note}`;
+    });
+  if (catalogLines.length > 0) {
+    sections.push(['WEBSITE GALLERIES (what is on the site and where):', ...catalogLines].join('\n'));
   }
 
   // ── Events: upcoming & past ────────────────────────────────────────────

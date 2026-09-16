@@ -207,10 +207,14 @@ function cardBlurb(item: ArtItem): string {
   return [item.category, item.medium].filter(Boolean).join(' • ');
 }
 
-/** Optimizer URL for a local upload — preloaded so the lightbox shows instantly. */
-function hiResSrc(src: string): string {
+/**
+ * Optimizer URL for a local upload — preloaded so the lightbox shows instantly.
+ * Widths MUST come from next.config.js deviceSizes (640/750/828/1080/1200/1920);
+ * anything else is rejected by the optimizer with a 400.
+ */
+function hiResSrc(src: string, w: 1080 | 1920 = 1920): string {
   if (!src.startsWith('/')) return src;
-  return `/_next/image?url=${encodeURIComponent(src)}&w=1440&q=90`;
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=90`;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -514,8 +518,8 @@ export default function Carousel3D({
     return () => cancelAnimationFrame(frame);
   }, [autoplayEnabled, isPlaying, hasEngaged, tabHidden, isDragging, inView, count, autoAdvanceIntervalMs, commitStep]);
 
-  /* Warm the browser cache for the centred painting (original + hi-res variant)
-     so the lightbox renders it the instant it opens. */
+  /* Warm the browser cache for the centred painting (original + optimized
+     hi-res variant) so the lightbox renders it the instant it opens. */
   useEffect(() => {
     const src = items[index]?.src;
     if (!src) return;
@@ -548,11 +552,9 @@ export default function Carousel3D({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (count < 2) return;
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    } catch {
-      /* Capture is best-effort */
-    }
+    /* Do NOT setPointerCapture here. Capture retargets the subsequent click
+       to the stage, so the image's onClick (enlarge) never fires. Capture is
+       taken lazily in onPointerMove once a real drag is confirmed. */
     const now = performance.now();
     dragRef.current = {
       active: true,
@@ -595,6 +597,14 @@ export default function Carousel3D({
 
     if (Math.abs(totalDx) > 8) {
       d.locked = true;
+      /* Real drag confirmed — now capture the pointer so moves outside the
+         stage still pan the carousel. Taking it here (not on pointer-down)
+         keeps plain clicks free to reach the image's enlarge handler. */
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch {
+        /* Capture is best-effort */
+      }
     }
 
     posRef.current -= dx / spacing;

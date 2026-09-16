@@ -230,7 +230,11 @@ function LayoutRows() {
               </button>
               <button
                 type="button"
-                onClick={() => persist(items.filter((entry) => entry.id !== item.id))}
+                onClick={() => {
+                  if (window.confirm(`Remove the "${item.title || 'Untitled'}" shortcut? This is staged as an unsaved change and can still be discarded before commit.`)) {
+                    persist(items.filter((entry) => entry.id !== item.id));
+                  }
+                }}
                 className="rounded-lg border border-red-900/60 bg-red-950/50 p-1.5 text-red-300 hover:bg-red-900/60"
                 aria-label="Remove shortcut"
               >

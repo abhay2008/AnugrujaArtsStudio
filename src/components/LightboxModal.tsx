@@ -472,19 +472,55 @@ export default function LightboxModal() {
             transformOrigin: 'center center',
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={imgRef}
-            src={activeImage}
-            alt={activeTitle || 'Enlarged Artwork'}
-            decoding="async"
-            fetchPriority="high"
-            draggable={false}
-            onLoad={() => setIsLoaded(true)}
-            className={`max-w-[92vw] max-h-[70vh] sm:max-h-[72vh] object-contain rounded-xl shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-studio-gold/25 transition-opacity duration-300 ${
-              isLoaded ? 'opacity-100' : 'opacity-90'
-            }`}
-          />
+          {/* Local images go through the optimizer at lightbox-friendly sizes.
+              These are the exact URLs the carousel preloads, so the enlarged
+              view renders from cache instantly — no raw-multi-MB fetch. */}
+          {(() => {
+            const isLocal = activeImage?.startsWith('/');
+            const optUrl = isLocal
+              ? `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1080&q=90`
+              : activeImage;
+            const wideUrl = isLocal
+              ? `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1920&q=90`
+              : undefined;
+            const srcSet = isLocal
+              ? [
+                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=640&q=75 640w`,
+                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1080&q=90 1080w`,
+                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1920&q=90 1920w`,
+                ].join(', ')
+              : undefined;
+            return (
+              <>
+                {!isLoaded && (
+                  <div
+                    className="absolute inset-6 sm:inset-10 rounded-xl bg-gradient-to-br from-purple-950/60 to-[#1d062e]/40 border border-studio-gold/10 animate-pulse-soft"
+                    aria-hidden
+                  />
+                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={imgRef}
+                  src={optUrl}
+                  srcSet={srcSet}
+                  sizes="92vw"
+                  alt={activeTitle || 'Enlarged Artwork'}
+                  decoding="async"
+                  fetchPriority="high"
+                  draggable={false}
+                  onLoad={() => setIsLoaded(true)}
+                  onError={() => setIsLoaded(true)}
+                  className={`relative max-w-[92vw] max-h-[70vh] sm:max-h-[72vh] object-contain rounded-xl shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-studio-gold/25 transition-all duration-500 ${
+                    isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.985]'
+                  }`}
+                />
+                {/* Warm the widest variant during idle time for big screens */}
+                {isLocal && wideUrl && typeof window !== 'undefined' && (
+                  <link rel="preload" as="image" href={wideUrl} />
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
 

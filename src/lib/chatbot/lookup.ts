@@ -1,0 +1,593 @@
+import type { SiteContent } from '@/lib/types';
+import { getSiteContentSync } from '@/lib/serverContent';
+import { formatPrice } from '@/lib/price';
+
+export type PreprogrammedReply =
+  | { matched: true; text: string }
+  | { matched: false; text?: undefined };
+
+/**
+ * Deterministic replies for the most common studio questions.
+ *
+ * These run BEFORE the LLM path so repetitive queries are instant, cheap, and
+ * rate-limit-proof. The replies are derived from live CMS data where possible
+ * (prices, statuses, upcoming event, FAQ answers), so they stay accurate as
+ * the studio updates the site.
+ */
+export function lookupAndReply(raw: string): PreprogrammedReply {
+  const q = (raw ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!q) return { matched: false };
+
+  const content = getSiteContentSync();
+  const sale = content.galleries?.sale ?? [];
+  const events = content.events?.upcoming ?? [];
+  const chatbot = content.chatbot;
+  const faqs = chatbot?.faqs ?? [];
+  const brand = content.brand;
+
+  // ── Direct painting lookup ─────────────────────────────────────────────
+  // Try to match by number or by title keywords.
+  const numericMatch = q.match(/painting(?:\s+#?)?\s*(?:no(?:\.)?|number)?\s*(\d+)/i);
+  if (numericMatch) {
+    const num = parseInt(numericMatch[1], 10);
+    const painting = findSalePaintingByNumber(sale, num);
+    if (painting) {
+      return {
+        matched: true,
+        text: paintingLookupReply(painting, brand),
+      };
+    }
+  }
+
+  // Title keyword match: e.g. "original fine art painting 12", "painting 7"
+  const titleMatch = findSalePaintingByTitleTokens(sale, q);
+  if (titleMatch) {
+    return {
+      matched: true,
+      text: paintingLookupReply(titleMatch, brand),
+    };
+  }
+
+  // ── Sale / catalog questions ────────────────────────────────────────────
+  if (matchesAny(q, [
+    /paint(?:ings|ing)?\s+(are|for|on)\s+sale/i,
+    /available\s+(paint(?:ings|ing)?|originals?)/i,
+    /what.*paint(?:ings|ing)?.*sale/i,
+    /tell\s+me\s+about\s+your\s+paint(?:ings|ing)/i,
+    /gallery/i,
+    /catalog/i,
+  ])) {
+    return {
+      matched: true,
+      text: saleCatalogReply(sale, brand),
+    };
+  }
+
+  // ── Classes / courses (specific — before generic price intent) ──────────
+  if (matchesAny(q, [
+    /class/i,
+    /course/i,
+    /diploma/i,
+    /student/i,
+    /learn/i,
+    /beginner/i,
+    /training/i,
+    /coaching/i,
+    /nata/i,
+    /nid/i,
+    /nift/i,
+    /ceed/i,
+    /ueed/i,
+    /bfa/i,
+    /entrance/i,
+    /exam/i,
+    /watercolor/i,
+    /water\s*colour/i,
+    /fine\s*arts?/i,
+    /curriculum/i,
+    /syllabus/i,
+    /batch/i,
+    /offer/i,
+    /do\s+you\s+(offer|have|teach|run|start|have\s+for)/i,
+    /for\s+beginners?/i,
+  ])) {
+    return {
+      matched: true,
+      text: classesAndCoursesReply(content, brand),
+    };
+  }
+
+  // ── Specific purchase intents before generic price questions ────────────
+  if (matchesAny(q, [
+    /commission/i,
+    /custom/i,
+    /portrait/i,
+    /mural/i,
+    /deity/i,
+    /make\s+me/i,
+    /for\s+me/i,
+    /my\s+idea/i,
+  ])) {
+    return {
+      matched: true,
+      text: commissionReply(brand),
+    };
+  }
+
+  if (matchesAny(q, [
+    /ship/i,
+    /shipping/i,
+    /delivery/i,
+    /post/i,
+    /send/i,
+    /transport/i,
+  ])) {
+    return {
+      matched: true,
+      text: shippingReply(faqs, brand),
+    };
+  }
+
+  // ── Price questions (general) ───────────────────────────────────────────
+  if (matchesAny(q, [
+    /how\s+much/i,
+    /price/i,
+    /cost/i,
+    /prices/i,
+    /rate/i,
+    /fees/i,
+  ])) {
+    if (matchesAny(q, [
+      /class/i,
+      /course/i,
+      /diploma/i,
+      /camp/i,
+      /coaching/i,
+      /nata/i,
+      /nid/i,
+      /nift/i,
+      /ceed/i,
+      /ueed/i,
+      /bfa/i,
+      /entrance/i,
+      /exam/i,
+      /workshop/i,
+      /batch/i,
+      /tuition/i,
+    ])) {
+      return {
+        matched: true,
+        text: classesAndWorkshopPricingReply(brand),
+      };
+    }
+
+    if (matchesAny(q, [
+      /buy/i,
+      /purchase/i,
+      /order/i,
+      /own/i,
+      /get\s+(a|an)/i,
+      /have\s+one/i,
+      /take\s+home/i,
+      /book/i,
+      /register/i,
+      /sign\s*up/i,
+      /join/i,
+      /enroll/i,
+      /signup/i,
+      /how\s+do/i,
+      /process/i,
+      /checkout/i,
+      /payment/i,
+    ])) {
+      return {
+        matched: true,
+        text: purchasingReply(brand),
+      };
+    }
+
+    return {
+      matched: true,
+      text: salePriceRangeReply(sale, brand),
+    };
+  }
+
+  // ── Status questions: sold/available ────────────────────────────────────
+  if (matchesAny(q, [
+    /sold/i,
+    /available/i,
+    /reserved/i,
+    /which.*sold/i,
+    /status/i,
+    /how many/i,
+  ])) {
+    return {
+      matched: true,
+      text: saleStatusReply(sale, brand),
+    };
+  }
+
+  // ── Events / workshops / next session ───────────────────────────────────
+  if (matchesAny(q, [
+    /workshop/i,
+    /event/i,
+    /next/i,
+    /coming/i,
+    /upcoming/i,
+    /when/i,
+    /calendar/i,
+    /masterclass/i,
+    /weekend/i,
+    /retreat/i,
+    /session/i,
+    /camp/i,
+    /exhibition/i,
+    /exhibit/i,
+  ])) {
+    if (events.length > 0) {
+      return {
+        matched: true,
+        text: upcomingEventReply(events[0], brand, chatbot ?? {}),
+      };
+    }
+    return {
+      matched: true,
+      text: noUpcomingEventReply(brand),
+    };
+  }
+
+  // ── Buying / contact / location ─────────────────────────────────────────
+  if (matchesAny(q, [
+    /buy/i,
+    /purchase/i,
+    /order/i,
+    /own/i,
+    /get\s+(a|an)/i,
+    /have\s+one/i,
+    /take\s+home/i,
+    /book/i,
+    /register/i,
+    /sign\s*up/i,
+    /join/i,
+    /enroll/i,
+    /signup/i,
+    /how\s+do/i,
+    /process/i,
+    /checkout/i,
+    /payment/i,
+    /whatsapp/i,
+    /contact/i,
+    /reach/i,
+    /phone/i,
+    /call/i,
+    /message/i,
+    /mail/i,
+    /email/i,
+    /location/i,
+    /where/i,
+    /studio\s+located/i,
+    /address/i,
+    /bangalore/i,
+    /chennai/i,
+    /bengaluru/i,
+  ])) {
+    if (matchesAny(q, [/where/i, /location/i, /address/i, /studio\s+located/i, /bangalore/i, /chennai/i, /bengaluru/i])) {
+      return {
+        matched: true,
+        text: locationReply(brand),
+      };
+    }
+    return {
+      matched: true,
+      text: purchasingReply(brand),
+    };
+  }
+
+  // ── Artist / about ──────────────────────────────────────────────────────
+  if (matchesAny(q, [
+    /anuradha/i,
+    /founder/i,
+    /artist/i,
+    /ma'am/i,
+    /about/i,
+    /tell\s+me\s+about/i,
+    /who/i,
+    /background/i,
+    /journey/i,
+    /achievement/i,
+    /award/i,
+    /honour/i,
+    /exhibition/i,
+    /exhibit/i,
+    /experienced/i,
+  ])) {
+    return {
+      matched: true,
+      text: artistAndAboutReply(content, brand),
+    };
+  }
+
+  // ── General welcome / fallback catch-all for very vague prompts ────────
+  if (matchesAny(q, [
+    /hello/i,
+    /hi\b/i,
+    /hey/i,
+    /namaste/i,
+    /good\s+(morning|afternoon|evening)/i,
+    /thanks/i,
+    /thank\s+you/i,
+    /help/i,
+    /what\s+can/i,
+    /who\s+are/i,
+    /what\s+are/i,
+    /what\s+do/i,
+    /tell/i,
+    /give/i,
+    /show/i,
+    /maybe/i,
+    /sure/i,
+    /ok\b/i,
+    /okay/i,
+    /please/i,
+  ])) {
+    return {
+      matched: true,
+      text: greetingReply(brand),
+    };
+  }
+
+  return { matched: false };
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function findSalePaintingByNumber(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], num: number): { id: string; title: string; price?: number | string; status?: string | undefined } | undefined {
+  // Match by explicit painting number in the title, e.g. "Original Fine Art Painting #12".
+  return sale.find((p) => {
+    const m = p.title.match(/#\s*(\d+)/i);
+    return m && parseInt(m[1], 10) === num;
+  });
+}
+
+function findSalePaintingByTitleTokens(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], q: string): { id: string; title: string; price?: number | string; status?: string | undefined } | undefined {
+  // If the query mentions a painting number already handled above, skip.
+  if (/#\s*\d+/.test(q)) return undefined;
+
+  // Tokenize query and match significant title tokens.
+  const qTokens = new Set(
+    q
+      .replace(/[^a-z0-9#\s]/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length >= 2),
+  );
+
+  let best: { id: string; title: string; price?: number | string; status?: string | undefined } | undefined = undefined;
+  let bestScore = 0;
+
+  for (const p of sale) {
+    const title = p.title.toLowerCase();
+    const pTokens = new Set(
+      title
+        .replace(/[^a-z0-9#\s]/g, ' ')
+        .split(/\s+/)
+        .filter((t) => t.length >= 2),
+    );
+
+    let hits = 0;
+    for (const t of qTokens) {
+      if (pTokens.has(t)) hits += 1;
+    }
+
+    // Prefer matches on the more unique numeric/token tail of the title.
+    const numericToken = title.match(/#\s*(\d+)/i);
+    if (numericToken && qTokens.has(numericToken[1])) hits += 2;
+
+    if (hits > bestScore && hits >= 2) {
+      bestScore = hits;
+      best = p;
+    }
+  }
+
+  return best;
+}
+
+function matchesAny(q: string, patterns: RegExp[]): boolean {
+  return patterns.some((re) => re.test(q));
+}
+
+// ── Reply builders ─────────────────────────────────────────────────────────
+
+function paintingLookupReply(
+  painting: { title: string; price?: number | string; status?: string | undefined; description?: string | undefined },
+  brand: { phoneDisplay: string },
+): string {
+  const title = painting.title;
+  const price = painting.price !== undefined && painting.price !== '' ? formatPrice(painting.price) : 'price on request';
+  const status = painting.status ?? 'Available';
+  const desc = painting.description ? ` ${painting.description}` : '';
+  return `**${title}** — ${price} — ${status}.${desc}\n\nIf you’d like to own it, confirm availability and next steps on WhatsApp: ${brand.phoneDisplay}.`;
+}
+
+function saleCatalogReply(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], brand: { phoneDisplay: string }): string {
+  if (sale.length === 0) {
+    return "We don’t have a public sale catalog loaded right now. The studio can share current pieces and prices on WhatsApp — reach us at " + brand.phoneDisplay + ".";
+  }
+
+  const prices = sale
+    .map((p) => (typeof p.price === 'number' || typeof p.price === 'string' ? Number(p.price) : null))
+    .filter((p): p is number => p !== null && !Number.isNaN(p))
+    .sort((a, b) => a - b);
+
+  const range = prices.length > 0
+    ? `Prices range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**.`
+    : "Prices are available on request.";
+
+  const available = sale.filter((p) => (p.status ?? 'Available') === 'Available').length;
+  const sold = sale.filter((p) => (p.status ?? 'Available') === 'Sold').length;
+
+  const head = [
+    `We have **${sale.length}** originals in the sale catalog — each one-of-a-kind, signed by the artist.`,
+    range,
+    `Right now **${available}** are available and **${sold}** have been sold.`,
+    "Here are a few pieces to start with:",
+  ].join('\n');
+
+  const highlights = sale
+    .filter((p) => (p.status ?? 'Available') === 'Available')
+    .slice(0, 4)
+    .map((p) => `**${p.title}** — ${typeof p.price === 'number' || typeof p.price === 'string' ? formatPrice(p.price) : 'price on request'}`)
+    .join('\n');
+
+  return [
+    head,
+    highlights,
+    "\nBrowse the full gallery with photos on our Sale page (/sale), or ask me about a specific painting by name or number.",
+  ].join('\n');
+}
+
+function salePriceRangeReply(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], brand: { phoneDisplay: string }): string {
+  if (sale.length === 0) {
+    return "The studio will confirm current prices personally — reach us on WhatsApp at " + brand.phoneDisplay + ".";
+  }
+
+  const prices = sale
+    .map((p) => (typeof p.price === 'number' || typeof p.price === 'string' ? Number(p.price) : null))
+    .filter((p): p is number => p !== null && !Number.isNaN(p))
+    .sort((a, b) => a - b);
+
+  const range = prices.length > 0
+    ? `Our originals range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**, depending on size, medium and complexity.`
+    : "Prices depend on the piece — the studio will confirm personally.";
+
+  return [
+    range,
+    "If you have a particular painting in mind, ask me by name or number and I can share its exact price and status.",
+    "For ownership, framing, shipping or payment, the studio handles everything personally on WhatsApp: " + brand.phoneDisplay + ".",
+  ].join('\n');
+}
+
+function saleStatusReply(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], brand: { phoneDisplay: string }): string {
+  if (sale.length === 0) {
+    return "The studio can confirm current availability personally — reach us on WhatsApp at " + brand.phoneDisplay + ".";
+  }
+
+  const available = sale.filter((p) => (p.status ?? 'Available') === 'Available');
+  const sold = sale.filter((p) => (p.status ?? 'Available') === 'Sold');
+  const reserved = sale.filter((p) => (p.status ?? 'Available') === 'Reserved');
+
+  const parts = [
+    `In the sale catalog, **${available.length}** are available, **${sold.length}** are sold, and **${reserved.length}** are reserved.`,
+  ];
+
+  if (sold.length > 0) {
+    const soldList = sold
+      .slice(0, 6)
+      .map((p) => `**${p.title}**`)
+      .join(', ');
+    parts.push(`Sold pieces include: ${soldList}${sold.length > 6 ? ` and ${sold.length - 6} more.` : '.'}`);
+  }
+
+  parts.push(
+    "\nIf you want a specific piece or one like a sold piece, we can often create a similar original — ask me about commissions.",
+    "For anything you’d like to buy now, the studio confirms availability and next steps on WhatsApp: " + brand.phoneDisplay + ".",
+  );
+
+  return parts.join('\n');
+}
+
+function classesAndCoursesReply(content: SiteContent, brand: { phoneDisplay: string }): string {
+  const courses = content.sections?.courses;
+  const title = courses?.title ?? 'Classes & Courses';
+  const subtitle = courses?.subtitle ?? 'Online & offline';
+
+  return [
+    `Yes — Anugruja Arts Studio offers **${title}**: ${subtitle}.`,
+    "Programs include regular batches, a 1-year fine arts diploma, summer camps, and entrance-exam coaching for NATA, NID, NIFT, CEED, UCEED and BFA.",
+    "Details like current batch timings, fees and seat availability are confirmed personally on WhatsApp: " + brand.phoneDisplay + ".",
+    "If you tell me your goal — hobby, professional training, or exam prep — I can point you to the right path.",
+  ].join('\n');
+}
+
+function classesAndWorkshopPricingReply(brand: { phoneDisplay: string }): string {
+  return [
+    "Class, course and workshop fees depend on the program, batch and duration, so the studio confirms them personally.",
+    "Reach us on WhatsApp at " + brand.phoneDisplay + " and we’ll share current fees, seats and the best batch for you.",
+  ].join('\n');
+}
+
+function purchasingReply(brand: { phoneDisplay: string }): string {
+  return [
+    "All purchases, commissions and class registrations happen personally on WhatsApp.",
+    "Reach the studio at " + brand.phoneDisplay + " — we’ll help you choose, confirm availability, frames, shipping and payment.",
+    "There’s no online checkout; everything is handled with a human touch.",
+  ].join('\n');
+}
+
+function commissionReply(brand: { phoneDisplay: string }): string {
+  return [
+    "Custom commissions are a studio specialty — portraits, deities, murals and custom watercolors.",
+    "Share your idea, size, medium and timeline on WhatsApp: " + brand.phoneDisplay + ".",
+    "We’ll send a quote and work with you personally until it’s done.",
+  ].join('\n');
+}
+
+function shippingReply(faqs: { question: string; answer: string }[], brand: { phoneDisplay: string }): string {
+  const faq = faqs.find((f) => /ship/i.test(f.question));
+  if (faq) {
+    return faq.answer + " For a shipping quote, reach us on WhatsApp: " + brand.phoneDisplay + ".";
+  }
+  return "Originals are shipped safely packed across India and internationally. The studio will quote shipping on WhatsApp depending on size and destination: " + brand.phoneDisplay + ".";
+}
+
+function locationReply(brand: { locationLabel: string; phoneDisplay: string; email: string }): string {
+  return [
+    "The studio operates from " + brand.locationLabel + ".",
+    "For visits, classes or commissions, reach us on WhatsApp: " + brand.phoneDisplay + " or email " + brand.email + ".",
+  ].join('\n');
+}
+
+function upcomingEventReply(event: { title: string; date: string; dateIso?: string | undefined; location?: string | undefined; description?: string | undefined; registrationUrl?: string | undefined; registrationDeadline?: string | undefined; eventType?: string | undefined; seatsRemaining?: number | undefined }, brand: { phoneDisplay: string }, chatbot: { faqs?: { question: string; answer: string }[] | undefined }): string {
+  const lines = [
+    `Our next event is **${event.title}** — ${event.date}.`,
+  ];
+
+  if (event.location) lines.push(`Venue: ${event.location}.`);
+  if (event.eventType) lines.push(`Type: ${event.eventType}.`);
+  if (event.description) lines.push(event.description);
+  if (event.seatsRemaining !== undefined) lines.push(`Seats remaining: ${event.seatsRemaining}.`);
+
+  if (event.registrationDeadline) {
+    lines.push(`Registration: ${event.registrationDeadline}.`);
+  }
+
+  lines.push(
+    "To book a seat or ask questions, reach us on WhatsApp: " + brand.phoneDisplay + ".",
+  );
+
+  return lines.join('\n');
+}
+
+function noUpcomingEventReply(brand: { phoneDisplay: string }): string {
+  return "We don’t have an upcoming event loaded right now. For the latest workshops and dates, ask me again later or reach the studio on WhatsApp: " + brand.phoneDisplay + ".";
+}
+
+function artistAndAboutReply(content: SiteContent, brand: { phoneDisplay: string }): string {
+  const brandName = content.brand.name;
+  const founder = content.brand.founder;
+  const location = content.brand.locationLabel;
+
+  return [
+    `${brandName} is founded and led by **${founder}**, a professional fine artist working in realistic watercolour and original art.`,
+    `The studio is based in ${location}, with online classes available worldwide.`,
+    "If you want the full artist story, achievements and exhibitions, I can share that too — or you can visit our About page (/about).",
+    "For classes, commissions or purchases, reach us on WhatsApp: " + brand.phoneDisplay + ".",
+  ].join('\n');
+}
+
+function greetingReply(brand: { phoneDisplay: string }): string {
+  return [
+    "Namaste! I'm Chitra, the studio's assistant.",
+    "Ask me about paintings for sale, prices, classes, workshops, commissions or the artist.",
+    "If you're ready to buy, book or commission, the studio handles everything personally on WhatsApp: " + brand.phoneDisplay + ".",
+  ].join('\n');
+}

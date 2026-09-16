@@ -326,7 +326,11 @@ export default function EventsManager() {
                     </button>
                     <button
                       title="Delete event"
-                      onClick={() => removeItem(list, item.id)}
+                      onClick={() => {
+                        if (window.confirm(`Delete "${item.title}" from the studio calendar? This is staged as an unsaved change and can still be discarded before commit.`)) {
+                          removeItem(list, item.id);
+                        }
+                      }}
                       className="rounded-lg border border-red-900/50 bg-red-950/60 p-1.5 text-red-300 hover:bg-red-900"
                     >
                       <Trash2 className="h-4 w-4" />

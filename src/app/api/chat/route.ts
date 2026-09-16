@@ -10,6 +10,7 @@ import {
   MAX_SESSION_MESSAGES,
 } from '@/lib/chatbot/guardrails';
 import { chatRateLimiter } from '@/lib/chatbot/rateLimit';
+import { lookupAndReply } from '@/lib/chatbot/lookup';
 import { getSiteContentSync } from '@/lib/serverContent';
 
 export const runtime = 'nodejs';
@@ -84,10 +85,13 @@ function sseEncode(event: string, data: unknown): Uint8Array {
  * Wrap a plain-text reply (guardrail refusal, safe fallback) in the same SSE
  * protocol the model stream uses, so clients only speak one protocol.
  */
-function sseTextResponse(text: string): Response {
+function sseTextResponse(text: string, layer?: string): Response {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(sseEncode('start', {}));
+      if (layer) {
+        controller.enqueue(sseEncode('meta', { layer }));
+      }
       controller.enqueue(sseEncode('delta', { text }));
       controller.enqueue(sseEncode('done', {}));
       controller.close();
@@ -97,6 +101,7 @@ function sseTextResponse(text: string): Response {
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store, no-transform',
+      'X-ChatLayer': layer ?? 'llm',
     },
   });
 }
@@ -147,10 +152,18 @@ export async function POST(req: NextRequest) {
     return sseTextResponse(refusalFor(verdict.reason));
   }
 
-  // ── 3. Build live context (cached; refreshed on admin commits) ────────
+  // ── 3. Deterministic / preprogrammed layer ────────────────────────────
+  // Common studio queries are answered directly from CMS so they are instant,
+  // cheap, and never burn the OpenRouter quota or trip rate limits.
+  const preprogrammed = lookupAndReply(verdict.text);
+  if (preprogrammed.matched) {
+    return sseTextResponse(sanitizeOutput(preprogrammed.text), 'preprogrammed');
+  }
+
+  // ── 4. Build live context (cached; refreshed on admin commits) ────────
   const liveContext = buildStudioContext();
 
-  // ── 4. Call OpenRouter with model fallbacks ───────────────────────────
+  // ── 5. Call OpenRouter with model fallbacks ───────────────────────────
   const models = [primaryModel(), ...fallbackModels()];
   let upstream: Response | null = null;
   let usedModel = '';
@@ -195,7 +208,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 5. Relay the stream, sanitizing output on the way out ─────────────
+  // ── 6. Relay the stream, sanitizing output on the way out ─────────────
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = '';
@@ -246,7 +259,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // ── 6. Output guardrails on the assembled reply ─────────────────
+        // ── 7. Output guardrails on the assembled reply ─────────────────
         if (!started || refused || !full.trim()) {
           controller.enqueue(
             sseEncode('delta', {
@@ -288,6 +301,7 @@ export async function POST(req: NextRequest) {
       'Cache-Control': 'no-store, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
+      'X-Chat-Layer': 'llm',
     },
   });
 }

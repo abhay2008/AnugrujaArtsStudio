@@ -15,7 +15,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
-import { GALLERY_DEFINITIONS, GalleryKey, ArtItem } from '@/lib/types';
+import {
+  GALLERY_CATALOG,
+  GalleryKey,
+  ArtItem,
+  galleryCatalogEntry,
+  suggestGalleryFromFilename,
+} from '@/lib/types';
 import { optimizeImageForUpload } from '@/lib/imageOptimize';
 import ReviewChangesModal from './ReviewChangesModal';
 
@@ -25,7 +31,12 @@ interface BatchDraft {
   previewUrl: string;
   title: string;
   category: string;
+  categoryTouched: boolean;
   price: string;
+  medium: string;
+  dimensions: string;
+  /** How the gallery was chosen, so the UI can explain the suggestion. */
+  gallerySource: 'filename' | 'default' | 'manual';
   targetGallery: GalleryKey;
   optimizedPromise?: Promise<{ dataUrl: string; filename: string }>;
   precomputedDataUrl?: string;
@@ -48,7 +59,6 @@ export default function MassUploadStudio() {
     if (!files || files.length === 0) return;
 
     const currentDefaultGallery = bulkGallery;
-    const defaultDef = GALLERY_DEFINITIONS.find((d) => d.key === currentDefaultGallery);
 
     const nextDrafts: BatchDraft[] = Array.from(files)
       .filter((file) => file.type.startsWith('image/'))
@@ -59,6 +69,13 @@ export default function MassUploadStudio() {
           .replace(/[-_]/g, ' ')
           .replace(/\b\w/g, (c) => c.toUpperCase());
 
+        // Smart mapping: the filename often says where the art belongs
+        // ("krishna-sale-2.jpg" → Art for Sale, "student-boat.jpg" → Classes).
+        const suggested = suggestGalleryFromFilename(file.name);
+        const gallery = suggested ?? currentDefaultGallery;
+        const gallerySource: BatchDraft['gallerySource'] = suggested ? 'filename' : 'default';
+        const def = galleryCatalogEntry(gallery);
+
         const optPromise = optimizeImageForUpload(file, previewUrl);
 
         return {
@@ -66,9 +83,15 @@ export default function MassUploadStudio() {
           file,
           previewUrl,
           title: baseTitle || 'Original Artwork',
-          category: defaultDef?.defaultCategory || 'Paintings for Sale',
+          category: def.defaultCategory,
+          categoryTouched: false,
+          // Never fabricate: price/medium/dimensions start empty and the
+          // fields only appear for collections where they make sense.
           price: '',
-          targetGallery: currentDefaultGallery,
+          medium: '',
+          dimensions: '',
+          gallerySource,
+          targetGallery: gallery,
           optimizedPromise: optPromise,
           status: 'idle',
         };
@@ -95,14 +118,31 @@ export default function MassUploadStudio() {
 
   const applyBulkGalleryToAll = (newGallery: GalleryKey) => {
     setBulkGallery(newGallery);
-    const def = GALLERY_DEFINITIONS.find((d) => d.key === newGallery);
+    const def = galleryCatalogEntry(newGallery);
     setDrafts((prev) =>
       prev.map((d) =>
         d.status !== 'done'
           ? {
               ...d,
               targetGallery: newGallery,
-              category: def?.defaultCategory || d.category,
+              gallerySource: 'manual',
+              category: d.categoryTouched ? d.category : def.defaultCategory,
+            }
+          : d
+      )
+    );
+  };
+
+  const setDraftGallery = (tempId: string, newGallery: GalleryKey) => {
+    const def = galleryCatalogEntry(newGallery);
+    setDrafts((prev) =>
+      prev.map((d) =>
+        d.tempId === tempId
+          ? {
+              ...d,
+              targetGallery: newGallery,
+              gallerySource: 'manual',
+              category: d.categoryTouched ? d.category : def.defaultCategory,
             }
           : d
       )
@@ -127,12 +167,20 @@ export default function MassUploadStudio() {
           previewUrl: draft.previewUrl,
         });
 
+        const isSale = galleryCatalogEntry(draft.targetGallery).sellable;
         const newArtItem: ArtItem = {
           id: `art-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           src: uploadedUrl,
           title: draft.title.trim() || 'Original Artwork',
-          category: draft.category.trim() || 'Paintings for Sale',
-          price: draft.price.trim() || undefined,
+          category: draft.category.trim() || galleryCatalogEntry(draft.targetGallery).defaultCategory,
+          // Price only exists where the collection is actually sellable —
+          // showcase pieces never get invented price tags.
+          price: isSale && draft.price.trim() ? draft.price.trim() : undefined,
+          medium: draft.medium.trim() || undefined,
+          dimensions: draft.dimensions.trim() || undefined,
+          // Only sale pieces carry an acquisition badge; showcase art is not
+          // "available" for anything, so no status is stamped on it.
+          status: isSale ? ('Available' as const) : undefined,
           dateAdded: new Date().toISOString(),
         };
 
@@ -247,7 +295,7 @@ export default function MassUploadStudio() {
                 )}
               </h3>
               <p className="text-xs text-yellow-100/60 mt-0.5">
-                Configure artwork title, gallery category, and pricing before publishing.
+                Each photo is auto-mapped to the right collection from its filename — adjust anything before publishing.
               </p>
             </div>
 
@@ -256,13 +304,13 @@ export default function MassUploadStudio() {
               {/* Quick Set Destination */}
               <div className="flex items-center gap-1.5 bg-[#190626] border border-studio-gold/30 rounded-xl px-2.5 py-1">
                 <Tag className="w-3.5 h-3.5 text-studio-gold" />
-                <span className="text-[11px] text-yellow-200/60 font-semibold">Default Gallery:</span>
+                <span className="text-[11px] text-yellow-200/60 font-semibold">Default collection:</span>
                 <select
                   value={bulkGallery}
                   onChange={(e) => applyBulkGalleryToAll(e.target.value as GalleryKey)}
                   className="bg-transparent text-xs text-yellow-100 font-bold focus:outline-none cursor-pointer"
                 >
-                  {GALLERY_DEFINITIONS.map((def) => (
+                  {GALLERY_CATALOG.map((def) => (
                     <option key={def.key} value={def.key} className="bg-[#190626] text-yellow-100">
                       {def.label}
                     </option>
@@ -364,51 +412,127 @@ export default function MassUploadStudio() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
-                        Gallery
-                      </label>
-                      <select
-                        value={draft.targetGallery}
-                        disabled={draft.status === 'done'}
-                        onChange={(e) =>
-                          setDrafts((prev) =>
-                            prev.map((d) =>
-                              d.tempId === draft.tempId
-                                ? { ...d, targetGallery: e.target.value as GalleryKey }
-                                : d
-                            )
-                          )
-                        }
-                        className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60 cursor-pointer"
-                      >
-                        {GALLERY_DEFINITIONS.map((def) => (
-                          <option key={def.key} value={def.key} className="bg-[#190626]">
-                            {def.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
-                        Price (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="₹3,500"
-                        value={draft.price}
-                        disabled={draft.status === 'done'}
-                        onChange={(e) =>
-                          setDrafts((prev) =>
-                            prev.map((d) => (d.tempId === draft.tempId ? { ...d, price: e.target.value } : d))
-                          )
-                        }
-                        className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                      Where should this appear?
+                    </label>
+                    <select
+                      value={draft.targetGallery}
+                      disabled={draft.status === 'done'}
+                      onChange={(e) => setDraftGallery(draft.tempId, e.target.value as GalleryKey)}
+                      className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60 cursor-pointer"
+                    >
+                      {GALLERY_CATALOG.map((def) => (
+                        <option key={def.key} value={def.key} className="bg-[#190626]">
+                          {def.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-yellow-200/50 mt-1 leading-snug">
+                      {draft.gallerySource === 'filename' ? (
+                        <span className="text-emerald-400">✓ auto-matched from filename — </span>
+                      ) : null}
+                      {galleryCatalogEntry(draft.targetGallery).purpose}
+                    </p>
                   </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                      Section label (optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={galleryCatalogEntry(draft.targetGallery).defaultCategory}
+                      value={draft.category}
+                      disabled={draft.status === 'done'}
+                      onChange={(e) =>
+                        setDrafts((prev) =>
+                          prev.map((d) =>
+                            d.tempId === draft.tempId
+                              ? { ...d, category: e.target.value, categoryTouched: true }
+                              : d
+                          )
+                        )
+                      }
+                      className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
+                    />
+                  </div>
+
+                  {galleryCatalogEntry(draft.targetGallery).sellable ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                          Price
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="₹3,500 — blank = on request"
+                          value={draft.price}
+                          disabled={draft.status === 'done'}
+                          onChange={(e) =>
+                            setDrafts((prev) =>
+                              prev.map((d) => (d.tempId === draft.tempId ? { ...d, price: e.target.value } : d))
+                            )
+                          }
+                          className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                          Medium
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Watercolour on paper"
+                          value={draft.medium}
+                          disabled={draft.status === 'done'}
+                          onChange={(e) =>
+                            setDrafts((prev) =>
+                              prev.map((d) => (d.tempId === draft.tempId ? { ...d, medium: e.target.value } : d))
+                            )
+                          }
+                          className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                          Medium (optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Watercolour on paper"
+                          value={draft.medium}
+                          disabled={draft.status === 'done'}
+                          onChange={(e) =>
+                            setDrafts((prev) =>
+                              prev.map((d) => (d.tempId === draft.tempId ? { ...d, medium: e.target.value } : d))
+                            )
+                          }
+                          className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-yellow-200/60">
+                          Dimensions (optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 12x16 in"
+                          value={draft.dimensions}
+                          disabled={draft.status === 'done'}
+                          onChange={(e) =>
+                            setDrafts((prev) =>
+                              prev.map((d) => (d.tempId === draft.tempId ? { ...d, dimensions: e.target.value } : d))
+                            )
+                          }
+                          className="w-full px-2 py-1.5 rounded-lg bg-[#270b3b] border border-studio-gold/30 text-yellow-100 text-xs focus:outline-none disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {draft.errorMessage && (
                     <p className="text-[11px] text-red-400">{draft.errorMessage}</p>

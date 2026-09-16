@@ -43,6 +43,8 @@ interface SiteContextValue {
   updateArtwork: (gallery: GalleryKey, itemId: string, patch: Partial<ArtItem>) => void;
   removeArtwork: (gallery: GalleryKey, itemId: string) => void;
   reorderGallery: (gallery: GalleryKey, fromIndex: number, toIndex: number) => void;
+  /** Move an artwork from one collection to another (admin curation). */
+  moveArtworkToGallery: (fromGallery: GalleryKey, itemId: string, toGallery: GalleryKey) => void;
   moveArtworkToPosition: (gallery: GalleryKey, itemId: string, targetPos: number) => void;
   uploadFile: (
     file: File,
@@ -79,6 +81,7 @@ const defaultContext: SiteContextValue = {
   updateArtwork: () => {},
   removeArtwork: () => {},
   reorderGallery: () => {},
+  moveArtworkToGallery: () => {},
   moveArtworkToPosition: () => {},
   uploadFile: async () => '',
   save: async () => '',
@@ -129,7 +132,10 @@ export function SiteProvider({ children }: { children: ReactNode }) {
           baselineRef.current = data;
           if (force || !editor.dirty) {
             setContentState(data);
-            persist(data);
+            // Do NOT persist here: localStorage is reserved for *unsaved* drafts.
+            // Writing fetched content into the draft slot made the next page load
+            // treat it as unsaved work (phantom "UNSAVED EDITS"), and would also
+            // silently overwrite a genuine in-progress draft on refresh.
           }
         }
       }
@@ -138,20 +144,50 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     }
   }, [editor.dirty, persist]);
 
-  // Load from local storage draft or server on mount
+  // Boot: decide once between a stored draft and server content.
+  // Sequential (not parallel) so the fetch can never clobber a just-loaded
+  // draft, and so a stale draft that merely mirrors server content — a legacy
+  // artifact of the old persist-on-refresh bug — is discarded as clean.
   useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem(ADMIN_STORAGE_KEY);
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft) as SiteContent;
-        if (parsed && parsed.galleries) {
-          setContentState(parsed);
+    let cancelled = false;
+    void (async () => {
+      let draft: SiteContent | null = null;
+      try {
+        const savedDraft = localStorage.getItem(ADMIN_STORAGE_KEY);
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft) as SiteContent;
+          if (parsed && parsed.galleries) draft = parsed;
+        }
+      } catch {}
+
+      let server: SiteContent | null = null;
+      try {
+        const res = await fetch(`/api/content?_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = (await res.json()) as SiteContent;
+          if (data && data.galleries) server = data;
+        }
+      } catch {}
+      if (cancelled) return;
+
+      if (draft) {
+        if (server && JSON.stringify(draft) === JSON.stringify(server)) {
+          // Draft matches the server exactly: no real unsaved work.
+          try {
+            localStorage.removeItem(ADMIN_STORAGE_KEY);
+          } catch {}
+          baselineRef.current = server;
+          setContentState(server);
+        } else {
+          baselineRef.current = server || (initialFallback as unknown as SiteContent);
+          setContentState(draft);
           setEditor((prev) => ({ ...prev, dirty: true, status: 'Draft loaded from browser storage' }));
         }
+      } else if (server) {
+        baselineRef.current = server;
+        setContentState(server);
       }
-    } catch {}
-
-    void refreshContent();
+    })();
 
     fetch('/api/github')
       .then((r) => (r.ok ? r.json() : null))
@@ -161,7 +197,12 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-  }, [refreshContent]);
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setWorkspace = useCallback((ws: 'studio' | 'preview') => {
     setEditor((prev) => ({ ...prev, workspace: ws }));
@@ -250,6 +291,28 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       return next;
     });
     setEditor((prev) => ({ ...prev, dirty: true, status: 'Added artwork to ' + gallery }));
+  }, [persist]);
+
+  /** Move an artwork between collections (e.g. Featured → Art for Sale). */
+  const moveArtworkToGallery = useCallback((fromGallery: GalleryKey, itemId: string, toGallery: GalleryKey) => {
+    if (fromGallery === toGallery) return;
+    setContentState((prev) => {
+      const fromList = prev.galleries[fromGallery] || [];
+      const item = fromList.find((i) => i.id === itemId);
+      if (!item) return prev;
+      const toList = prev.galleries[toGallery] || [];
+      const next = {
+        ...prev,
+        galleries: {
+          ...prev.galleries,
+          [fromGallery]: fromList.filter((i) => i.id !== itemId),
+          [toGallery]: [item, ...toList],
+        },
+      };
+      persist(next);
+      return next;
+    });
+    setEditor((prev) => ({ ...prev, dirty: true, status: `Moved artwork to ${toGallery}` }));
   }, [persist]);
 
   const updateArtwork = useCallback((gallery: GalleryKey, itemId: string, patch: Partial<ArtItem>) => {
@@ -470,8 +533,10 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         if (bItem) {
           const fieldChanges: string[] = [];
           if (bItem.title !== cItem.title) fieldChanges.push(`title: "${cItem.title}"`);
-          if (bItem.price !== cItem.price) fieldChanges.push(`price: "${cItem.price || 'none'}"`);
-          if (bItem.category !== cItem.category) fieldChanges.push(`category: "${cItem.category || 'default'}"`);
+          if ((bItem.price ?? '') !== (cItem.price ?? '')) fieldChanges.push(`price: "${cItem.price || 'none'}"`);
+          if ((bItem.category ?? '') !== (cItem.category ?? '')) fieldChanges.push(`category: "${cItem.category || 'default'}"`);
+          if ((bItem.medium ?? '') !== (cItem.medium ?? '')) fieldChanges.push(`medium: "${cItem.medium || 'none'}"`);
+          if ((bItem.status ?? '') !== (cItem.status ?? '')) fieldChanges.push(`status: "${cItem.status || 'none'}"`);
           if (fieldChanges.length > 0) {
             changes.push(`Edited "${bItem.title}" in [${gKey}] (${fieldChanges.join(', ')})`);
           }
@@ -505,6 +570,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         removeArtwork,
         reorderGallery,
         moveArtworkToPosition,
+        moveArtworkToGallery,
         uploadFile,
         save,
         refreshContent,
