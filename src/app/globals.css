@@ -6184,3 +6184,329 @@ body,
     transition: none;
   }
 }
+
+/* Registration event editorial pass — aligned with the Journey and Accolades
+   rooms. These rules intentionally override the first card treatment above so
+   the event block stays compact and keeps one visual language site-wide. */
+.registration-events {
+  width: min(100%, 62rem);
+  margin-inline: auto;
+}
+
+.registration-events-heading {
+  margin: 0 auto clamp(1rem, 2.2vw, 1.5rem);
+  text-align: center;
+}
+
+.registration-events-intro {
+  max-width: 38rem;
+  margin: 0.65rem auto 0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(0.98rem, 1.8vw, 1.12rem);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.registration-events-list {
+  display: grid;
+  width: 100%;
+  gap: 1rem;
+}
+
+.registration-event-card {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.78fr) minmax(0, 1.22fr);
+  overflow: hidden;
+  border: 1px solid var(--atelier-hairline);
+  border-radius: 0.5rem;
+  background: var(--atelier-panel-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px) saturate(1.06);
+  -webkit-backdrop-filter: blur(12px) saturate(1.06);
+}
+
+.registration-event-images {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  grid-template-rows: repeat(2, minmax(5rem, 1fr));
+  min-height: 15.5rem;
+  gap: 0.25rem;
+  background: var(--surface-inset);
+}
+
+.registration-event-images:not(.is-gallery) {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.registration-event-images.is-gallery .registration-event-image:first-child {
+  grid-row: 1 / span 2;
+}
+
+.registration-event-image {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--surface-inset);
+  text-align: left;
+}
+
+.registration-event-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+.registration-event-image:hover img,
+.registration-event-image:focus-visible img {
+  transform: scale(1.045);
+  filter: brightness(1.08);
+}
+
+.registration-event-image:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: -3px;
+}
+
+.registration-event-image-hint {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 4, 13, 0.68);
+  padding: 0.25rem 0.5rem;
+  color: #fff7df;
+  font: 600 0.6rem/1.1 system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.registration-event-image:hover .registration-event-image-hint,
+.registration-event-image:focus-visible .registration-event-image-hint {
+  opacity: 1;
+}
+
+.registration-event-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(1rem, 2.5vw, 1.55rem) clamp(1rem, 3vw, 2rem);
+}
+
+.registration-event-topline {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.registration-event-type {
+  color: var(--color-sunset);
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.registration-event-seats {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(249, 115, 22, 0.32);
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.08);
+  padding: 0.25rem 0.5rem;
+  color: var(--atelier-gold-ink);
+  font: 600 0.62rem/1.1 'Montserrat', system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.registration-event-title {
+  margin: 0.45rem 0 0;
+  color: var(--text-primary);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  font-weight: 600;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.registration-event-description {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0.55rem 0 0;
+  color: var(--text-muted);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(0.95rem, 1.6vw, 1.08rem);
+  line-height: 1.38;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.registration-event-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: 0.65rem 0.85rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--atelier-hairline);
+}
+
+.registration-event-detail {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font: 500 0.68rem/1.3 'Montserrat', system-ui, sans-serif;
+}
+
+.registration-event-detail svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  color: var(--color-sunset);
+}
+
+.registration-event-detail span {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.registration-event-detail b {
+  color: var(--atelier-gold-soft);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.registration-event-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.registration-event-cta {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+  border: 1px solid rgba(242, 215, 112, 0.55);
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-sunset) 100%);
+  padding: 0.62rem 1.1rem;
+  color: #1b0924;
+  font: 700 0.7rem/1 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.18);
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.registration-event-cta svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.registration-event-cta:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 26px rgba(234, 88, 12, 0.28);
+  transform: translateY(-1px);
+}
+
+[data-theme='light'] .registration-event-card {
+  border-color: rgba(122, 92, 30, 0.22);
+  background: var(--atelier-panel-bg);
+  box-shadow: 0 14px 34px -18px rgba(90, 70, 50, 0.28);
+}
+
+[data-theme='light'] .registration-event-images {
+  background: rgba(235, 224, 204, 0.72);
+}
+
+[data-theme='light'] .registration-event-seats {
+  border-color: rgba(122, 92, 30, 0.28);
+  background: rgba(212, 175, 55, 0.14);
+  color: #77520d;
+}
+
+[data-theme='light'] .registration-event-image-hint {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(38, 20, 50, 0.76);
+}
+
+@media (max-width: 767px) {
+  .registration-events-heading {
+    margin-bottom: 1rem;
+  }
+
+  .registration-events-intro {
+    max-width: 19rem;
+    font-size: 0.98rem;
+  }
+
+  .registration-event-card {
+    display: block;
+    border-radius: 0.45rem;
+  }
+
+  .registration-event-images,
+  .registration-event-images.is-gallery {
+    min-height: 8.75rem;
+    max-height: 8.75rem;
+    grid-template-columns: 1.25fr 0.75fr;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .registration-event-images:not(.is-gallery) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  .registration-event-content {
+    padding: 1rem;
+  }
+
+  .registration-event-title {
+    font-size: clamp(1.35rem, 6vw, 1.7rem);
+  }
+
+  .registration-event-description {
+    margin-top: 0.4rem;
+    font-size: 0.96rem;
+    -webkit-line-clamp: 3;
+  }
+
+  .registration-event-details {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+    padding-top: 0.65rem;
+  }
+
+  .registration-event-detail-wide {
+    grid-column: auto;
+  }
+
+  .registration-event-cta {
+    width: 100%;
+    min-height: 2.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .registration-event-image-hint {
+    display: none;
+  }
+}

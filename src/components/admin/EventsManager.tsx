@@ -8,6 +8,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
@@ -15,6 +16,10 @@ import type { StudioEvent } from '@/lib/types';
 
 function makeId(): string {
   return `ev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function eventImagesCount(event: StudioEvent): number {
+  return event.images?.filter(Boolean).length || (event.image ? 1 : 0);
 }
 
 const inputCls =
@@ -27,12 +32,16 @@ function EventEditor({
   onChange,
   onCancel,
   onSave,
+  onUploadPhotos,
+  uploading,
   heading,
 }: {
   draft: StudioEvent;
   onChange: (e: StudioEvent) => void;
   onCancel: () => void;
   onSave: () => void;
+  onUploadPhotos: (files: FileList | null) => Promise<void>;
+  uploading: boolean;
   heading: string;
 }) {
   return (
@@ -113,14 +122,27 @@ function EventEditor({
             onChange={(e) => onChange({ ...draft, seatsRemaining: e.target.value === '' ? undefined : Number(e.target.value) })}
           />
         </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Event photos (one path or URL per line)</label>
+        <div className="sm:col-span-2 space-y-2">
+          <label className={labelCls}>Event photos</label>
           <textarea
-            className={`${inputCls} mt-1 min-h-[64px]`}
-            placeholder="/images/workshop-1.jpeg\n/images/workshop-2.jpeg"
+            className={`${inputCls} min-h-[64px]`}
+            placeholder="One image path or URL per line"
             value={(draft.images ?? (draft.image ? [draft.image] : [])).join('\n')}
             onChange={(e) => onChange({ ...draft, images: e.target.value.split(/\n|,/).map((value) => value.trim()).filter(Boolean) })}
           />
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-studio-gold/30 bg-purple-950/70 px-3 py-2 text-[11px] font-bold text-yellow-100/80 hover:border-studio-gold/60 hover:text-white">
+            <Upload className="h-3.5 w-3.5 text-studio-gold" />
+            {uploading ? 'Uploading photos…' : 'Upload photos from computer'}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploading}
+              className="sr-only"
+              onChange={(e) => void onUploadPhotos(e.target.files)}
+            />
+          </label>
+          <p className="text-[10px] text-yellow-200/45">Uploaded images are added to the gallery above. Click any photo on the public site to enlarge it.</p>
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Description</label>
@@ -161,13 +183,14 @@ function EventEditor({
  * powering the home spotlight, and the chatbot's events knowledge.
  */
 export default function EventsManager() {
-  const { content, updateEvents } = useSite();
+  const { content, updateEvents, uploadFile } = useSite();
 
   const upcoming: StudioEvent[] = content.events?.upcoming ?? [];
   const past: StudioEvent[] = content.events?.past ?? [];
 
   const [editing, setEditing] = useState<{ list: 'upcoming' | 'past'; id: string } | null>(null);
   const [draft, setDraft] = useState<StudioEvent | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const persist = (nextUpcoming: StudioEvent[], nextPast: StudioEvent[]) => {
     updateEvents({ upcoming: nextUpcoming, past: nextPast });
@@ -181,6 +204,20 @@ export default function EventsManager() {
   const cancelEdit = () => {
     setEditing(null);
     setDraft(null);
+  };
+
+  const uploadPhotos = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        urls.push(await uploadFile(file));
+      }
+      setDraft((current) => current ? { ...current, images: [...(current.images ?? []), ...urls] } : current);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const saveEdit = () => {
@@ -252,6 +289,8 @@ export default function EventsManager() {
                     onChange={setDraft}
                     onCancel={cancelEdit}
                     onSave={saveEdit}
+                    onUploadPhotos={uploadPhotos}
+                    uploading={uploading}
                   />
                 </div>
               ) : (
@@ -268,6 +307,12 @@ export default function EventsManager() {
                       {item.location && (
                         <span className="text-[11px] text-yellow-100/50">📍 {item.location}</span>
                       )}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-yellow-100/50">
+                      {item.eventType && <span>{item.eventType}</span>}
+                      {item.registrationDeadline && <span>Register by: {item.registrationDeadline}</span>}
+                      {item.seatsRemaining !== undefined && <span>{item.seatsRemaining} seats left</span>}
+                      {eventImagesCount(item) > 0 && <span>{eventImagesCount(item)} photos</span>}
                     </div>
                     {item.description && <p className="mt-1 line-clamp-2 text-xs text-yellow-100/55">{item.description}</p>}
                   </div>
