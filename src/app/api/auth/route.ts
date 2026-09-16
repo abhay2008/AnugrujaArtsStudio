@@ -8,6 +8,7 @@ import {
   sessionToken,
   getSessionExpiry,
 } from '@/lib/adminAuth';
+import { checkThrottle, clientKey, recordFailure, recordSuccess } from '@/lib/loginThrottle';
 
 function passwordMatches(input: unknown): boolean {
   if (typeof input !== 'string' || !input) return false;
@@ -31,16 +32,51 @@ export async function GET(req: NextRequest) {
   );
 }
 
+function lockedResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    {
+      error: `Too many failed attempts. Try again in ${Math.max(
+        1,
+        Math.ceil(retryAfterSeconds / 60)
+      )} minute(s).`,
+    },
+    {
+      status: 429,
+      headers: { 'Retry-After': String(retryAfterSeconds), 'Cache-Control': 'no-store' },
+    }
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const key = clientKey(req.headers);
+  const gate = checkThrottle(key);
+  if (gate.locked) {
+    return lockedResponse(gate.retryAfterSeconds);
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     if (!passwordMatches(body?.password)) {
-      return NextResponse.json({ error: 'Wrong admin password' }, { status: 401 });
+      recordFailure(key);
+      const after = checkThrottle(key);
+      if (after.locked) {
+        return lockedResponse(after.retryAfterSeconds);
+      }
+      return NextResponse.json(
+        {
+          error: `Wrong admin password. ${after.failuresRemaining} attempt${
+            after.failuresRemaining === 1 ? '' : 's'
+          } left before a temporary lockout.`,
+        },
+        { status: 401 }
+      );
     }
   } catch {
     // adminPassword() throws when ADMIN_PASSWORD is not configured — fail closed.
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
+
+  recordSuccess(key);
 
   try {
     const token = await sessionToken();

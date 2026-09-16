@@ -34,3 +34,10 @@ yarn-error.log*
 next-env.d.ts
 .vercel
 .env*
+
+# keep the variable-name template in git, never real values
+!.env.example
+
+# coding-agent scratch space (run notes, generated commit messages) — may
+# quote secrets while being drafted, so never let it reach the repository
+.freebuff/
