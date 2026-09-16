@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, X } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useScrollLock } from '@/lib/scrollLock';
 
 type SocialNetwork = 'whatsapp' | 'facebook' | 'instagram' | 'youtube';
 
@@ -97,18 +98,17 @@ export default function Header() {
     setDropdownOpen(false);
   }, [pathname]);
 
-  // Escape closes the drawer, and the page behind it is scroll-locked.
+  useScrollLock(drawerOpen);
+
+  // Escape closes the drawer.
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setDrawerOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
     };
   }, [drawerOpen]);
 

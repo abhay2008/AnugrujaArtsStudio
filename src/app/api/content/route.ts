@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { getSiteContentSync, writeSiteContentSync } from '@/lib/serverContent';
 import { commitTextFile, getRemoteTextFile, githubConfigured } from '@/lib/github';
 import { cookieIsValid, COOKIE_NAME } from '@/lib/adminAuth';
+import { CHATBOT_CONTEXT_TAG, resetStudioContextCache } from '@/lib/chatbot/context';
 import type { SiteContent } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -74,9 +75,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Revalidate public static pages so changes appear immediately
+    // Revalidate public static pages so changes appear immediately, and
+    // drop the chatbot's cached context so the AI assistant knows about the
+    // new paintings / prices / events on its very next message.
     try {
       revalidatePath('/', 'layout');
+    } catch {}
+    try {
+      revalidateTag(CHATBOT_CONTEXT_TAG);
+      resetStudioContextCache();
     } catch {}
 
     return NextResponse.json({

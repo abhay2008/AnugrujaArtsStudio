@@ -4,19 +4,40 @@ import HeroEmblem from '@/components/HeroEmblem';
 import BotanicalCorner from '@/components/BotanicalCorner';
 import AtelierMotion from '@/components/AtelierMotion';
 import { studioData } from '@/data/studioData';
+import initialContent from '../../content/site.json';
+import type { SiteContent } from '@/lib/types';
 
+/**
+ * The banner spotlight mirrors the next CMS event when one exists, so the
+ * home page and the chat assistant can never disagree about what's coming.
+ * Falls back to the editorial spotlight in studioData otherwise.
+ */
 function SpotlightBar() {
   const { spotlight } = studioData;
-  if (!spotlight.isActive) return null;
+  const events = (initialContent as unknown as SiteContent).events?.upcoming ?? [];
+  const next = events[0];
+
+  const category = next ? 'Upcoming Workshop' : spotlight.category;
+  const headline = next?.title ?? spotlight.headline;
+  const dateBadge = next?.date ?? spotlight.dateBadge;
+  const href = next?.registrationUrl ?? spotlight.actionUrl;
+  const external = Boolean(next?.registrationUrl);
+  const seatsNote = spotlight.seatsRemaining ? `${spotlight.seatsRemaining} seats left` : null;
+
+  if (!next && !spotlight.isActive) return null;
 
   return (
     <div className="spotlight-bar-container hero-rise" style={{ animationDelay: '0.06s' }}>
-      <Link href={spotlight.actionUrl} className="spotlight-pill">
+      <Link
+        href={href}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        className="spotlight-pill"
+      >
         <span className="pulsing-status-dot" aria-hidden />
-        <span className="spotlight-cat">{spotlight.category}</span>
-        <span className="spotlight-title">{spotlight.headline}</span>
-        <span className="spotlight-date">{spotlight.dateBadge}</span>
-        <span className="spotlight-seats">{spotlight.seatsRemaining} seats left</span>
+        <span className="spotlight-cat">{category}</span>
+        <span className="spotlight-title">{headline}</span>
+        <span className="spotlight-date">{dateBadge}</span>
+        {seatsNote && <span className="spotlight-seats">{seatsNote}</span>}
         <span className="spotlight-arrow" aria-hidden>↗</span>
       </Link>
     </div>

@@ -945,5 +945,78 @@
       "title": "Classes & Courses",
       "subtitle": "Online-Offline, Watercolour & Comprehensive Fine Arts Courses"
     }
+  },
+  "events": {
+    "upcoming": [
+      {
+        "id": "ev-oct-workshop",
+        "title": "Realistic Watercolor Mastery: Light & Glazing",
+        "date": "Starts Oct 12",
+        "dateIso": "2026-10-12",
+        "location": "Anugruja Arts Studio",
+        "description": "A hands-on masterclass on light, glazing and realistic watercolor technique with Master Artist Anuradha Govarthanan. Small batch, personal attention. Only 4 seats remaining.",
+        "registrationUrl": "https://posts.gle/SGYFWZ"
+      }
+    ],
+    "past": [
+      {
+        "id": "ev-past-fabriano",
+        "title": "Fabriano InAquarelle — International Exhibition",
+        "date": "2021",
+        "location": "Fabriano, Italy",
+        "description": "Anuradha's realistic watercolour work represented the studio at Italy's historic watercolor exhibition."
+      },
+      {
+        "id": "ev-past-jiwi",
+        "title": "Japan International Watercolor Institute Showcase",
+        "date": "2022",
+        "location": "Tokyo, Japan",
+        "description": "Selected international showcase at the Japan International Watercolor Institute."
+      },
+      {
+        "id": "ev-past-mnc",
+        "title": "Corporate MNC Masterclasses",
+        "date": "Ongoing (2019–2023)",
+        "location": "Hyderabad & Bangalore",
+        "description": "Creative rejuvenation and fine art masterclasses for tech and corporate leaders, themed around global warming awareness."
+      },
+      {
+        "id": "ev-past-kashmir",
+        "title": "Kashmir Residential Masterclass",
+        "date": "2023",
+        "location": "Kashmir",
+        "description": "A residential masterclass witnessed by the Cultural Minister, blending landscape painting with heritage immersion."
+      }
+    ]
+  },
+  "chatbot": {
+    "enabled": true,
+    "welcomeMessage": "Namaste! I'm Chitra, the studio's AI assistant. Ask me about paintings for sale, prices, classes, or upcoming workshops — or tap a suggestion below.",
+    "suggestedPrompts": [
+      "What paintings are available for sale?",
+      "How much do the paintings cost?",
+      "Which paintings have been sold?",
+      "What classes do you offer?",
+      "When is the next workshop?",
+      "Tell me about Anuradha ma'am"
+    ],
+    "faqs": [
+      {
+        "question": "How do I buy a painting?",
+        "answer": "Every original listed in the sale catalog can be inquired about directly on WhatsApp — the studio confirms availability, frames, shipping and payment personally. No online checkout; everything is handled with a human touch."
+      },
+      {
+        "question": "Do you ship paintings?",
+        "answer": "Yes — originals are shipped safely packed across India and internationally. Shipping is quoted on WhatsApp depending on size and destination."
+      },
+      {
+        "question": "Can I commission a custom painting?",
+        "answer": "Absolutely. Portraits, deities, murals and custom watercolors are a studio specialty. Share your idea, size and timeline on WhatsApp for a quote."
+      },
+      {
+        "question": "Where is the studio located?",
+        "answer": "The studio operates from Bengaluru & Chennai, with online classes available worldwide."
+      }
+    ]
   }
 }

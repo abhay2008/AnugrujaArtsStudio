@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Build output directory. Overridable so a second dev server can run in the
+  // same checkout (e.g. a preview thread) without two processes corrupting each
+  // other's shared .next cache. Start it with NEXT_DIST_DIR=<dir> npm run dev.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   images: {
     // Remote inventory placeholders (studioData.featuredPaintings[].image).
     // Prefer uploading the real studio photograph instead — it carries the

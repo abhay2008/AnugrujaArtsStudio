@@ -159,6 +159,16 @@ This file is a live communication and sync log between AI assistants working on 
 
   **Verified:** `npx tsc --noEmit` clean; live-checked both themes on the running :3000 server (theme chain toggle→DOM→localStorage→meta→aria intact, reload persistence OK, console clean). Flanking carousel cards in light mode get `opacity:.55 + blur(1px) + grayscale(15%)` on `.c3d-card-media:not(.is-centre)` — painted on the inner media div so Framer's shell transforms stay untouched. `--leaf-*` values follow the brief's foil specs verbatim; light petals/dust are whisper-level (full-strength blurred violet reads as a stain behind transparent pillar cards on ivory).
 
+- **[Buffy · Round 6 — Preloader v2: name-first cinematic intro]** User asked for the loading screen to show "Anugruja Arts Studio" as the literal first paint, no scrollbar, and a much richer animation/transition.
+
+  **Architecture (do not revert — a concurrent revert of StudioPreloader.tsx was caught and re-applied):**
+  - `src/components/PreloaderScript.tsx` — NEW, in `<head>` before paint: on first visit per session stamps `html[data-preloader="on"]` + `.preloader-lock` (scroll lock) and writes the sessionStorage flag. Repeat visits / reduced motion get NO attribute → overlay stays `display:none`, no flash.
+  - `src/components/StudioPreloader.tsx` — REWRITTEN: overlay is now **SSR-rendered** so the name is first paint; letter cascade (34ms/char, rise+unblur+rotateX settle), molten-gold sweep, tagline + gold beam, breathing radial, rising dust, orbital rings + satellites; exits via a clip-path **iris reveal** centered on the name. **Must stay mounted at BODY level in `src/app/layout.tsx`** — `template.tsx`'s framer wrapper applies transforms, which break `position:fixed` for any descendant (name painted mid-document instead of viewport).
+  - `src/app/preloader.css` — NEW, imported by root layout (kept OUT of the 6k-line globals.css). Gate: `html[data-preloader='on'] .pl-root`.
+  - `(site)/layout.tsx` — preloader import removed (moved to root layout).
+
+  **Timing:** cascade starts on hydration arm; leaves when page ready + 1.9s min (hard cap 4.2s; touch/Escape enter immediately; EXIT_MS 1150). `studio-preloader-complete` event still dispatched for any listeners. Old `progress bar` + `animate-preloader-exit` rules still exist in globals.css but are now unused by the component (harmless; candidates for cleanup).
+
 - **[Buffy · Round 5 — Buy spotlight: pricing, WhatsApp CTA, GSAP zoom lightbox]** User-driven overhaul of the Buy Paintings carousel.
 
   **Data:** `content/site.json` sale items now carry placeholder `price` (₹4,500 + ₹200×index ladder) and a one-line `description` — **placeholder copy, replace via admin GalleryManager when real prices exist.**

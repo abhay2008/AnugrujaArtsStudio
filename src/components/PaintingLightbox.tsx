@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { formatPrice } from '@/lib/price';
 import { useReducedMotion } from '@/lib/useReducedMotion';
+import { useScrollLock } from '@/lib/scrollLock';
 
 export interface PaintingLightboxItem {
   src: string;
@@ -199,12 +200,12 @@ export default function PaintingLightbox({ item, onClose }: { item: PaintingLigh
     window.setTimeout(finished, 400);
   }, [item, onClose, reducedMotion]);
 
-  /* ---------------- scroll lock + keyboard ---------------- */
+  useScrollLock(Boolean(item));
+
+  /* ---------------- keyboard navigation ---------------- */
 
   useEffect(() => {
     if (!item) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -213,10 +214,21 @@ export default function PaintingLightbox({ item, onClose }: { item: PaintingLigh
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
     };
   }, [item, close]);
+
+  // Intercept wheel on scrim to prevent any page scroll chaining
+  useEffect(() => {
+    const scrim = scrimRef.current;
+    if (!item || !scrim) return;
+    const onScrimWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    scrim.addEventListener('wheel', onScrimWheel, { passive: false });
+    return () => scrim.removeEventListener('wheel', onScrimWheel);
+  }, [item]);
 
   /* ---------------- wheel / pinch zoom ---------------- */
 

@@ -1,0 +1,436 @@
+/* ==========================================================================
+   STUDIO PRELOADER v2 — "Anugruja Arts Studio" first paint
+   Imported after globals.css. Overlay gated on html[data-preloader='on'],
+   which PreloaderScript sets before first paint on first-visit sessions.
+   Scroll lock ships via .preloader-lock — no scrollbar ever paints.
+   All motion is opacity / transform / filter / clip-path (compositor-only).
+   ========================================================================== */
+
+.preloader-lock {
+  overflow: hidden !important;
+}
+
+/* Hidden by default so repeat visits / reduced-motion visitors never flash
+   the overlay; the pre-paint script un-hides it for the session's opener. */
+.pl-root {
+  display: none;
+}
+
+html[data-preloader='on'] .pl-root {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: plVeilIn 0.45s ease-out both;
+}
+
+/* Exit: cinematic iris — the veil collapses to a point at the name's
+   centre while the page is revealed around it. */
+html[data-preloader='on'] .pl-root[data-entering='true'] {
+  pointer-events: none;
+  cursor: default;
+  animation:
+    plIris 1.05s cubic-bezier(0.7, 0, 0.2, 1) forwards,
+    plIrisVeil 1s cubic-bezier(0.6, 0, 0.4, 1) forwards 120ms;
+}
+
+@keyframes plVeilIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes plIris {
+  from {
+    clip-path: circle(141% at 50% 46%);
+  }
+  to {
+    clip-path: circle(0% at 50% 46%);
+  }
+}
+
+@keyframes plIrisVeil {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- ground */
+
+.pl-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 44%, rgba(80, 24, 116, 0.35) 0%, rgba(23, 4, 37, 0) 55%),
+    radial-gradient(circle at 50% 40%, #32094f 0%, #170425 52%, #09010f 100%);
+}
+
+.pl-pulse {
+  position: absolute;
+  width: 46vmin;
+  height: 46vmin;
+  border-radius: 50%;
+  left: 50%;
+  top: 42%;
+  margin: -23vmin 0 0 -23vmin;
+  background: radial-gradient(
+    circle,
+    rgba(242, 215, 112, 0.14) 0%,
+    rgba(224, 64, 251, 0.08) 45%,
+    transparent 70%
+  );
+  animation: plBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes plBreathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* ------------------------------------------------------------- gold dust */
+
+.pl-dust {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pl-mote {
+  position: absolute;
+  bottom: -3vh;
+  left: calc((var(--i) * 7.3 + 4) * 1%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f2d770;
+  box-shadow: 0 0 8px 1px rgba(242, 215, 112, 0.8);
+  opacity: 0;
+  animation: plRise 4.2s linear infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+
+@keyframes plRise {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.7);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-108vh) translateX(calc((var(--i) - 7) * 14px)) scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* -------------------------------------------------------- orbital rings */
+
+.pl-orbits {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pl-ring {
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(242, 215, 112, 0.16);
+}
+
+.pl-ring--a {
+  width: min(74vmin, 560px);
+  height: min(74vmin, 560px);
+  border-style: dashed;
+  animation: plSpin 26s linear infinite;
+}
+
+.pl-ring--b {
+  width: min(56vmin, 420px);
+  height: min(56vmin, 420px);
+  border-color: rgba(224, 64, 251, 0.18);
+  animation: plSpin 20s linear infinite reverse;
+}
+
+.pl-ring--c {
+  width: min(92vmin, 700px);
+  height: min(92vmin, 700px);
+  border-color: rgba(242, 215, 112, 0.07);
+  animation: plSpin 40s linear infinite;
+}
+
+@keyframes plSpin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.pl-sat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: #f2d770;
+  box-shadow: 0 0 12px 2px rgba(242, 215, 112, 0.75);
+}
+
+.pl-sat--a {
+  animation: plOrbitA 9s linear infinite;
+  background: #f9e295;
+}
+
+.pl-sat--b {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  animation: plOrbitB 14s linear infinite reverse;
+  background: #e040fb;
+  box-shadow: 0 0 10px 2px rgba(224, 64, 251, 0.7);
+}
+
+@keyframes plOrbitA {
+  from {
+    transform: rotate(0deg) translateX(min(37vmin, 280px)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(min(37vmin, 280px)) rotate(-360deg);
+  }
+}
+
+@keyframes plOrbitB {
+  from {
+    transform: rotate(0deg) translateX(min(28vmin, 210px)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(min(28vmin, 210px)) rotate(-360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ name */
+
+.pl-name {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0 18px;
+  font-family: 'Cinzel Decorative', Cinzel, serif;
+  font-weight: 700;
+  font-size: clamp(1.55rem, 5.4vw, 3.4rem);
+  letter-spacing: 0.14em;
+  text-align: center;
+  line-height: 1.16;
+  color: #f2d770;
+  text-shadow:
+    0 0 24px rgba(249, 115, 22, 0.35),
+    0 0 60px rgba(242, 215, 112, 0.18);
+}
+
+/* Letter cascade: rise + unblur + rotateX settle, 34ms apart */
+.pl-ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.55em) rotateX(45deg) scale(0.85);
+  transform-origin: 50% 100%;
+  filter: blur(6px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
+  transition-delay: calc(var(--ch-i) * 34ms);
+}
+
+.pl-ch.is-in {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+}
+
+/* Molten-gold shimmer that travels across the assembled letters */
+html[data-preloader='on'] .pl-ch.is-in {
+  background: linear-gradient(110deg, #f2d770 30%, #fff7d1 46%, #f2d770 62%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: plSweep 2.4s linear infinite;
+  animation-delay: calc(var(--ch-i) * -0.12s);
+}
+
+@keyframes plSweep {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+
+/* ---------------------------------------------------- tagline / beam / hint */
+
+.pl-tagline {
+  position: relative;
+  z-index: 2;
+  margin: 14px 0 0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  letter-spacing: 0.08em;
+  color: rgba(255, 231, 186, 0.82);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.7s ease 1.15s, transform 0.7s ease 1.15s;
+}
+
+.pl-tagline.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.pl-beam {
+  position: relative;
+  z-index: 2;
+  width: min(320px, 64vw);
+  height: 2px;
+  margin-top: 18px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #f2d770 18%,
+    #fff3b0 50%,
+    #f2d770 82%,
+    transparent
+  );
+  box-shadow: 0 0 14px rgba(242, 215, 112, 0.55);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.95s;
+}
+
+.pl-beam.is-in {
+  transform: scaleX(1);
+}
+
+.pl-hint {
+  position: relative;
+  z-index: 2;
+  margin: 30px 0 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255, 227, 170, 0.5);
+  opacity: 0;
+  transition: opacity 0.8s ease 1.5s;
+}
+
+.pl-hint.is-in {
+  opacity: 1;
+  animation: plHintBreathe 2.4s ease-in-out infinite 2.3s;
+}
+
+@keyframes plHintBreathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Exit: content layers lift off ahead of the iris */
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-ch,
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-tagline,
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-beam,
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint {
+  animation: plContentOut 0.5s cubic-bezier(0.6, 0, 0.8, 0.4) forwards;
+}
+
+@keyframes plContentOut {
+  to {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.94);
+    filter: blur(8px);
+  }
+}
+
+/* --------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-ch,
+  .pl-tagline,
+  .pl-beam,
+  .pl-hint {
+    transition: none !important;
+  }
+
+  .pl-ch.is-in {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .pl-ch.is-in {
+    animation: none !important;
+    -webkit-text-fill-color: currentColor;
+    background: none;
+  }
+
+  .pl-mote,
+  .pl-sat--a,
+  .pl-sat--b,
+  .pl-ring--a,
+  .pl-ring--b,
+  .pl-ring--c,
+  .pl-pulse,
+  .pl-hint.is-in {
+    animation: none !important;
+  }
+
+  html[data-preloader='on'] .pl-root[data-entering='true'] {
+    animation: plIrisVeil 0.4s ease forwards;
+  }
+}
+
+/* ------------------------------------------------------------ small screens */
+
+@media (max-width: 640px) {
+  .pl-name {
+    font-size: clamp(1.3rem, 6.8vw, 2.1rem);
+    letter-spacing: 0.1em;
+  }
+
+  .pl-hint {
+    margin-top: 24px;
+  }
+}

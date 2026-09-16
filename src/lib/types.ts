@@ -65,6 +65,41 @@ export interface SiteGalleries {
   commission: ArtItem[];
 }
 
+/** One entry in the studio's structured event calendar (CMS-managed). */
+export interface StudioEvent {
+  id: string;
+  title: string;
+  /** Free-form date as displayed, e.g. "Oct 12, 2026" or "Every Saturday". */
+  date: string;
+  /** ISO hint (e.g. "2026-10-12") so the bot can reason about upcoming vs past. */
+  dateIso?: string;
+  location?: string;
+  description?: string;
+  registrationUrl?: string;
+  image?: string;
+  /** Only for past events — how it went, attendance, highlights. */
+  outcome?: string;
+}
+
+export interface StudioEvents {
+  upcoming: StudioEvent[];
+  past: StudioEvent[];
+}
+
+export interface ChatbotFaq {
+  question: string;
+  answer: string;
+}
+
+/** Admin-managed configuration for the site-wide AI chat assistant. */
+export interface ChatbotConfig {
+  enabled: boolean;
+  welcomeMessage: string;
+  suggestedPrompts: string[];
+  /** Extra business knowledge the bot may quote verbatim. */
+  faqs: ChatbotFaq[];
+}
+
 export interface SiteSections {
   banner: {
     title: string;
@@ -95,6 +130,10 @@ export interface SiteContent {
   social: SocialLink[];
   galleries: SiteGalleries;
   sections: SiteSections;
+  /** Structured event calendar shown on the site and known to the chatbot. */
+  events?: StudioEvents;
+  /** Site-wide AI chat assistant configuration & extra knowledge. */
+  chatbot?: ChatbotConfig;
 }
 
 export type GalleryKey = keyof SiteGalleries;

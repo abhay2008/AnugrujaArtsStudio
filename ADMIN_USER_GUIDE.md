@@ -56,6 +56,15 @@ Welcome to the **Anugruja Arts Studio Admin Console & CMS**. This portal is patt
 * Update SEO browser titles and meta descriptions with live diff detection.
 * Apply and commit changes directly to the repository.
 
+### 5. Events & Chatbot (`/admin` -> Events & Chatbot)
+* Maintain the studio's event calendar: **Upcoming** workshops/masterclasses and **Past** events & exhibitions.
+* Every event has a title, display date, optional ISO date, location, description, registration link and (for past events) an outcome note.
+* The next upcoming event automatically drives the home-page banner spotlight.
+* **Meet Chitra 🤖** — the website now has an AI assistant visible on every page (bottom-right sparkle button). Chitra answers visitor questions using the live website data: paintings for sale with prices, sold/available status, classes, events and studio info.
+  * **Zero maintenance:** Chitra re-reads the website content after every commit. Upload a new painting or change a price, and she knows immediately — no extra work.
+  * **Safety:** Chitra only discusses the studio and art, never invents prices or dates, and hands purchase questions to WhatsApp. Rate limits protect the free AI quota.
+  * Suggested prompt chips and the welcome message come from `chatbot` settings in `content/site.json` (advanced: edit via Brand & SEO commit or ask the developer).
+
 ---
 
 ## 🚀 Committing Changes to GitHub

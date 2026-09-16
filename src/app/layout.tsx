@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './preloader.css';
 import ThemeScript from '@/components/ThemeScript';
+import PreloaderScript from '@/components/PreloaderScript';
+import StudioPreloader from '@/components/StudioPreloader';
 
 export const metadata: Metadata = {
   title: 'Anugruja Arts Studio — Anuradha Govarthanan',
@@ -45,8 +48,15 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#100318" />
         <ThemeScript />
+        <PreloaderScript />
       </head>
-      <body className="site-body min-h-screen flex flex-col antialiased">{children}</body>
+      <body className="site-body min-h-screen flex flex-col antialiased">
+        {/* Intro overlay lives at body level: ancestors like the route
+            transition wrapper use transforms, which would turn `fixed`
+            into "sized to that div" instead of the viewport. */}
+        <StudioPreloader />
+        {children}
+      </body>
     </html>
   );
 }

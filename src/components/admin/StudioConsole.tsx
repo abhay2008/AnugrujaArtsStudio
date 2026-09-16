@@ -11,6 +11,7 @@ import {
   DollarSign,
   Clock,
   ListTree,
+  Sparkles,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import { GALLERY_DEFINITIONS, GalleryKey } from '@/lib/types';
@@ -18,14 +19,16 @@ import MassUploadStudio from './MassUploadStudio';
 import GalleryManager from './GalleryManager';
 import GeneralSettings from './GeneralSettings';
 import QuickNavManager from './QuickNavManager';
+import EventsManager from './EventsManager';
 import { AdminSavePill, type CommitFlow } from './AdminShell';
 
-type ConsoleTab = 'upload' | 'galleries' | 'quicknav' | 'settings';
+type ConsoleTab = 'upload' | 'galleries' | 'quicknav' | 'events' | 'settings';
 
 const TABS: { id: ConsoleTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'upload', label: 'Mass Upload Studio', icon: Upload },
   { id: 'galleries', label: 'Galleries & Artworks', icon: LayoutGrid },
   { id: 'quicknav', label: 'Pages & Listings', icon: ListTree },
+  { id: 'events', label: 'Events & Chatbot', icon: Sparkles },
   { id: 'settings', label: 'Brand & SEO', icon: Settings },
 ];
 
@@ -103,6 +106,7 @@ export default function StudioConsole({ flow }: { flow: CommitFlow }) {
         {activeTab === 'upload' && <MassUploadStudio />}
         {activeTab === 'galleries' && <GalleryManager />}
         {activeTab === 'quicknav' && <QuickNavManager />}
+        {activeTab === 'events' && <EventsManager />}
         {activeTab === 'settings' && <GeneralSettings />}
       </div>
 

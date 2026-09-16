@@ -250,9 +250,13 @@ export default function Carousel3D({
   const dragRef = useRef({
     active: false,
     startX: 0,
+    startY: 0,
     lastX: 0,
     lastT: 0,
+    startTime: 0,
     locked: false,
+    isDirectionLocked: false,
+    isHorizontal: false,
   });
   const rootRef = useRef<HTMLDivElement>(null);
   const vitrineRef = useRef<HTMLDivElement>(null);
@@ -521,24 +525,25 @@ export default function Carousel3D({
     }
   }, [index, items]);
 
-  /** Enlarge the centre painting in the GSAP lightbox, FLIP-ing from its card. */
-  const openPaintingAt = useCallback(
+  /** Enlarge the artwork in the high-performance zoomable lightbox */
+  const openImageAt = useCallback(
     (i: number) => {
       const it = items[i];
       if (!it) return;
-      const node = cardsRef.current[i];
-      const rect = node?.getBoundingClientRect();
-      setPainting({
-        src: it.src,
-        title: it.title,
-        description: cardBlurb(it) || undefined,
-        price: it.price,
-        originRect: rect
-          ? { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
-          : null,
-      });
+      openGallery(
+        items.map((item) => ({
+          src: item.src,
+          title: item.title,
+          description: cardBlurb(item) || undefined,
+          price: item.price,
+          category: item.category,
+          medium: item.medium,
+          status: item.status,
+        })),
+        i
+      );
     },
-    [items]
+    [items, openGallery]
   );
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -546,14 +551,19 @@ export default function Carousel3D({
     try {
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     } catch {
-      /* Capture is best-effort — a failure must not break the drag state machine. */
+      /* Capture is best-effort */
     }
+    const now = performance.now();
     dragRef.current = {
       active: true,
       startX: e.clientX,
+      startY: e.clientY,
       lastX: e.clientX,
-      lastT: performance.now(),
+      lastT: now,
+      startTime: now,
       locked: false,
+      isDirectionLocked: false,
+      isHorizontal: false,
     };
     velRef.current = 0;
     setIsDragging(true);
@@ -563,13 +573,33 @@ export default function Carousel3D({
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d.active) return;
+    const now = performance.now();
     const dx = e.clientX - d.lastX;
-    const dt = Math.max(1, performance.now() - d.lastT);
+    const dt = Math.max(1, now - d.lastT);
     d.lastX = e.clientX;
-    d.lastT = performance.now();
-    if (Math.abs(e.clientX - d.startX) > 8) d.locked = true;
+    d.lastT = now;
+
+    const totalDx = e.clientX - d.startX;
+    const totalDy = e.clientY - d.startY;
+
+    if (!d.isDirectionLocked) {
+      if (Math.hypot(totalDx, totalDy) > 6) {
+        d.isDirectionLocked = true;
+        d.isHorizontal = Math.abs(totalDx) >= Math.abs(totalDy);
+      }
+    }
+
+    if (d.isDirectionLocked && !d.isHorizontal) {
+      return;
+    }
+
+    if (Math.abs(totalDx) > 8) {
+      d.locked = true;
+    }
+
     posRef.current -= dx / spacing;
-    velRef.current = (-dx / dt) * 12;
+    const instantVel = (-dx / dt) * 12;
+    velRef.current = velRef.current * 0.3 + instantVel * 0.7;
   };
 
   const endDrag = () => {
@@ -579,9 +609,23 @@ export default function Carousel3D({
     setIsDragging(false);
     engage();
 
-    if (Math.abs(velRef.current) > 0.45) {
-      commitStep(velRef.current > 0 ? 1 : -1);
-      velRef.current *= 0.2;
+    const totalDx = d.lastX - d.startX;
+    const totalDt = Math.max(1, performance.now() - d.startTime);
+    const speed = Math.abs(totalDx) / totalDt;
+
+    // A swipe is detected if:
+    // 1. Distance moved is significant (>= 30px), OR
+    // 2. Quick flick (speed > 0.22 and >= 15px), OR
+    // 3. Significant velocity
+    const isSwipe =
+      Math.abs(totalDx) >= 30 ||
+      (speed > 0.22 && Math.abs(totalDx) >= 15) ||
+      Math.abs(velRef.current) > 0.25;
+
+    if (isSwipe && (d.isHorizontal || !d.isDirectionLocked)) {
+      const dir = totalDx !== 0 ? (totalDx < 0 ? 1 : -1) : velRef.current > 0 ? 1 : -1;
+      commitStep(dir);
+      velRef.current = 0;
     } else {
       const snapped = Math.round(posRef.current);
       const currentTarget = Math.round(targetRef.current);
@@ -594,7 +638,7 @@ export default function Carousel3D({
 
     window.setTimeout(() => {
       dragRef.current.locked = false;
-    }, 60);
+    }, 150);
   };
 
   useEffect(() => {
@@ -615,20 +659,6 @@ export default function Carousel3D({
     return () => stage.removeEventListener('wheel', onWheel);
   }, [commitStep, engage]);
 
-  const openGalleryAt = useCallback(
-    (i: number) => {
-      openGallery(
-        items.map((it) => ({
-          src: it.src,
-          title: it.title,
-          description: cardBlurb(it) || undefined,
-        })),
-        i
-      );
-    },
-    [items, openGallery]
-  );
-
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight') {
       e.preventDefault();
@@ -640,24 +670,34 @@ export default function Carousel3D({
       prev();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      if (isSpotlightRef.current) openPaintingAt(index);
-      else openGalleryAt(index);
+      openImageAt(index);
     }
   };
 
   /**
-   * Clicking the centre card enlarges it; clicking any other card brings that
-   * card to the centre instead of jumping straight into the lightbox.
+   * "if the card is clicked then that card should come front, nothing else"
    */
   const onCardClick = (i: number) => {
     if (dragRef.current.locked) return;
     engage();
-    if (i === index) {
-      if (isSpotlightRef.current) openPaintingAt(i);
-      else openGalleryAt(i);
+    if (i !== index) {
+      goTo(i);
+    }
+  };
+
+  /**
+   * "also the image should open in enlarged view only if the image is clicked,
+   * if the card is clicked then that card should come front, nothing else"
+   */
+  const onImageClick = (e: React.MouseEvent, i: number) => {
+    if (dragRef.current.locked) return;
+    e.stopPropagation();
+    engage();
+    if (i !== index) {
+      goTo(i);
       return;
     }
-    goTo(i);
+    openImageAt(i);
   };
 
   const current = items[index];
@@ -816,10 +856,12 @@ export default function Carousel3D({
                 hiddenFromAT
                   ? undefined
                   : isCentre
-                    ? `Enlarge ${item.title}`
-                    : `Show ${item.title}`
+                    ? `Artwork ${item.title}`
+                    : `Bring ${item.title} to front`
               }
-              className="c3d-card-shell absolute left-1/2 top-1/2 cursor-pointer outline-none will-change-transform"
+              className={`c3d-card-shell absolute left-1/2 top-1/2 outline-none will-change-transform ${
+                isCentre ? 'cursor-default' : 'cursor-pointer'
+              }`}
               style={{
                 transformStyle: 'preserve-3d',
                 backfaceVisibility: 'hidden',
@@ -838,9 +880,21 @@ export default function Carousel3D({
               )}
 
               <div className="c3d-card">
-                {/* The frame *is* the image — no padding, border sits on the
-                    picture edges, corners rounded to match. */}
-                <div className={`c3d-card-media${isCentre ? ' is-centre' : ''}`}>
+                {/* The frame *is* the image — only clicking the centre image enlarges it; clicking a side card brings it forward */}
+                <div
+                  onClick={(e) => onImageClick(e, i)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      onImageClick(e as unknown as React.MouseEvent, i);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={isCentre ? 0 : -1}
+                  aria-label={isCentre ? `Enlarge image of ${item.title}` : `Show ${item.title}`}
+                  title={isCentre ? 'Click image to enlarge' : 'Click to bring to front'}
+                  className={`c3d-card-media${isCentre ? ' is-centre cursor-zoom-in' : ' cursor-pointer'}`}
+                >
                   <Image
                     src={item.src}
                     alt={item.title}
@@ -850,7 +904,7 @@ export default function Carousel3D({
                     draggable={false}
                     priority={i === 0}
                     loading={i === 0 ? undefined : i < 4 ? 'eager' : 'lazy'}
-                    className="c3d-card-img object-cover"
+                    className="c3d-card-img object-cover pointer-events-none select-none"
                   />
                   {isSpotlight && <span className="c3d-gloss" aria-hidden />}
                   {item.status && (
@@ -865,15 +919,22 @@ export default function Carousel3D({
                   )}
                   {isPolaroid && <span className="c3d-pin" aria-hidden />}
                   {isCentre && (
-                    <span className="c3d-view-badge">
+                    <span
+                      className="c3d-view-badge"
+                      title="Click to enlarge"
+                      onClick={(e) => onImageClick(e, i)}
+                    >
                       <Maximize2 className="h-3 w-3" />
                       View
                     </span>
                   )}
                 </div>
 
-                {/* Name + description in its own reserved row, outside the frame. */}
-                <div className="c3d-card-caption">
+                {/* Name + description in its own reserved row: clicking card brings it front */}
+                <div
+                  className={`c3d-card-caption ${isCentre ? 'cursor-default' : 'cursor-pointer'}`}
+                  onClick={() => onCardClick(i)}
+                >
                   <p className="c3d-card-name">{item.title}</p>
                   {blurb && <p className="c3d-card-blurb">{blurb}</p>}
                 </div>

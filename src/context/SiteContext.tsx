@@ -10,7 +10,7 @@ import React, {
   ReactNode,
 } from 'react';
 import initialFallback from '../../content/site.json';
-import type { SiteContent, ArtItem, GalleryKey } from '@/lib/types';
+import type { SiteContent, ArtItem, GalleryKey, StudioEvents, ChatbotConfig } from '@/lib/types';
 import { optimizeImageForUpload } from '@/lib/imageOptimize';
 
 export const ADMIN_STORAGE_KEY = 'anugruja_admin_content_draft';
@@ -37,6 +37,8 @@ interface SiteContextValue {
   updateBrand: (patch: Partial<SiteContent['brand']>) => void;
   updateMeta: (patch: Partial<SiteContent['meta']>) => void;
   updateSection: <K extends keyof SiteContent['sections']>(sectionKey: K, patch: Partial<SiteContent['sections'][K]>) => void;
+  updateEvents: (events: StudioEvents) => void;
+  updateChatbot: (patch: Partial<ChatbotConfig>) => void;
   appendArtwork: (gallery: GalleryKey, item: ArtItem) => void;
   updateArtwork: (gallery: GalleryKey, itemId: string, patch: Partial<ArtItem>) => void;
   removeArtwork: (gallery: GalleryKey, itemId: string) => void;
@@ -71,6 +73,8 @@ const defaultContext: SiteContextValue = {
   updateBrand: () => {},
   updateMeta: () => {},
   updateSection: () => {},
+  updateEvents: () => {},
+  updateChatbot: () => {},
   appendArtwork: () => {},
   updateArtwork: () => {},
   removeArtwork: () => {},
@@ -206,6 +210,30 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       return next;
     });
     setEditor((prev) => ({ ...prev, dirty: true, status: `Updated ${String(sectionKey)} section` }));
+  }, [persist]);
+
+  const updateEvents = useCallback((events: StudioEvents) => {
+    setContentState((prev) => {
+      const next = { ...prev, events };
+      persist(next);
+      return next;
+    });
+    setEditor((prev) => ({ ...prev, dirty: true, status: 'Updated events calendar' }));
+  }, [persist]);
+
+  const updateChatbot = useCallback((patch: Partial<ChatbotConfig>) => {
+    setContentState((prev) => {
+      const currentChatbot: ChatbotConfig = prev.chatbot ?? {
+        enabled: true,
+        welcomeMessage: '',
+        suggestedPrompts: [],
+        faqs: [],
+      };
+      const next: SiteContent = { ...prev, chatbot: { ...currentChatbot, ...patch } };
+      persist(next);
+      return next;
+    });
+    setEditor((prev) => ({ ...prev, dirty: true, status: 'Updated chatbot settings' }));
   }, [persist]);
 
   const appendArtwork = useCallback((gallery: GalleryKey, item: ArtItem) => {
@@ -470,6 +498,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         updateBrand,
         updateMeta,
         updateSection,
+        updateEvents,
+        updateChatbot,
         appendArtwork,
         updateArtwork,
         removeArtwork,
