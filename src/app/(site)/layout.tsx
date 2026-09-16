@@ -6,6 +6,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 import { ThemeProvider } from '@/context/ThemeContext';
 import PageAmbient from '@/components/PageAmbient';
 import ChatWidget from '@/components/chat/ChatWidget';
+import SeoStructuredData from '@/components/SeoStructuredData';
 
 /**
  * Public site surface: everything a visitor sees.
@@ -18,6 +19,7 @@ export default function SiteLayout({
 }) {
   return (
     <ThemeProvider>
+      <SeoStructuredData />
       <PageAmbient />
       <LightboxProvider>
         <ScrollReveal />

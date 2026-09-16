@@ -5,10 +5,52 @@ import ThemeScript from '@/components/ThemeScript';
 import PreloaderScript from '@/components/PreloaderScript';
 import StudioPreloader from '@/components/StudioPreloader';
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://anugruja-arts-studio.vercel.app').replace(/\/$/, '');
+
 export const metadata: Metadata = {
-  title: 'Anugruja Arts Studio — Anuradha Govarthanan',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Anugruja Arts Studio — Anuradha Govarthanan',
+    template: '%s | Anugruja Arts Studio',
+  },
   description:
-    'Commercial web platform and fine arts portfolio for Anugruja Arts Studio, featuring original watercolor paintings, fine arts diploma courses, workshops, and custom art commissions.',
+    'Discover original watercolor paintings, fine arts classes, workshops, and custom commissions by Master Artist Anuradha Govarthanan at Anugruja Arts Studio.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: siteUrl,
+    siteName: 'Anugruja Arts Studio',
+    title: 'Anugruja Arts Studio — Anuradha Govarthanan',
+    description: 'Original watercolor paintings, fine arts classes, workshops, and custom commissions from Anugruja Arts Studio.',
+    images: [
+      {
+        url: '/images/banner.jpeg',
+        width: 1200,
+        height: 630,
+        alt: 'Anugruja Arts Studio — watercolor art and fine arts education',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Anugruja Arts Studio — Anuradha Govarthanan',
+    description: 'Original watercolor paintings, fine arts classes, workshops, and custom commissions.',
+    images: ['/images/banner.jpeg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   keywords: [
     'Anugruja Arts Studio',
     'Anuradha Govarthanan',
@@ -18,7 +60,7 @@ export const metadata: Metadata = {
     'Art workshops',
     'Art commissions',
   ],
-  authors: [{ name: 'Abhay Kashyap' }],
+  authors: [{ name: 'Anuradha Govarthanan' }],
   icons: {
     icon: '/images/logo.png',
   },
