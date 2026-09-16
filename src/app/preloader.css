@@ -28,10 +28,13 @@ html[data-preloader='on'] .pl-root {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   animation: plVeilIn 0.45s ease-out both;
+  --pl-iris-end: 0px;
 }
 
-/* Exit: cinematic iris — the veil collapses to a point at the name's
-   centre while the page is revealed around it. */
+/* Exit: cinematic iris — the veil collapses onto the studio crest (the
+   landing page's logo disc). The target is re-measured by JS so on mobile
+   it lands on the crest beside the name, and on desktop on the header
+   logo after the header slides in. */
 html[data-preloader='on'] .pl-root[data-entering='true'] {
   pointer-events: none;
   cursor: default;
@@ -51,10 +54,12 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
 
 @keyframes plIris {
   from {
-    clip-path: circle(141% at 50% 46%);
+    clip-path: circle(141% at var(--pl-iris-x, 50%) var(--pl-iris-y, 42%));
   }
   to {
-    clip-path: circle(0% at 50% 46%);
+    /* Ends at the landing-page emblem's rim (JS-measured): the closing
+       disc exactly frames the hero logo as the veil vanishes. */
+    clip-path: circle(var(--pl-iris-end, 0px) at var(--pl-iris-x, 50%) var(--pl-iris-y, 42%));
   }
 }
 
@@ -77,13 +82,22 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
     radial-gradient(circle at 50% 40%, #32094f 0%, #170425 52%, #09010f 100%);
 }
 
+@keyframes plFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+
 .pl-pulse {
   position: absolute;
   width: 46vmin;
   height: 46vmin;
   border-radius: 50%;
   left: 50%;
-  top: 42%;
+  top: var(--pl-orbit-y, 42%);
   margin: -23vmin 0 0 -23vmin;
   background: radial-gradient(
     circle,
@@ -91,7 +105,15 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
     rgba(224, 64, 251, 0.08) 45%,
     transparent 70%
   );
-  animation: plBreathe 2.6s ease-in-out infinite;
+  opacity: 0;
+}
+
+/* Fades in only after the crest has been measured, so the glow is born
+   centred on the crest — never at the CSS default that then corrects. */
+.pl-pulse.is-anchored {
+  animation:
+    plFadeIn 0.6s ease-out both,
+    plBreathe 2.6s ease-in-out infinite 0.6s;
 }
 
 @keyframes plBreathe {
@@ -148,11 +170,13 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
 .pl-orbits {
   position: absolute;
   left: 50%;
-  top: 42%;
+  top: var(--pl-orbit-y, 42%);
   transform: translate(-50%, -50%);
   width: 0;
   height: 0;
   pointer-events: none;
+  /* Rendered only after the crest is measured; fades in at its anchor. */
+  animation: plFadeIn 0.5s ease-out both;
 }
 
 .pl-ring {
@@ -235,6 +259,94 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
   }
 }
 
+/* -------------------------------------------------------- studio crest */
+/* Mirrors HeroEmblem on the landing page: three concentric rings, a
+   chrome-plum core, and the studio logo centred inside. The rings breathe
+   with gold halos so the crest feels alive, not pasted on. The crest sits
+   IN the flex column above the name on every viewport, so text can never
+   overlap the logo. */
+.pl-crest {
+  position: relative;
+  z-index: 3;
+  width: min(30vmin, 190px);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  pointer-events: none;
+  margin-bottom: clamp(18px, 3.2vh, 34px);
+}
+
+.pl-crest-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4%;
+  opacity: 0;
+  filter: drop-shadow(0 10px 28px rgba(242, 215, 112, 0.28));
+  transition:
+    opacity 0.7s ease 0.15s,
+    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+  transform: scale(0.55);
+}
+
+/* The fade is gated on the image actually being decoded (.is-loaded),
+   so the rim + halo never sit around an empty disc. */
+.pl-crest-img.is-loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Rotating conic halo sweep behind the logo disc */
+.pl-crest-halo {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(242, 215, 112, 0.45) 14%,
+    rgba(224, 64, 251, 0.2) 22%,
+    transparent 34%,
+    transparent 62%,
+    rgba(242, 215, 112, 0.35) 74%,
+    transparent 88%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 66%, #000 74%, transparent 82%);
+  mask: radial-gradient(circle, transparent 58%, #000 66%, #000 74%, transparent 82%);
+  animation: plHaloSpin 6.5s linear infinite;
+}
+
+@keyframes plHaloSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Gilded rim around the logo, breathing in counter-phase */
+.pl-crest-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(242, 215, 112, 0.55);
+  box-shadow:
+    0 0 22px rgba(242, 215, 112, 0.35),
+    inset 0 0 14px rgba(242, 215, 112, 0.2);
+  animation: plRimBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes plRimBreathe {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.035);
+  }
+}
+
 /* ------------------------------------------------------------------ name */
 
 .pl-name {
@@ -252,6 +364,19 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
   text-shadow:
     0 0 24px rgba(249, 115, 22, 0.35),
     0 0 60px rgba(242, 215, 112, 0.18);
+}
+
+/* Words wrap as units — a word can drop to the next line, but a word can
+   never be split across lines (the old per-letter flow broke 'St/udio'). */
+.pl-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Word-gap spacer between inline word blocks */
+.pl-word + .pl-word::before {
+  content: '\00a0\00a0\00a0';
+  display: inline-block;
 }
 
 /* Letter cascade: rise + unblur + rotateX settle, 34ms apart */
@@ -372,7 +497,8 @@ html[data-preloader='on'] .pl-ch.is-in {
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-ch,
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-tagline,
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-beam,
-html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint {
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint,
+html[data-preloader='on'] .pl-root[data-entering='true'] .pl-crest {
   animation: plContentOut 0.5s cubic-bezier(0.6, 0, 0.8, 0.4) forwards;
 }
 
@@ -412,13 +538,39 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint {
   .pl-ring--a,
   .pl-ring--b,
   .pl-ring--c,
-  .pl-pulse,
+  .pl-pulse.is-anchored,
+  .pl-orbits,
+  .pl-crest-halo,
+  .pl-crest-rim,
   .pl-hint.is-in {
     animation: none !important;
   }
 
+  html[data-preloader='on'] .pl-crest-img {
+    opacity: 1;
+    transform: none;
+  }
+
+  html[data-preloader='on'] .pl-crest-img {
+    transition: none !important;
+  }
+
   html[data-preloader='on'] .pl-root[data-entering='true'] {
     animation: plIrisVeil 0.4s ease forwards;
+  }
+
+  /* Animations off → the fade-driven layers need static visibility. */
+  .pl-pulse.is-anchored {
+    opacity: 0.55;
+  }
+
+  .pl-orbits {
+    opacity: 1;
+  }
+
+  .pl-crest-img.is-loaded {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -426,11 +578,174 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint {
 
 @media (max-width: 640px) {
   .pl-name {
-    font-size: clamp(1.3rem, 6.8vw, 2.1rem);
-    letter-spacing: 0.1em;
+    font-size: clamp(1.3rem, 6.2vw, 2rem);
+    letter-spacing: 0.09em;
+    padding: 0 10px;
   }
 
   .pl-hint {
     margin-top: 24px;
+  }
+
+  /* Phone layout: a slightly smaller crest, same anchored composition —
+     crest above, name wrapping BETWEEN words as units below. */
+  .pl-crest {
+    width: min(38vw, 168px);
+    margin-bottom: clamp(14px, 2.6vh, 26px);
+  }
+
+  .pl-name {
+    max-width: 100%;
+    overflow-wrap: normal;
+  }
+}
+
+/* ---------------------------------------------------- hero emblem ambience */
+/* The preloader crest and the landing page's HeroEmblem share these, so
+   the iris hands the logo over in identical form — no visual jump. */
+
+/* Rotating conic halo sweep around the emblem rings */
+.emblem-halo {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(242, 215, 112, 0.5) 14%,
+    rgba(224, 64, 251, 0.22) 22%,
+    transparent 34%,
+    transparent 62%,
+    rgba(242, 215, 112, 0.4) 74%,
+    transparent 88%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 56%, #000 64%, #000 74%, transparent 84%);
+  mask: radial-gradient(circle, transparent 56%, #000 64%, #000 74%, transparent 84%);
+  animation: plHaloSpin 7s linear infinite;
+}
+
+/* Two comets chasing each other along the emblem's rim. Each glint is a
+   full-box layer that rotates around the emblem's centre, so the comet
+   rides the actual rim at ANY emblem size (phone medallion to desktop). */
+.emblem-glint {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.emblem-glint::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: #f9e295;
+  box-shadow: 0 0 10px 2px rgba(242, 215, 112, 0.8);
+}
+
+.emblem-glint--a {
+  animation: emblemSpin 9s linear infinite;
+}
+
+.emblem-glint--b {
+  animation: emblemSpin 12s linear infinite reverse;
+}
+
+.emblem-glint--b::before {
+  top: 100%;
+  background: #e040fb;
+  box-shadow: 0 0 10px 2px rgba(224, 64, 251, 0.7);
+}
+
+@keyframes emblemSpin {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* The landing-page emblem breathes a warm aura as the veil fades away,
+   tying the intro's crest to the page's crest. Applied while the
+   `studio-preloader-complete` event (dispatched by StudioPreloader)
+   is still settling. */
+.hero-emblem.emblem-arriving .hero-emblem-ring-outer {
+  animation:
+    emblemRingArrival 1.4s cubic-bezier(0.22, 1, 0.36, 1) both,
+    spinSlow 34s linear infinite 1.4s;
+}
+
+.hero-emblem.emblem-arriving .hero-emblem-ring-mid {
+  animation:
+    emblemRingArrival 1.4s cubic-bezier(0.22, 1, 0.36, 1) both 0.12s,
+    spinSlow 24s linear infinite reverse 1.4s;
+}
+
+.hero-emblem.emblem-arriving::after {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(242, 215, 112, 0.4) 0%,
+    rgba(224, 64, 251, 0.12) 45%,
+    transparent 70%
+  );
+  animation: emblemAura 1.6s ease-out both;
+}
+
+@keyframes emblemRingArrival {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(242, 215, 112, 0));
+  }
+  40% {
+    filter: drop-shadow(0 0 10px rgba(242, 215, 112, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(242, 215, 112, 0));
+  }
+}
+
+@keyframes emblemAura {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emblem-halo,
+  .emblem-glint--a,
+  .emblem-glint--b {
+    animation: none !important;
+  }
+
+  .hero-emblem.emblem-arriving .hero-emblem-ring-outer,
+  .hero-emblem.emblem-arriving .hero-emblem-ring-mid,
+  .hero-emblem.emblem-arriving::after {
+    animation: none !important;
   }
 }

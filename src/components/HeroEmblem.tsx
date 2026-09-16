@@ -1,4 +1,7 @@
+'use client';
+
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 type EmblemSize = 'sm' | 'lg';
 
@@ -8,7 +11,14 @@ const SHELL: Record<EmblemSize, string> = {
   lg: 'w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-[clamp(260px,26vw,360px)] lg:h-[clamp(260px,26vw,360px)]',
 };
 
-/** Multi-layer circular studio emblem for the landing hero */
+/**
+ * Multi-layer circular studio emblem for the landing hero.
+ *
+ * Carries the same halo sweep + orbiting glints as the preloader's crest
+ * (preloader.css), so when the intro's iris collapses onto the logo the
+ * page emblem takes over in identical form — no visual jump. A brief
+ * golden aura fires when the preloader hands over.
+ */
 export default function HeroEmblem({
   size = 'sm',
   className = '',
@@ -16,8 +26,27 @@ export default function HeroEmblem({
   size?: EmblemSize;
   className?: string;
 }) {
+  const [arriving, setArriving] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let clearTimer: number | undefined;
+    const onPreloaderDone = () => {
+      setArriving(true);
+      clearTimer = window.setTimeout(() => setArriving(false), 2800);
+    };
+    window.addEventListener('studio-preloader-complete', onPreloaderDone, { once: true });
+    return () => {
+      window.removeEventListener('studio-preloader-complete', onPreloaderDone);
+      if (clearTimer) window.clearTimeout(clearTimer);
+    };
+  }, []);
+
   return (
-    <div className={`hero-emblem ${SHELL[size]} relative shrink-0 ${className}`.trim()}>
+    <div
+      className={`hero-emblem ${SHELL[size]} relative shrink-0 ${arriving ? 'emblem-arriving' : ''} ${className}`.trim()}
+    >
+      <span className="emblem-halo" aria-hidden />
       <div className="hero-emblem-ring hero-emblem-ring-outer" />
       <div className="hero-emblem-ring hero-emblem-ring-mid" />
       <div className="hero-emblem-ring hero-emblem-ring-inner" />
@@ -31,6 +60,8 @@ export default function HeroEmblem({
           className="object-contain p-3 sm:p-4"
         />
       </div>
+      <span className="emblem-glint emblem-glint--a" aria-hidden />
+      <span className="emblem-glint emblem-glint--b" aria-hidden />
     </div>
   );
 }

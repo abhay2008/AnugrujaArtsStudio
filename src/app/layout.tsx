@@ -47,6 +47,23 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#100318" />
+        {/* The preloader crest and name are the first paint — the logo and
+            the two intro fonts must not arrive after it. */}
+        <link rel="preload" as="image" href="/images/logo-intro.png" fetchPriority="high" />
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/cinzel-decorative-700.woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href="/fonts/cormorant-garamond-italic.woff2"
+          crossOrigin="anonymous"
+        />
         <ThemeScript />
         <PreloaderScript />
       </head>
