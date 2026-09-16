@@ -76,7 +76,16 @@ export interface StudioEvent {
   location?: string;
   description?: string;
   registrationUrl?: string;
+  /** Registration deadline shown as editorial copy, e.g. "Closes Oct 5". */
+  registrationDeadline?: string;
+  /** Optional label such as Workshop, Exhibition, Retreat or Masterclass. */
+  eventType?: string;
+  /** Optional capacity hint surfaced on the registration card. */
+  seatsRemaining?: number;
+  /** Legacy single-image field retained for existing entries. */
   image?: string;
+  /** Promotional images shown in the upcoming-event gallery. */
+  images?: string[];
   /** Only for past events — how it went, attendance, highlights. */
   outcome?: string;
 }

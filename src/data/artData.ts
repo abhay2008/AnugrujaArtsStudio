@@ -15,6 +15,7 @@ export const classGallery = currentContent().galleries.classes;
 export const watercolorGallery = currentContent().galleries.watercolor;
 export const saleGallery = currentContent().galleries.sale;
 export const commissionGallery = currentContent().galleries.commission;
+export const upcomingEvents = currentContent().events?.upcoming ?? [];
 
 // Dynamic accessor function for current galleries
 export function getGalleryItems(key: keyof SiteContent['galleries']) {

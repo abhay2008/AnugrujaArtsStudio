@@ -84,6 +84,44 @@ function EventEditor({
             onChange={(e) => onChange({ ...draft, registrationUrl: e.target.value })}
           />
         </div>
+        <div>
+          <label className={labelCls}>Registration deadline</label>
+          <input
+            className={`${inputCls} mt-1`}
+            placeholder="Registrations close October 5"
+            value={draft.registrationDeadline ?? ''}
+            onChange={(e) => onChange({ ...draft, registrationDeadline: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Event type</label>
+          <input
+            className={`${inputCls} mt-1`}
+            placeholder="Workshop / Exhibition / Retreat"
+            value={draft.eventType ?? ''}
+            onChange={(e) => onChange({ ...draft, eventType: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Seats remaining</label>
+          <input
+            type="number"
+            min="0"
+            className={`${inputCls} mt-1`}
+            placeholder="Optional"
+            value={draft.seatsRemaining ?? ''}
+            onChange={(e) => onChange({ ...draft, seatsRemaining: e.target.value === '' ? undefined : Number(e.target.value) })}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Event photos (one path or URL per line)</label>
+          <textarea
+            className={`${inputCls} mt-1 min-h-[64px]`}
+            placeholder="/images/workshop-1.jpeg\n/images/workshop-2.jpeg"
+            value={(draft.images ?? (draft.image ? [draft.image] : [])).join('\n')}
+            onChange={(e) => onChange({ ...draft, images: e.target.value.split(/\n|,/).map((value) => value.trim()).filter(Boolean) })}
+          />
+        </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Description</label>
           <textarea

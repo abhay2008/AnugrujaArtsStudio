@@ -51,7 +51,10 @@ function eventLines(events: StudioEvent[] | undefined, label: string): string[] 
     const parts = [`- ${ev.title} — ${ev.date}`];
     if (ev.dateIso) parts.push(`(ISO: ${ev.dateIso})`);
     if (ev.location) parts.push(`at ${ev.location}`);
+    if (ev.eventType) parts.push(`[${ev.eventType}]`);
     if (ev.description) parts.push(`: ${ev.description}`);
+    if (ev.registrationDeadline) parts.push(` Deadline: ${ev.registrationDeadline}`);
+    if (ev.seatsRemaining !== undefined) parts.push(` Seats remaining: ${ev.seatsRemaining}`);
     if (ev.outcome) parts.push(` Outcome: ${ev.outcome}`);
     if (ev.registrationUrl) parts.push(` Register: ${ev.registrationUrl}`);
     return parts.join(' ');

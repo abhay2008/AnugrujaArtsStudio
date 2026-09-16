@@ -955,7 +955,15 @@
         "dateIso": "2026-10-12",
         "location": "Anugruja Arts Studio",
         "description": "A hands-on masterclass on light, glazing and realistic watercolor technique with Master Artist Anuradha Govarthanan. Small batch, personal attention. Only 4 seats remaining.",
-        "registrationUrl": "https://posts.gle/SGYFWZ"
+        "registrationUrl": "https://posts.gle/SGYFWZ",
+        "registrationDeadline": "Registrations close October 5, 2026",
+        "eventType": "Weekend Masterclass",
+        "seatsRemaining": 4,
+        "images": [
+          "/images/w1.jpeg",
+          "/images/w6.jpeg",
+          "/images/w7.jpeg"
+        ]
       }
     ],
     "past": [

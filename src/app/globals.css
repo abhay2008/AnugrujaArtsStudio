@@ -6019,3 +6019,168 @@ body,
 [data-theme='light'] .painting-lb-hint {
   color: rgba(60, 52, 44, 0.45);
 }
+
+/* Upcoming registration cards — one calm editorial panel per event. */
+.registration-events-heading {
+  padding: 0.35rem 0 0.25rem;
+}
+
+.registration-event-card {
+  background: var(--panel-sunset-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.registration-event-images {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  min-height: 13rem;
+  background: var(--surface-inset);
+}
+
+.registration-event-images.is-gallery {
+  grid-template-columns: 1.35fr 0.65fr;
+  grid-template-rows: repeat(2, minmax(6.25rem, 1fr));
+}
+
+.registration-event-image {
+  position: relative;
+  min-height: 10rem;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--surface-inset);
+  text-align: left;
+}
+
+.registration-event-images.is-gallery .registration-event-image:first-child {
+  grid-row: 1 / span 2;
+}
+
+.registration-event-image img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+.registration-event-image:hover img,
+.registration-event-image:focus-visible img {
+  transform: scale(1.045);
+  filter: brightness(1.08);
+}
+
+.registration-event-image:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: -3px;
+}
+
+.registration-event-image-hint {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 4, 13, 0.68);
+  padding: 0.25rem 0.55rem;
+  color: #fff7df;
+  font: 600 0.65rem/1.1 system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.registration-event-image:hover .registration-event-image-hint,
+.registration-event-image:focus-visible .registration-event-image-hint {
+  opacity: 1;
+}
+
+.registration-event-details {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.8rem;
+}
+
+.registration-event-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--text-muted);
+  font: 500 0.76rem/1.35 system-ui, sans-serif;
+}
+
+.registration-event-detail span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.registration-event-detail b {
+  color: var(--text-subtle);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.registration-event-cta {
+  border: 1px solid rgba(242, 215, 112, 0.55);
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-sunset) 100%);
+  color: #1b0924;
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.18);
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.registration-event-cta:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 26px rgba(234, 88, 12, 0.28);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 560px) {
+  .registration-event-images.is-gallery {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 12rem 7rem;
+  }
+
+  .registration-event-images.is-gallery .registration-event-image:first-child {
+    grid-column: 1 / span 2;
+    grid-row: auto;
+  }
+
+  .registration-event-images.is-gallery .registration-event-image {
+    min-height: 7rem;
+  }
+}
+
+/* Light paper theme: preserve the same plum/gold identity while keeping every
+   event label readable against the porcelain panel. */
+[data-theme='light'] .registration-event-card {
+  border-color: rgba(122, 92, 30, 0.24) !important;
+  box-shadow: 0 16px 38px rgba(90, 70, 50, 0.12);
+}
+
+[data-theme='light'] .registration-event-images {
+  background: rgba(235, 224, 204, 0.72);
+}
+
+[data-theme='light'] .registration-event-card .text-amber-200 {
+  color: #77520d;
+}
+
+[data-theme='light'] .registration-event-card .border-amber-300\/30 {
+  border-color: rgba(122, 92, 30, 0.3);
+}
+
+[data-theme='light'] .registration-event-card .bg-amber-300\/10 {
+  background: rgba(212, 175, 55, 0.16);
+}
+
+[data-theme='light'] .registration-event-image-hint {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(38, 20, 50, 0.76);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .registration-event-image img,
+  .registration-event-cta {
+    transition: none;
+  }
+}

@@ -685,18 +685,11 @@ export default function Carousel3D({
     }
   };
 
-  /**
-   * "also the image should open in enlarged view only if the image is clicked,
-   * if the card is clicked then that card should come front, nothing else"
-   */
+  /** Any deliberate image click opens that exact image; card captions still only navigate. */
   const onImageClick = (e: React.MouseEvent, i: number) => {
     if (dragRef.current.locked) return;
     e.stopPropagation();
     engage();
-    if (i !== index) {
-      goTo(i);
-      return;
-    }
     openImageAt(i);
   };
 
@@ -891,9 +884,9 @@ export default function Carousel3D({
                   }}
                   role="button"
                   tabIndex={isCentre ? 0 : -1}
-                  aria-label={isCentre ? `Enlarge image of ${item.title}` : `Show ${item.title}`}
-                  title={isCentre ? 'Click image to enlarge' : 'Click to bring to front'}
-                  className={`c3d-card-media${isCentre ? ' is-centre cursor-zoom-in' : ' cursor-pointer'}`}
+                  aria-label={`Enlarge image of ${item.title}`}
+                  title="Click image to enlarge"
+                  className="c3d-card-media cursor-zoom-in"
                 >
                   <Image
                     src={item.src}

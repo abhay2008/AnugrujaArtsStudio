@@ -152,7 +152,7 @@ export const studioData = {
     dateBadge: 'Starts Oct 12',
     seatsRemaining: 4,
     /* Anchors to the "Workshops & Exhibitions" section on the home page. */
-    actionUrl: '#two',
+    actionUrl: '#workshops',
   },
 
   achievements: [

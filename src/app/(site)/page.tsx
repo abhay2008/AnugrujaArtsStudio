@@ -4,6 +4,7 @@ import QuickNav from '@/components/QuickNav';
 import Reveal from '@/components/Reveal';
 import ArtistJourneySection from '@/components/ArtistJourneySection';
 import AccoladesSection from '@/components/AccoladesSection';
+import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import {
   workshopGallery,
   testimonialGallery,
@@ -11,10 +12,10 @@ import {
   buyShowcaseItems,
   quickNavListings,
   studioMeta,
+  upcomingEvents,
 } from '@/data/artData';
 import {
   Sparkles,
-  ExternalLink,
   Award,
   HeartHandshake,
   ShoppingBag,
@@ -63,6 +64,10 @@ export default function HomePage() {
         id="workshops"
         className="landing-section section-atelier mx-auto w-full max-w-7xl space-y-8 px-4 py-[clamp(2.5rem,7vh,4.5rem)] scroll-mt-20 sm:px-8"
       >
+        <Reveal delay={100} variant="fade">
+          <UpcomingEventsSection events={upcomingEvents} />
+        </Reveal>
+
         <Reveal className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-section-kicker text-studio-sunset">
             <Award className="w-3.5 h-3.5 text-studio-sunset" />
@@ -78,20 +83,8 @@ export default function HomePage() {
           </p>
         </Reveal>
 
-        <Reveal delay={100} variant="fade">
+        <Reveal delay={170} variant="fade">
           <Carousel3D items={workshopGallery} variant="deck" />
-        </Reveal>
-
-        <Reveal className="text-center" delay={180}>
-          <a
-            href={studioMeta.eventsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="glass-btn-gold inline-flex items-center gap-2 min-h-[48px] px-8 py-3.5 rounded-2xl text-studio-gold font-bold text-base sm:text-lg active:scale-95"
-          >
-            <span>New events &amp; masterclasses</span>
-            <ExternalLink className="w-4 h-4 text-studio-sunset" />
-          </a>
         </Reveal>
       </section>
 

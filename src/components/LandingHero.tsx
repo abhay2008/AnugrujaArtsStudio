@@ -20,19 +20,17 @@ function SpotlightBar() {
   const category = next ? 'Upcoming Workshop' : spotlight.category;
   const headline = next?.title ?? spotlight.headline;
   const dateBadge = next?.date ?? spotlight.dateBadge;
-  const href = next?.registrationUrl ?? spotlight.actionUrl;
-  const external = Boolean(next?.registrationUrl);
-  const seatsNote = spotlight.seatsRemaining ? `${spotlight.seatsRemaining} seats left` : null;
+  // The landing-page announcement should guide visitors to the full event
+  // details and registration cards, not skip straight to the external form.
+  const href = next ? '#workshops' : spotlight.actionUrl;
+  const seats = next?.seatsRemaining ?? spotlight.seatsRemaining;
+  const seatsNote = seats ? `${seats} seats left` : null;
 
   if (!next && !spotlight.isActive) return null;
 
   return (
     <div className="spotlight-bar-container hero-rise" style={{ animationDelay: '0.06s' }}>
-      <Link
-        href={href}
-        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-        className="spotlight-pill"
-      >
+      <Link href={href} className="spotlight-pill">
         <span className="pulsing-status-dot" aria-hidden />
         <span className="spotlight-cat">{category}</span>
         <span className="spotlight-title">{headline}</span>
