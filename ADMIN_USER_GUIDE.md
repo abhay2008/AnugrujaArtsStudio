@@ -16,7 +16,7 @@ Welcome to the **Anugruja Arts Studio Admin Console & CMS**. This portal is patt
 ## 🔐 Authentication & Session Security
 
 * **URL**: `/login` (or navigate to `/admin` to be automatically redirected).
-* **Default Admin Password**: `REDACTED-SECRET-REMOVED-FROM-HISTORY` (override via `ADMIN_PASSWORD` environment variable).
+* **Admin Password**: Configured via the `ADMIN_PASSWORD` environment variable (set in Vercel Project Settings; required — there is no built-in default).
 * **Session Lifespan**: Signed with HMAC-SHA256 cookie (`anugruja_admin_session`), lasting 1 hour with automatic expiration.
 
 ---

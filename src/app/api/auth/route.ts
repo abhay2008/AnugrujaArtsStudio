@@ -37,7 +37,12 @@ export async function POST(req: NextRequest) {
     if (!passwordMatches(body?.password)) {
       return NextResponse.json({ error: 'Wrong admin password' }, { status: 401 });
     }
+  } catch {
+    // adminPassword() throws when ADMIN_PASSWORD is not configured — fail closed.
+    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+  }
 
+  try {
     const token = await sessionToken();
     const expiresAt = getSessionExpiry(token);
 

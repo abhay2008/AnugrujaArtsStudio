@@ -1,8 +1,21 @@
 export const COOKIE_NAME = 'anugruja_admin_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60; // 1 hour session
 
+/**
+ * The admin password lives only in the environment — Vercel Project Settings in
+ * production, `.env.local` locally. Fails closed when unset, so no built-in
+ * default password can ever ship in the repository.
+ */
 export function adminPassword(): string {
-  return (process.env.ADMIN_PASSWORD || 'REDACTED-SECRET-REMOVED-FROM-HISTORY').trim();
+  const password = process.env.ADMIN_PASSWORD?.trim();
+  if (!password) {
+    // Fail closed: never ship a built-in fallback password.
+    throw new Error(
+      'ADMIN_PASSWORD environment variable is not set. ' +
+        'Configure it in Vercel Project Settings (or .env.local for local dev).'
+    );
+  }
+  return password;
 }
 
 async function hmacSign(message: string): Promise<string> {
@@ -43,7 +56,13 @@ export async function cookieIsValid(value?: string | null): Promise<boolean> {
     return false;
   }
 
-  const expectedSig = await hmacSign(`anugruja-v1:${parts[0]}`);
+  let expectedSig: string;
+  try {
+    expectedSig = await hmacSign(`anugruja-v1:${parts[0]}`);
+  } catch {
+    // ADMIN_PASSWORD is not configured: deny every session instead of throwing.
+    return false;
+  }
   const actualSig = parts[1];
   if (expectedSig.length !== actualSig.length) return false;
 
