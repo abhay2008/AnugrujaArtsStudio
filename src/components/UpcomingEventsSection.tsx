@@ -2,6 +2,7 @@
 
 import { CalendarDays, Clock3, ExternalLink, MapPin, Users } from 'lucide-react';
 import { useLightbox } from '@/components/LightboxContext';
+import { eventRegistrationLink } from '@/lib/inquiry';
 import type { StudioEvent } from '@/lib/types';
 
 function eventImages(event: StudioEvent): string[] {
@@ -90,17 +91,15 @@ export default function UpcomingEventsSection({ events }: { events: StudioEvent[
                   )}
                 </div>
 
-                {event.registrationUrl && (
-                  <a
-                    href={event.registrationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="registration-event-cta"
-                  >
-                    Register now
-                    <ExternalLink aria-hidden />
-                  </a>
-                )}
+                <a
+                  href={eventRegistrationLink(event.title, event.date)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="registration-event-cta"
+                >
+                  Register now on WhatsApp
+                  <ExternalLink aria-hidden />
+                </a>
               </div>
             </article>
           );

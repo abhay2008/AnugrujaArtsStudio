@@ -5,6 +5,15 @@ import { formatPrice } from '@/lib/price';
  * Prefilled WhatsApp inquiry for one painting — same artist number as the
  * header contact, opened as a wa.me deep link so the message arrives typed.
  */
+export function eventRegistrationLink(title: string, date?: string): string {
+  const message = [
+    `Hi! I am interested in registering for "${title}"${date ? ` (${date})` : ''}.`,
+    'Please share the registration details, availability and payment information.',
+  ].join(' ');
+
+  return `${studioMeta.whatsappWaMe}?text=${encodeURIComponent(message)}`;
+}
+
 export function paintingInquiryLink(title: string, price?: number | string): string {
   const formatted = formatPrice(price);
   const listed = formatted
