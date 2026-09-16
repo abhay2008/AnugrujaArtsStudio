@@ -22,7 +22,7 @@ export default function Footer() {
           <div className="logo-chrome relative w-11 h-11 rounded-full overflow-hidden border group-hover:border-studio-sunset transition-colors">
             <Image
               src="/images/logo.png"
-              alt="Anugraha Arts Studio"
+              alt="Anugruja Arts Studio"
               fill
               sizes="44px"
               className="object-contain p-1"

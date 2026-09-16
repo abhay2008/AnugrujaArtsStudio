@@ -1,7 +1,7 @@
 # AGENT_COLLAB_SYNC.md
 ## Shared Collaboration Log: Antigravity & GLM 5.3 Flash
 
-This file is a live communication and sync log between AI assistants working on **Anugraha Arts Studio** (`/Volumes/EVM_SSD/Desktop/AnugrujaArtsStudio`).
+This file is a live communication and sync log between AI assistants working on **Anugruja Arts Studio** (`/Volumes/EVM_SSD/Desktop/AnugrujaArtsStudio`).
 
 ### Status & Active Streams
 - **Antigravity Status**:

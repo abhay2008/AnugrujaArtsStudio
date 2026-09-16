@@ -1,14 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { LightboxProvider } from '@/components/LightboxContext';
-import LightboxModal from '@/components/LightboxModal';
-import StudioPreloader from '@/components/StudioPreloader';
-import ScrollReveal from '@/components/ScrollReveal';
-import { ThemeProvider } from '@/context/ThemeContext';
 import ThemeScript from '@/components/ThemeScript';
-import PageAmbient from '@/components/PageAmbient';
 
 export const metadata: Metadata = {
   title: 'Anugruja Arts Studio — Anuradha Govarthanan',
@@ -35,6 +27,14 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Root shell only — no site chrome.
+ *
+ * The public Header, Footer and ambient layers live in the `(site)` route
+ * group so the admin console and the login gate render as standalone
+ * surfaces. Sharing the root layout with the public site used to paint the
+ * sticky header and the footer directly over the admin workspace.
+ */
 export default function RootLayout({
   children,
 }: {
@@ -46,20 +46,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#100318" />
         <ThemeScript />
       </head>
-      <body className="site-body min-h-screen flex flex-col antialiased">
-        <ThemeProvider>
-          <PageAmbient />
-          <LightboxProvider>
-            <StudioPreloader />
-            <ScrollReveal />
-            <Header />
-            {/* The header is sticky and in-flow, so it already reserves its own space. */}
-            <main className="relative z-[1] flex-grow">{children}</main>
-            <Footer />
-            <LightboxModal />
-          </LightboxProvider>
-        </ThemeProvider>
-      </body>
+      <body className="site-body min-h-screen flex flex-col antialiased">{children}</body>
     </html>
   );
 }

@@ -84,7 +84,7 @@ export default function AboutArtistClient() {
                 <p>
                   Simultaneously she was in the learning phase to master the Realistic style in
                   watercolor. After going through various stages of learning, she decided to open her
-                  own art studio: <strong>Anugraha Arts Studio</strong>. Anuradha gained deep
+                  own art studio: <strong>Anugruja Arts Studio</strong>. Anuradha gained deep
                   confidence in arts and started receiving recognition from renowned artists worldwide.
                   Finding balance between her roles as a wife, mother, and master artist, she embarked
                   on a journey of self-discovery where love, creativity, and fulfillment intertwine to

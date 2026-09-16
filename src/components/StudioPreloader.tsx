@@ -116,7 +116,7 @@ export default function StudioPreloader() {
         {/* Title in Cinzel Decorative */}
         <div className="space-y-1">
           <h2 className="font-decorative text-2xl md:text-3xl font-bold gold-sunset-shimmer tracking-widest uppercase drop-shadow-[0_2px_15px_rgba(249,115,22,0.3)]">
-            Anugraha Arts
+            Anugruja Arts
           </h2>
           <p className="font-editorial italic text-amber-100/80 text-sm md:text-base tracking-wider">
             &ldquo;Discover ourselves through colors&rdquo;

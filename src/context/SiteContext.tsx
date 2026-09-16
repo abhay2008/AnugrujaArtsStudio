@@ -17,6 +17,10 @@ export const ADMIN_STORAGE_KEY = 'anugruja_admin_content_draft';
 
 interface EditorState {
   workspace: 'studio' | 'preview';
+  /** True while the live-preview workspace is open so sections become clickable. */
+  editMode: boolean;
+  /** Section id currently open in the preview editor panel. */
+  selectedId: string | null;
   dirty: boolean;
   saving: boolean;
   status: string;
@@ -28,6 +32,8 @@ interface SiteContextValue {
   content: SiteContent;
   editor: EditorState;
   setWorkspace: (ws: 'studio' | 'preview') => void;
+  setEditMode: (on: boolean) => void;
+  selectSection: (id: string | null) => void;
   updateBrand: (patch: Partial<SiteContent['brand']>) => void;
   updateMeta: (patch: Partial<SiteContent['meta']>) => void;
   updateSection: <K extends keyof SiteContent['sections']>(sectionKey: K, patch: Partial<SiteContent['sections'][K]>) => void;
@@ -51,6 +57,8 @@ const defaultContext: SiteContextValue = {
   content: initialFallback as unknown as SiteContent,
   editor: {
     workspace: 'studio',
+    editMode: false,
+    selectedId: null,
     dirty: false,
     saving: false,
     status: '',
@@ -58,6 +66,8 @@ const defaultContext: SiteContextValue = {
     repoUrl: '',
   },
   setWorkspace: () => {},
+  setEditMode: () => {},
+  selectSection: () => {},
   updateBrand: () => {},
   updateMeta: () => {},
   updateSection: () => {},
@@ -91,6 +101,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
   const [editor, setEditor] = useState<EditorState>({
     workspace: 'studio',
+    editMode: false,
+    selectedId: null,
     dirty: false,
     saving: false,
     status: '',
@@ -149,6 +161,14 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
   const setWorkspace = useCallback((ws: 'studio' | 'preview') => {
     setEditor((prev) => ({ ...prev, workspace: ws }));
+  }, []);
+
+  const setEditMode = useCallback((on: boolean) => {
+    setEditor((prev) => ({ ...prev, editMode: on }));
+  }, []);
+
+  const selectSection = useCallback((id: string | null) => {
+    setEditor((prev) => ({ ...prev, selectedId: id }));
   }, []);
 
   const updateBrand = useCallback((patch: Partial<SiteContent['brand']>) => {
@@ -445,6 +465,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         content,
         editor,
         setWorkspace,
+        setEditMode,
+        selectSection,
         updateBrand,
         updateMeta,
         updateSection,
