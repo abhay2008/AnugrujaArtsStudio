@@ -120,6 +120,11 @@ export default function ChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const openRef = useRef(false);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   // Load CMS config once.
   useEffect(() => {
@@ -241,6 +246,8 @@ export default function ChatWidget() {
             });
           } else if (ev.event === 'done') {
             setMessages((prev) => prev.map((m) => ({ ...m, pending: false })));
+            // Reply landed while the panel was closed → nudge with the dot.
+            if (!openRef.current) setUnread(true);
           }
         });
 
@@ -279,8 +286,8 @@ export default function ChatWidget() {
       role="dialog"
       aria-label="Chat with Chitra, the studio assistant"
       className="fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-studio-gold/30 bg-[#160523]/98 shadow-2xl backdrop-blur-xl
-                 bottom-24 right-4 w-[min(calc(100vw-2rem),380px)] h-[min(70dvh,560px)]
-                 sm:bottom-24 sm:right-6"
+                 bottom-36 right-4 w-[min(calc(100vw-2rem),380px)] h-[min(70dvh,560px)] max-h-[calc(100dvh-10.5rem)]
+                 sm:bottom-40 sm:right-6"
       style={{ boxShadow: '0 0 40px rgba(242,215,112,0.15), 0 20px 60px rgba(0,0,0,0.6)' }}
     >
       {/* Header */}
@@ -380,7 +387,7 @@ export default function ChatWidget() {
         }}
         aria-label={open ? 'Close chat' : 'Chat with the studio assistant'}
         aria-expanded={open}
-        className="fixed bottom-6 right-4 z-[59] flex h-14 w-14 items-center justify-center rounded-full border border-studio-gold/50 bg-gradient-to-br from-purple-800 via-purple-900 to-[#2a0a3f] shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:right-6 motion-reduce:hover:scale-100"
+        className="fixed bottom-20 right-4 z-[59] flex h-14 w-14 items-center justify-center rounded-full border border-studio-gold/50 bg-gradient-to-br from-purple-800 via-purple-900 to-[#2a0a3f] shadow-2xl transition-transform hover:scale-105 active:scale-95 sm:bottom-24 sm:right-6 motion-reduce:hover:scale-100"
         style={{ boxShadow: '0 0 24px rgba(242,215,112,0.25), 0 8px 30px rgba(0,0,0,0.5)' }}
       >
         {open ? (
@@ -388,7 +395,9 @@ export default function ChatWidget() {
         ) : (
           <MessageCircle className="h-6 w-6 text-studio-gold" />
         )}
-        {!open && unread && <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-purple-950" />}
+        {!open && unread && (
+          <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-red-500 ring-2 ring-purple-950" />
+        )}
         {!open && (
           <span className="absolute inset-0 -z-10 animate-pulse-slow rounded-full bg-studio-gold/20 blur-md" aria-hidden />
         )}
