@@ -108,6 +108,10 @@
     rgba(147, 51, 234, 0.2) 78%,
     transparent 100%
   );
+  /* Opaque backings used on the performance tier, where the translucent
+     chrome cannot rely on backdrop-filter to hide what scrolls beneath it. */
+  --header-underlay: #12071f;
+  --quicknav-underlay: #1c0f2c;
   --vitrine-bg: linear-gradient(180deg, rgba(42, 18, 62, 0.5) 0%, rgba(22, 8, 36, 0.55) 100%);
   --panel-sunset-bg: linear-gradient(135deg, rgba(40, 16, 58, 0.55) 0%, rgba(24, 10, 38, 0.58) 100%);
   --carousel-fade: #120318;
@@ -215,6 +219,8 @@
     rgba(186, 168, 210, 0.3) 75%,
     transparent 100%
   );
+  --header-underlay: #f6f1e9;
+  --quicknav-underlay: #fdfaf4;
   --vitrine-bg: linear-gradient(180deg, rgba(253, 250, 246, 0.8) 0%, rgba(246, 240, 230, 0.78) 100%);
   --panel-sunset-bg: linear-gradient(135deg, rgba(252, 246, 238, 0.82) 0%, rgba(246, 238, 228, 0.8) 100%);
   --carousel-fade: #f7f3eb;
@@ -251,21 +257,50 @@
 
 html {
   scroll-behavior: smooth;
+  /* The canvas colour, so overscroll bounce shows the studio ground rather
+     than white. Owned by <html> now that <body> no longer paints a background
+     (see body::before below). */
+  background-color: var(--page-bg-fallback);
 }
 
 body,
 .site-body {
   color: var(--text-primary);
-  background-color: var(--page-bg-fallback);
-  background-image: var(--chrome-veil), var(--page-bg-mesh), var(--page-bg-base-gradient);
-  background-attachment: fixed;
   min-height: 100vh;
   font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   margin: 0;
   padding: 0;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.45s ease, color 0.35s ease;
+  transition: background-color 0.45s ease, color 0.35s ease;
+}
+
+/*
+ * The studio wash (chrome veil + colour mesh + base gradient) lives on a fixed,
+ * composited layer instead of `background-attachment: fixed` on <body>.
+ *
+ * `background-attachment: fixed` forces the browser to re-rasterise three
+ * full-viewport background layers on every scroll frame — one of the biggest
+ * contributors to scroll jank on Android. As a fixed pseudo-element the layers
+ * are painted once and simply stay put while the page scrolls.
+ *
+ * The layer stack is identical to what <body> used to paint; because the base
+ * gradient is opaque, nothing is lost by moving it off the body box.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--chrome-veil), var(--page-bg-mesh), var(--page-bg-base-gradient);
+}
+
+/* Falls back to the body box on engines without fixed-position stacking tricks. */
+@supports not (position: fixed) {
+  body {
+    background-image: var(--chrome-veil), var(--page-bg-mesh), var(--page-bg-base-gradient);
+  }
 }
 
 .font-sans-ui {
@@ -5607,23 +5642,36 @@ html {
   transform: translateY(-1px);
 }
 
-/* Smooth global transitions when toggling between dark & light themes */
-html,
-body,
-.gallery-header,
-.landing-hero,
-.atelier-hero-viewport,
-.atelier-gold-frame,
-.studio-pillar-card,
-.glass-panel-sunset,
-.hero-emblem-core,
-.hero-emblem-ring,
-.theme-toggle,
-.c3d-card-shell,
-.site-footer,
-.spotlight-pill,
-.btn-atelier-outline,
-.btn-atelier-solid {
+/*
+ * Theme cross-fade — scoped to a short window around the toggle.
+ *
+ * This used to be a PERMANENT transition list on these selectors. That is
+ * expensive in a way that is easy to miss: the carousel writes `filter` (blur +
+ * brightness) to each card as it moves, and a live `transition: filter 0.4s`
+ * restarts on every one of those writes — so a 400ms filter transition was
+ * being interpolated on every card, continuously, for as long as the widget was
+ * on screen. Same story for box-shadow/background writes elsewhere in here.
+ *
+ * ThemeProvider adds `.theme-transitioning` to <html> for ~650ms when the
+ * visitor switches theme, so the cross-fade still looks exactly the same — it
+ * just no longer rides along with every frame of page motion.
+ */
+html.theme-transitioning,
+html.theme-transitioning body,
+html.theme-transitioning .gallery-header,
+html.theme-transitioning .landing-hero,
+html.theme-transitioning .atelier-hero-viewport,
+html.theme-transitioning .atelier-gold-frame,
+html.theme-transitioning .studio-pillar-card,
+html.theme-transitioning .glass-panel-sunset,
+html.theme-transitioning .hero-emblem-core,
+html.theme-transitioning .hero-emblem-ring,
+html.theme-transitioning .theme-toggle,
+html.theme-transitioning .c3d-card-shell,
+html.theme-transitioning .site-footer,
+html.theme-transitioning .spotlight-pill,
+html.theme-transitioning .btn-atelier-outline,
+html.theme-transitioning .btn-atelier-solid {
   transition:
     background 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
@@ -5631,6 +5679,23 @@ body,
     border-color 0.4s ease,
     box-shadow 0.45s ease,
     filter 0.4s ease;
+}
+
+/* Only the cards actually on screen are promoted to their own GPU layer. */
+.c3d-card-shell.is-live {
+  will-change: transform;
+}
+
+/* Blur-up placeholder behind the enlarged painting (see LightboxModal). */
+.lb-lqip {
+  position: absolute;
+  inset: -6%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(24px);
+  opacity: 0.55;
+  transform: scale(1.06);
+  pointer-events: none;
 }
 
 /* ——— 7. Catalog carousels: museum floating mount, recessed flanks ———
@@ -6727,4 +6792,113 @@ body,
   .group.glass-card {
     transition: none;
   }
+}
+
+/* ================================================================
+   Performance tier — `[data-perf='lite']`
+   ================================================================
+   Stamped on <html> before the first paint (src/lib/perfTier.ts) when the
+   visitor is on a weak device, a slow or data-saving connection, or has asked
+   for reduced motion.
+
+   Nothing here removes motion or content. It removes *paint cost*: live blurs
+   that must be resampled every frame, backdrop sampling behind scrolling
+   chrome, and a whole-hero SVG turbulence filter. Each replacement keeps the
+   same colours and the same drift, produced with gradients instead of filters.
+   ================================================================ */
+
+/* Ambient washes — solid discs softened by blur(88px). A radial gradient of the
+   same colour reads the same and costs nothing per frame. */
+[data-perf='lite'] .page-ambient-orb,
+[data-perf='lite'] .light-pool {
+  filter: none;
+}
+
+[data-perf='lite'] .page-ambient-orb-purple {
+  background: radial-gradient(closest-side, var(--ambient-purple) 0%, transparent 100%);
+}
+
+[data-perf='lite'] .page-ambient-orb-blue {
+  background: radial-gradient(closest-side, var(--ambient-blue) 0%, transparent 100%);
+}
+
+[data-perf='lite'] .page-ambient-orb-gold {
+  background: radial-gradient(closest-side, var(--ambient-gold) 0%, transparent 100%);
+}
+
+[data-perf='lite'] .page-ambient-orb-orange {
+  background: radial-gradient(closest-side, var(--ambient-orange) 0%, transparent 100%);
+}
+
+/* Foil petals — the gradient is already soft; the 26px blur on top of it is the
+   expensive part. Nudged brighter so the edge reads the same without it. */
+[data-perf='lite'] .foil-petal {
+  filter: none;
+  opacity: 1;
+}
+
+/* Spotlight halo behind the centre card — a 38px blur for a bloom nobody would
+   miss. Off on this tier. */
+[data-perf='lite'] .c3d-accent-glow {
+  display: none;
+}
+
+/* In-card badge: sits inside the transformed carousel, so its backdrop is
+   resampled on every frame of the swipe. */
+[data-perf='lite'] .c3d-status {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(10, 4, 18, 0.86);
+}
+
+/* Sticky chrome — this is the one that pays on every single scroll frame.
+   Same gradient, same line, just given something opaque to sit on. */
+[data-perf='lite'] .gallery-header {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-image: var(--header-bg),
+    linear-gradient(var(--header-underlay), var(--header-underlay));
+}
+
+[data-perf='lite'] .quicknav-pill,
+[data-perf='lite'] .header-mobile-cluster {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* `--surface-panel` is a colour, so the opaque backing has to be a
+   background-color, not a background-image layer. */
+[data-perf='lite'] .quicknav-pill {
+  background-image: none;
+  background-color: var(--quicknav-underlay);
+}
+
+/* Hero grain — the feTurbulence filter plus blend mode over the whole hero
+   becomes a static paper-tooth dot pattern at the same opacity. */
+[data-perf='lite'] .procedural-grain-layer {
+  filter: none;
+  background-color: transparent;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 0.5px, transparent 0.6px);
+  background-size: 3px 3px;
+}
+
+[data-perf='lite'][data-theme='light'] .procedural-grain-layer {
+  background-image: radial-gradient(rgba(120, 96, 60, 0.45) 0.5px, transparent 0.6px);
+}
+
+/* Botanical corners — a drop-shadow per leaf, re-rasterised every frame because
+   the stem they hang from is moving. */
+[data-perf='lite'] .leaf-blade,
+[data-perf='lite'] .leaf-comet {
+  filter: none;
+}
+
+/* Light-theme flank recession: same opacity, no per-frame filter pass. */
+[data-perf='lite'][data-theme='light'] .c3d-card-media:not(.is-centre) {
+  filter: none;
+}
+
+/* Blurring a 32px placeholder is pointless — upscaling it is already soft. */
+[data-perf='lite'] .lb-lqip {
+  filter: none;
 }

@@ -13,6 +13,8 @@ import { useLightbox } from './LightboxContext';
 import { formatPrice } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { useScrollLock } from '@/lib/scrollLock';
+import { hasImageVariants, imageUrl, lightboxWidth, lqipUrl, responsiveImage } from '@/lib/imageSrc';
+import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
@@ -38,6 +40,7 @@ export default function LightboxModal() {
   } = useLightbox();
 
   const isOpen = Boolean(activeImage);
+  const tier = usePerfTier();
   useScrollLock(isOpen);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,6 +70,7 @@ export default function LightboxModal() {
   const lastTapRef = useRef({ t: 0, x: 0, y: 0 });
 
   const hasGallery = gallerySize > 1;
+  const lqip = activeImage ? lqipUrl(activeImage) : null;
 
   // Reset zoom & position whenever active slide changes
   const resetTransform = useCallback(() => {
@@ -83,18 +87,21 @@ export default function LightboxModal() {
     setIsLoaded(false);
   }, [activeImage, resetTransform]);
 
-  // Preload neighboring images for instant transitions
+  // Preload the neighbouring paintings — one pre-built derivative each, and
+  // never on a slow or metered connection (it used to fetch two full originals).
   useEffect(() => {
     if (!hasGallery || activeIndex < 0) return;
+    if (tier === 'lite' || isConstrainedConnection()) return;
     const nextIdx = (activeIndex + 1) % gallerySize;
     const prevIdx = (activeIndex - 1 + gallerySize) % gallerySize;
     [nextIdx, prevIdx].forEach((i) => {
-      const slide = slides[i];
-      if (!slide?.src) return;
+      const src = slides[i]?.src;
+      if (!src || !hasImageVariants(src)) return;
       const pre = new window.Image();
-      pre.src = slide.src;
+      pre.decoding = 'async';
+      pre.src = imageUrl(src, lightboxWidth());
     });
-  }, [hasGallery, activeIndex, gallerySize, slides]);
+  }, [hasGallery, activeIndex, gallerySize, slides, tier]);
 
   // Keep pan bounded inside viewable area
   const clampPan = useCallback((s: number, x: number, y: number) => {
@@ -436,6 +443,11 @@ export default function LightboxModal() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
+        {/* Blur-up placeholder — a few hundred bytes that turn the wait on a
+            slow connection into a deliberate reveal instead of a blank. */}
+        {!isLoaded && lqip && (
+          <div className="lb-lqip" style={{ backgroundImage: `url(${lqip})` }} aria-hidden />
+        )}
         {/* Next / Prev Gallery Buttons */}
         {hasGallery && !isZoomed && (
           <>
@@ -472,24 +484,28 @@ export default function LightboxModal() {
             transformOrigin: 'center center',
           }}
         >
-          {/* Local images go through the optimizer at lightbox-friendly sizes.
-              These are the exact URLs the carousel preloads, so the enlarged
-              view renders from cache instantly — no raw-multi-MB fetch. */}
+          {/* Pre-built WebP derivatives when we have them: the exact file the
+              carousel preloaded, already the right width for this screen, and
+              no optimizer round-trip to wait on. Newer uploads that predate
+              the last `npm run images:optimize` fall back to the optimizer. */}
           {(() => {
-            const isLocal = activeImage?.startsWith('/');
-            const optUrl = isLocal
-              ? `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1080&q=90`
-              : activeImage;
-            const wideUrl = isLocal
-              ? `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1920&q=90`
-              : undefined;
-            const srcSet = isLocal
-              ? [
-                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=640&q=75 640w`,
-                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1080&q=90 1080w`,
-                  `/_next/image?url=${encodeURIComponent(activeImage!)}&w=1920&q=90 1920w`,
-                ].join(', ')
-              : undefined;
+            const src = activeImage || '';
+            const isLocal = src.startsWith('/');
+            const built =
+              isLocal && hasImageVariants(src)
+                ? responsiveImage(src, '92vw', lightboxWidth())
+                : {
+                    src: isLocal
+                      ? `/_next/image?url=${encodeURIComponent(src)}&w=1080&q=90`
+                      : src,
+                    srcSet: isLocal
+                      ? [
+                          `/_next/image?url=${encodeURIComponent(src)}&w=640&q=75 640w`,
+                          `/_next/image?url=${encodeURIComponent(src)}&w=1080&q=90 1080w`,
+                          `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=90 1920w`,
+                        ].join(', ')
+                      : undefined,
+                  };
             return (
               <>
                 {!isLoaded && (
@@ -501,8 +517,8 @@ export default function LightboxModal() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   ref={imgRef}
-                  src={optUrl}
-                  srcSet={srcSet}
+                  src={built.src}
+                  srcSet={built.srcSet}
                   sizes="92vw"
                   alt={activeTitle || 'Enlarged Artwork'}
                   decoding="async"
@@ -514,10 +530,6 @@ export default function LightboxModal() {
                     isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.985]'
                   }`}
                 />
-                {/* Warm the widest variant during idle time for big screens */}
-                {isLocal && wideUrl && typeof window !== 'undefined' && (
-                  <link rel="preload" as="image" href={wideUrl} />
-                )}
               </>
             );
           })()}

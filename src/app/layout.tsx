@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './preloader.css';
 import ThemeScript from '@/components/ThemeScript';
+import PerfTierScript from '@/components/PerfTierScript';
 import PreloaderScript from '@/components/PreloaderScript';
 import StudioPreloader from '@/components/StudioPreloader';
 
@@ -107,6 +108,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <ThemeScript />
+        {/* Tier first: the preloader and every ambient layer below branch on it. */}
+        <PerfTierScript />
         <PreloaderScript />
       </head>
       <body className="site-body min-h-screen flex flex-col antialiased">

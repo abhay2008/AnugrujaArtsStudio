@@ -47,7 +47,7 @@ export default function SaleClient() {
 
         {/* Browsable full-catalog grid (lazy loaded, tap to zoom) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {saleGallery.map((art, idx) => (
+          {saleGallery.map((art) => (
             <div
               key={art.id}
               onClick={() => openLightbox(art.src, art.title)}
@@ -58,7 +58,10 @@ export default function SaleClient() {
                 alt={art.title}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
-                loading={idx < 6 ? 'eager' : 'lazy'}
+                /* Lazy everywhere: the browser already fetches whatever is in
+                   view immediately, so six eager tiles above the fold only
+                   competed with the carousel for bandwidth on slow links. */
+                loading="lazy"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col gap-0.5 p-2.5">

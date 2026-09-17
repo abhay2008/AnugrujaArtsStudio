@@ -105,7 +105,7 @@ export default function AutoScroller({
               alt={item.title}
               width={450}
               height={360}
-              loading={idx < 4 ? 'eager' : 'lazy'}
+              loading="lazy"
               quality={80}
               className="w-auto h-full object-contain mx-auto p-1"
             />

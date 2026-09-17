@@ -5,11 +5,12 @@ import Image from 'next/image';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2, Pause, Play } from 'lucide-react';
 import { useLightbox } from '@/components/LightboxContext';
-import PaintingLightbox, { type PaintingLightboxItem } from '@/components/PaintingLightbox';
 import { ArtItem } from '@/data/artData';
 import { formatPrice } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
-import { pulseCarouselStage } from '@/lib/carouselStageAnime';
+import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
+import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
+import { hasImageVariants, imageUrl, lightboxWidth } from '@/lib/imageSrc';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 
 /**
@@ -177,7 +178,9 @@ function layoutForOffset(
   offset: number,
   spacing: number,
   variant: CarouselVariant,
-  cardIndex: number
+  cardIndex: number,
+  /** Lite tier turns the depth blur off: same geometry, no full-card filter resample. */
+  allowBlur = true
 ): CardLayout {
   const beat = BEATS[variant];
   const abs = Math.abs(offset);
@@ -196,7 +199,10 @@ function layoutForOffset(
     z: -clamped * beat.depth,
     opacity: 1 - clamped * beat.fade,
     /* Fade the blur in late so the near neighbours of the centre stay sharp. */
-    blur: beat.blur > 0 && clamped > 0.15 ? Math.min(beat.blur, (clamped - 0.1) * beat.blur * 1.6) : 0,
+    blur:
+      allowBlur && beat.blur > 0 && clamped > 0.15
+        ? Math.min(beat.blur, (clamped - 0.1) * beat.blur * 1.6)
+        : 0,
     brightness: 1 - clamped * beat.dim,
   };
 }
@@ -205,16 +211,6 @@ function layoutForOffset(
 function cardBlurb(item: ArtItem): string {
   if (item.description) return item.description;
   return [item.category, item.medium].filter(Boolean).join(' • ');
-}
-
-/**
- * Optimizer URL for a local upload — preloaded so the lightbox shows instantly.
- * Widths MUST come from next.config.js deviceSizes (640/750/828/1080/1200/1920);
- * anything else is rejected by the optimizer with a 400.
- */
-function hiResSrc(src: string, w: 1080 | 1920 = 1920): string {
-  if (!src.startsWith('/')) return src;
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=90`;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -245,12 +241,25 @@ export default function Carousel3D({
   /* Any deliberate interaction (drag/wheel/arrow/dot/card) retires autoplay
      for the rest of the session — the visitor has taken the reins. */
   const [hasEngaged, setHasEngaged] = useState(false);
-  const [painting, setPainting] = useState<PaintingLightboxItem | null>(null);
+
+  const tier = usePerfTier();
+  /* Lite tier keeps every transform, depth cue and transition, but drops the
+     per-card blur: a blur filter that must be resampled for each moving card
+     every frame is the most expensive thing in this widget. */
+  const blurAllowed = tier === 'full';
 
   const posRef = useRef(0);
   const targetRef = useRef(0);
   const velRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
+  const indexRef = useRef(0);
+  /* Handle on the shared page frame loop — detached whenever the carousel has
+     settled, so a parked carousel costs exactly zero script time. */
+  const frameSubRef = useRef<FrameSubscription | null>(null);
+  /* Last payload written per card, keyed by rounded values: a card whose
+     geometry has not changed is never touched again. */
+  const writeCacheRef = useRef<string[]>([]);
+  const liveRef = useRef<boolean[]>([]);
+  const preloadedRef = useRef<Set<string>>(new Set());
   const dragRef = useRef({
     active: false,
     startX: 0,
@@ -284,8 +293,19 @@ export default function Carousel3D({
     [count]
   );
 
+  /**
+   * Paint the stage. Two things keep this cheap:
+   *   • every card caches the payload that was last written to it, so cards
+   *     whose geometry has not changed are not touched at all;
+   *   • `will-change: transform` is only ever set on the handful of cards that
+   *     are on screen — promoting all of them permanently costs the phone a
+   *     GPU layer per card (14 + 15 + 12 …) for no benefit.
+   */
   const applyTransforms = useCallback(() => {
     const pos = posRef.current;
+    const cache = writeCacheRef.current;
+    const live = liveRef.current;
+
     for (let i = 0; i < count; i++) {
       const el = cardsRef.current[i];
       if (!el) continue;
@@ -293,25 +313,54 @@ export default function Carousel3D({
       const abs = Math.abs(offset);
 
       if (abs > 1.55) {
+        if (cache[i] === 'hidden') continue;
+        cache[i] = 'hidden';
         el.style.opacity = '0';
         el.style.pointerEvents = 'none';
         el.style.visibility = 'hidden';
         continue;
       }
 
-      const L = layoutForOffset(offset, spacing, variant, i);
+      const L = layoutForOffset(offset, spacing, variant, i, blurAllowed);
+      const x = Math.round(L.x * 10) / 10;
+      const y = Math.round(L.y * 10) / 10;
+      const z = Math.round(L.z);
+      const rotateY = Math.round(L.rotateY * 100) / 100;
+      const rotateZ = Math.round(L.rotateZ * 100) / 100;
+      const scale = Math.round(L.scale * 1000) / 1000;
+      const opacity = Math.round(L.opacity * 1000) / 1000;
+      const brightness = Math.round(L.brightness * 1000) / 1000;
+      const blur = Math.round(L.blur * 100) / 100;
+      const zIndex = 140 - Math.round(abs * 50);
+      const clickable = abs <= 1.4;
+      const payload = `${x}|${y}|${z}|${rotateY}|${rotateZ}|${scale}|${opacity}|${brightness}|${blur}|${zIndex}|${clickable}`;
+
+      if (cache[i] === payload) continue;
+      cache[i] = payload;
+
+      el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
+      el.style.opacity = String(opacity);
+      el.style.zIndex = String(zIndex);
+      el.style.filter = blur > 0 ? `blur(${blur}px) brightness(${brightness})` : 'none';
       el.style.visibility = 'visible';
-      el.style.transform = `translate3d(calc(-50% + ${L.x}px), calc(-50% + ${L.y}px), ${L.z}px) rotateY(${L.rotateY}deg) rotateZ(${L.rotateZ}deg) scale(${L.scale})`;
-      el.style.opacity = String(L.opacity);
-      el.style.zIndex = String(140 - Math.round(abs * 50));
-      el.style.filter = L.blur > 0 ? `blur(${L.blur}px) brightness(${L.brightness})` : 'none';
       /* Every visible card is clickable — side cards focus themselves, the
          centre card opens the lightbox. */
-      el.style.pointerEvents = abs <= 1.4 ? 'auto' : 'none';
-    }
-  }, [count, spacing, variant]);
+      el.style.pointerEvents = clickable ? 'auto' : 'none';
 
-  const tick = useCallback(() => {
+      const shouldBeLive = clickable;
+      if (live[i] !== shouldBeLive) {
+        live[i] = shouldBeLive;
+        el.classList.toggle('is-live', shouldBeLive);
+      }
+    }
+  }, [blurAllowed, count, spacing, variant]);
+
+  /**
+   * One integration step. Returns false once the carousel has settled, which is
+   * the signal to detach from the frame loop — the physics stay identical, only
+   * the empty frames after they finish are gone.
+   */
+  const step = useCallback((): boolean => {
     const d = dragRef.current;
     if (!d.active) {
       if (Math.abs(velRef.current) > 0.0018) {
@@ -338,10 +387,67 @@ export default function Carousel3D({
     }
 
     applyTransforms();
+
     const idx = wrapIndex(posRef.current);
-    setIndex((prev) => (prev === idx ? prev : idx));
-    rafRef.current = requestAnimationFrame(tick);
+    if (idx !== indexRef.current) {
+      indexRef.current = idx;
+      setIndex(idx);
+    }
+
+    const settled =
+      !dragRef.current.active &&
+      velRef.current === 0 &&
+      Math.abs(targetRef.current - posRef.current) < 0.002;
+    const tabHidden = typeof document !== 'undefined' && document.hidden;
+    return !settled && !tabHidden;
   }, [applyTransforms, count, reducedMotion, wrapIndex]);
+
+  const park = useCallback(() => {
+    frameSubRef.current?.stop();
+    frameSubRef.current = null;
+  }, []);
+
+  /** Start (or keep) the loop running. Safe to call from anywhere, any number of times. */
+  const wake = useCallback(() => {
+    if (frameSubRef.current) return;
+    frameSubRef.current = subscribe(() => {
+      if (!step()) park();
+    });
+  }, [park, step]);
+
+  /**
+   * Brief stage pulse when the carousel advances. Replaces the old anime.js
+   * timeline with a compositor-driven Web Animation: no library, no per-frame
+   * JavaScript.
+   */
+  const pulseStage = useCallback(
+    (dir: number) => {
+      if (reducedMotion || tier === 'lite') return;
+      const stage = stageRef.current;
+      if (stage && typeof stage.animate === 'function') {
+        stage.animate(
+          [
+            { transform: 'rotateY(0deg)' },
+            { transform: `rotateY(${dir >= 0 ? -2.5 : 2.5}deg)` },
+            { transform: 'rotateY(0deg)' },
+          ],
+          { duration: 680, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+      }
+      const vitrine = variant === 'rail' ? vitrineRef.current : null;
+      if (vitrine && typeof vitrine.animate === 'function') {
+        vitrine.animate(
+          [
+            { boxShadow: '0 28px 70px -24px rgba(0, 0, 0, 0.45)' },
+            { boxShadow: '0 32px 80px -20px rgba(242, 215, 112, 0.22)' },
+            { boxShadow: '0 28px 70px -24px rgba(0, 0, 0, 0.45)' },
+          ],
+          { duration: 720, easing: 'ease-in-out' }
+        );
+      }
+    },
+    [reducedMotion, tier, variant]
+  );
 
   /**
    * Visibility is measured from the element rect on scroll/resize rather than
@@ -389,17 +495,17 @@ export default function Carousel3D({
     };
   }, [count]);
 
+  /**
+   * Ride the shared page frame loop, and only while the carousel is genuinely
+   * on screen. `step` detaches itself the moment everything has settled, so a
+   * static carousel, an off-screen carousel and a background tab all run zero
+   * JavaScript — which is what used to make phones hot and stuttery.
+   */
   useEffect(() => {
-    if (!inView) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      return;
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [tick, inView]);
+    if (!inView) return;
+    wake();
+    return park;
+  }, [inView, park, wake]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -421,7 +527,8 @@ export default function Carousel3D({
 
   useEffect(() => {
     applyTransforms();
-  }, [applyTransforms, items]);
+    wake();
+  }, [applyTransforms, items, wake]);
 
   useEffect(() => {
     const onVis = () => setTabHidden(document.hidden);
@@ -441,11 +548,10 @@ export default function Carousel3D({
       targetRef.current = Math.round(targetRef.current) + (dir >= 0 ? 1 : -1);
       velRef.current = 0;
       resetProgress();
-      if (!reducedMotion) {
-        pulseCarouselStage(stageRef.current, variant === 'rail' ? vitrineRef.current : null, dir);
-      }
+      wake();
+      pulseStage(dir);
     },
-    [count, reducedMotion, variant, resetProgress]
+    [count, pulseStage, resetProgress, wake]
   );
 
   const goTo = useCallback(
@@ -459,15 +565,10 @@ export default function Carousel3D({
       targetRef.current = Math.round(targetRef.current) + delta;
       velRef.current = 0;
       resetProgress();
-      if (!reducedMotion) {
-        pulseCarouselStage(
-          stageRef.current,
-          variant === 'rail' ? vitrineRef.current : null,
-          delta >= 0 ? 1 : -1
-        );
-      }
+      wake();
+      pulseStage(delta >= 0 ? 1 : -1);
     },
-    [count, wrapIndex, reducedMotion, variant, resetProgress]
+    [count, wake, wrapIndex, pulseStage, resetProgress]
   );
 
   /** Any deliberate interaction kills autoplay for the rest of the session. */
@@ -497,37 +598,49 @@ export default function Carousel3D({
     if (!autoplayEnabled || !isPlaying || hasEngaged || tabHidden || isDragging || !inView || count < 2) return;
 
     lastTickRef.current = null;
-    let frame = 0;
-    const loop = (now: number) => {
-      if (lastTickRef.current == null) lastTickRef.current = now;
-      const dt = now - lastTickRef.current;
-      lastTickRef.current = now;
-      if (!dragRef.current.active && Math.abs(velRef.current) < 0.01) {
-        progressRef.current += (dt / autoAdvanceIntervalMs) * 100;
-        if (progressRef.current >= 100) {
-          progressRef.current = 0;
-          commitStep(1);
+    /* The timer only moves a progress bar, so 30fps is indistinguishable and
+       halves the work the autoplay costs on a weak device. */
+    const sub = subscribe(
+      (now) => {
+        if (lastTickRef.current == null) lastTickRef.current = now;
+        const dt = now - lastTickRef.current;
+        lastTickRef.current = now;
+        if (!dragRef.current.active && Math.abs(velRef.current) < 0.01) {
+          progressRef.current += (dt / autoAdvanceIntervalMs) * 100;
+          if (progressRef.current >= 100) {
+            progressRef.current = 0;
+            commitStep(1);
+          }
+          if (progressBarRef.current) {
+            progressBarRef.current.style.width = `${Math.min(100, progressRef.current)}%`;
+          }
         }
-        if (progressBarRef.current) {
-          progressBarRef.current.style.width = `${Math.min(100, progressRef.current)}%`;
-        }
-      }
-      frame = requestAnimationFrame(loop);
-    };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
+      },
+      { fps: 30 }
+    );
+    return () => sub.stop();
   }, [autoplayEnabled, isPlaying, hasEngaged, tabHidden, isDragging, inView, count, autoAdvanceIntervalMs, commitStep]);
 
-  /* Warm the browser cache for the centred painting (original + optimized
-     hi-res variant) so the lightbox renders it the instant it opens. */
-  useEffect(() => {
-    const src = items[index]?.src;
-    if (!src) return;
-    for (const url of [src, hiResSrc(src)]) {
+  /**
+   * Warm the lightbox image — but only on intent.
+   *
+   * The old version downloaded the ORIGINAL jpeg *and* a 1920px optimizer
+   * variant on every index change; with the spotlight autoplaying every 4.6s
+   * that was a permanent background download competing with the page the
+   * visitor was actually looking at. Now: one pre-built derivative, fetched
+   * when a pointer lands on the card, never on a slow or metered connection.
+   */
+  const preloadFor = useCallback(
+    (src: string) => {
+      if (tier === 'lite' || isConstrainedConnection()) return;
+      if (!src || !hasImageVariants(src) || preloadedRef.current.has(src)) return;
+      preloadedRef.current.add(src);
       const img = new window.Image();
-      img.src = url;
-    }
-  }, [index, items]);
+      img.decoding = 'async';
+      img.src = imageUrl(src, lightboxWidth());
+    },
+    [tier]
+  );
 
   /** Enlarge the artwork in the high-performance zoomable lightbox */
   const openImageAt = useCallback(
@@ -570,11 +683,13 @@ export default function Carousel3D({
     velRef.current = 0;
     setIsDragging(true);
     engage();
+    wake();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d.active) return;
+    wake();
     const now = performance.now();
     const dx = e.clientX - d.lastX;
     const dt = Math.max(1, now - d.lastT);
@@ -618,6 +733,7 @@ export default function Carousel3D({
     d.active = false;
     setIsDragging(false);
     engage();
+    wake();
 
     const totalDx = d.lastX - d.startX;
     const totalDt = Math.max(1, performance.now() - d.startTime);
@@ -843,6 +959,17 @@ export default function Carousel3D({
           const isCentre = i === index;
           const adjacency = Math.abs(circularOffset(i, index, count));
           const hiddenFromAT = adjacency > 1;
+          /*
+           * Only cards near the centre get an <Image> at all.
+           *
+           * Every card is kept in the DOM (the loop animates them all), but a
+           * carousel of 14 works used to request 14 image files the moment the
+           * page was scrolled near it — most of them for cards the visitor
+           * cannot see, on a phone, on a bad connection. Three slots either side
+           * of the centre is more than the slide ever reveals at once, so the
+           * incoming card is always already loaded.
+           */
+          const nearCentre = adjacency <= 3;
           const blurb = cardBlurb(item);
           return (
             <div
@@ -853,6 +980,7 @@ export default function Carousel3D({
                 cardsRef.current[i] = node;
               }}
               onClick={() => onCardClick(i)}
+              onPointerEnter={() => preloadFor(item.src)}
               role={hiddenFromAT ? undefined : 'button'}
               tabIndex={isCentre ? 0 : -1}
               aria-label={
@@ -862,7 +990,7 @@ export default function Carousel3D({
                     ? `Artwork ${item.title}`
                     : `Bring ${item.title} to front`
               }
-              className={`c3d-card-shell absolute left-1/2 top-1/2 outline-none will-change-transform ${
+              className={`c3d-card-shell absolute left-1/2 top-1/2 outline-none ${
                 isCentre ? 'cursor-default' : 'cursor-pointer'
               }`}
               style={{
@@ -896,19 +1024,30 @@ export default function Carousel3D({
                   tabIndex={isCentre ? 0 : -1}
                   aria-label={`Enlarge image of ${item.title}`}
                   title="Click image to enlarge"
-                  className="c3d-card-media cursor-zoom-in"
+                  /* `is-centre` is what the flank-recession rules key off — every
+                     `.c3d-card-media:not(.is-centre)` rule in globals.css was
+                     matching the centre card too, because nothing ever set the
+                     class. */
+                  className={`c3d-card-media cursor-zoom-in${isCentre ? ' is-centre' : ''}`}
                 >
-                  <Image
-                    src={item.src}
-                    alt={item.title}
-                    fill
-                    sizes={IMAGE_SIZES[variant]}
-                    quality={isCentre ? 90 : 80}
-                    draggable={false}
-                    priority={i === 0}
-                    loading={i === 0 ? undefined : i < 4 ? 'eager' : 'lazy'}
-                    className="c3d-card-img object-cover pointer-events-none select-none"
-                  />
+                  {nearCentre && (
+                    <Image
+                      src={item.src}
+                      alt={item.title}
+                      fill
+                      sizes={IMAGE_SIZES[variant]}
+                      quality={isCentre ? 90 : 80}
+                      draggable={false}
+                      priority={i === 0}
+                      /* Only the card that is centred at first paint is eager.
+                         The old rule eagerly fetched indices 0-3 in every
+                         carousel, so ~12 full-size images raced the first paint
+                         on phones. */
+                      loading={i === 0 ? undefined : 'lazy'}
+                      fetchPriority={i === 0 ? undefined : 'low'}
+                      className="c3d-card-img object-cover pointer-events-none select-none"
+                    />
+                  )}
                   {isSpotlight && <span className="c3d-gloss" aria-hidden />}
                   {item.status && (
                     <span className="c3d-status" data-status={item.status.toLowerCase()}>
@@ -1088,7 +1227,8 @@ export default function Carousel3D({
                   className={`c3d-thumb${i === index ? ' is-active' : ''}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={it.src} alt="" loading="lazy" decoding="async" />
+                  {/* Derivative instead of the original: 30 KB per thumb, not 300 KB. */}
+                  <img src={imageUrl(it.src, 480)} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -1142,10 +1282,6 @@ export default function Carousel3D({
         </p>
       )}
 
-      {/* Buy-section spotlight: GSAP FLIP lightbox with preloaded instant image */}
-      {isSpotlight && (
-        <PaintingLightbox item={painting} onClose={() => setPainting(null)} />
-      )}
     </div>
   );
 }

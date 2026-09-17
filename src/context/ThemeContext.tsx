@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -26,6 +27,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>('dark');
   const [mounted, setMounted] = useState(false);
+  /** False until the first (pre-paint, silent) apply — only real toggles fade. */
+  const appliedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -40,7 +43,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
+
+    /*
+     * The cross-fade is opened for the ~650ms of the switch and then closed.
+     * A permanent transition list on those selectors is not a cosmetic choice:
+     * the carousel writes `filter` to every card as it moves, so a live
+     * `transition: filter 0.4s` restarted on each write and the browser ended up
+     * interpolating a 400ms filter transition on every card, continuously,
+     * for as long as the widget was on screen.
+     */
+    let timer: number | undefined;
+    if (appliedRef.current) {
+      root.classList.add('theme-transitioning');
+      timer = window.setTimeout(() => root.classList.remove('theme-transitioning'), 650);
+    }
+    appliedRef.current = true;
+
+    root.setAttribute('data-theme', theme);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
       meta.setAttribute('content', theme === 'light' ? '#f9f6f0' : '#0a0610');
@@ -50,6 +70,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [theme, mounted]);
 
   const setTheme = useCallback((mode: ThemeMode) => setThemeState(mode), []);

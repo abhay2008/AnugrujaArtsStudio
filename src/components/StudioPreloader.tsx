@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { readPerfTier } from '@/lib/perfTier';
 
 const EXIT_MS = 1150; // keep in sync with .pl-root[data-entering] animation durations
 
@@ -143,14 +144,22 @@ export default function StudioPreloader() {
     window.addEventListener('resize', onResize);
     document.fonts?.ready.then(syncAnchor).catch(() => {});
 
+    /*
+     * The intro is a luxury, not a toll booth. On a weak device or a slow link
+     * it is shortened — and the preloader's own animations (which compete for
+     * the same main thread as the assets it is waiting for) are trimmed by the
+     * `[data-perf='lite']` rules in preloader.css.
+     */
+    const lite = readPerfTier() === 'lite';
+
     const minTime = window.setTimeout(() => {
       minTimeDone = true;
       sampleReady();
       maybeLeave();
-    }, 1900);
+    }, lite ? 1000 : 1900);
 
     // Safety nets — the intro can never trap a visitor.
-    const hardCap = window.setTimeout(leave, 4200);
+    const hardCap = window.setTimeout(leave, lite ? 2600 : 4200);
     const onLoad = () => {
       sampleReady();
       maybeLeave();

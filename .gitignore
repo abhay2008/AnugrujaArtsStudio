@@ -41,3 +41,9 @@ next-env.d.ts
 # coding-agent scratch space (run notes, generated commit messages) — may
 # quote secrets while being drafted, so never let it reach the repository
 .freebuff/
+
+# local build output from NEXT_DIST_DIR runs (and other agents' scratch builds)
+/.next-*/
+
+# dev-server logs
+server.log

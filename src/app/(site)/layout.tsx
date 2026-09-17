@@ -1,11 +1,11 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { LightboxProvider } from '@/components/LightboxContext';
-import LightboxModal from '@/components/LightboxModal';
+import DeferredLightbox from '@/components/DeferredLightbox';
 import ScrollReveal from '@/components/ScrollReveal';
 import { ThemeProvider } from '@/context/ThemeContext';
 import PageAmbient from '@/components/PageAmbient';
-import ChatWidget from '@/components/chat/ChatWidget';
+import DeferredChatWidget from '@/components/chat/DeferredChatWidget';
 import SeoStructuredData from '@/components/SeoStructuredData';
 
 /**
@@ -27,8 +27,10 @@ export default function SiteLayout({
         {/* The header is sticky and in-flow, so it already reserves its own space. */}
         <main className="relative z-[1] flex-grow">{children}</main>
         <Footer />
-        <LightboxModal />
-        <ChatWidget />
+        {/* Both of these are code-split and mount on demand: the lightbox when a
+            painting is opened, the chat widget on the first idle moment. */}
+        <DeferredLightbox />
+        <DeferredChatWidget />
       </LightboxProvider>
     </ThemeProvider>
   );

@@ -23,7 +23,9 @@ const nextConfig = {
     minimumCacheTTL: 31536000,
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'animejs', 'framer-motion'],
+    // animejs was dropped with the carousel stage pulse (now a compositor-driven
+    // Web Animation in Carousel3D) — nothing imports it any more.
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

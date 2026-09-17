@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
+import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
+import { usePerfTier } from '@/lib/perfTier';
 
 type FrondTone = 'gold' | 'violet';
 type FrondBranch = 'primary' | 'secondary';
@@ -147,9 +149,15 @@ export default function BotanicalCorner({ tone, branch, className }: BotanicalCo
   const cfg = STEM_CONFIGS[branch];
   const leavesMeta = useMemo(() => generateLeavesMeta(branch), [branch]);
 
+  const tier = usePerfTier();
+
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const stemRef = useRef<SVGPathElement>(null);
   const cometRef = useRef<SVGPathElement>(null);
   const leafRefs = useRef<(SVGGElement | null)[]>([]);
+  /* The wind only needs to run while this corner is on screen — see below. */
+  const frameSubRef = useRef<FrameSubscription | null>(null);
+  const lastWriteRef = useRef<{ stem: string; leaves: string[] }>({ stem: '', leaves: [] });
 
   // Compute resting stem curve and initial leaf placements for zero-shift SSR
   const initialStemPath = `M ${cfg.p0[0]} ${cfg.p0[1]} C ${cfg.p1[0]} ${cfg.p1[1]}, ${cfg.p2[0]} ${cfg.p2[1]}, ${cfg.p3[0]} ${cfg.p3[1]}`;
@@ -171,11 +179,23 @@ export default function BotanicalCorner({ tone, branch, className }: BotanicalCo
     });
   }, [cfg, leavesMeta]);
 
+  /**
+   * Living wind, on the shared page frame loop.
+   *
+   * Three things keep this free on a phone: (1) the corner unsubscribes the
+   * moment it scrolls out of view, so the four hero corners cost nothing once
+   * the visitor has moved on; (2) the loop is capped at 20-30 fps (the gust is
+   * an ~8s cycle — nobody can see the difference, the CPU can); (3) only
+   * attributes whose value actually changed are written back.
+   */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    let animId: number;
+    const fps = tier === 'lite' ? 20 : 30;
+    const last = lastWriteRef.current;
+    last.stem = '';
+    last.leaves = [];
 
     const update = () => {
       const now = performance.now() * 0.001;
@@ -199,8 +219,11 @@ export default function BotanicalCorner({ tone, branch, className }: BotanicalCo
 
       const d = `M ${p0[0].toFixed(1)} ${p0[1].toFixed(1)} C ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}, ${p3[0].toFixed(1)} ${p3[1].toFixed(1)}`;
 
-      if (stemRef.current) stemRef.current.setAttribute('d', d);
-      if (cometRef.current) cometRef.current.setAttribute('d', d);
+      if (d !== last.stem) {
+        stemRef.current?.setAttribute('d', d);
+        cometRef.current?.setAttribute('d', d);
+        last.stem = d;
+      }
 
       for (let i = 0; i < leavesMeta.length; i++) {
         const meta = leavesMeta[i];
@@ -214,26 +237,47 @@ export default function BotanicalCorner({ tone, branch, className }: BotanicalCo
         const stemDeg = (Math.atan2(tanY, tanX) * 180) / Math.PI;
         const deg = meta.isTip ? stemDeg : stemDeg + meta.side * meta.sweep;
 
-        el.setAttribute(
-          'transform',
-          `translate(${lx.toFixed(2)} ${ly.toFixed(2)}) rotate(${deg.toFixed(2)})`
-        );
+        const transform = `translate(${lx.toFixed(2)} ${ly.toFixed(2)}) rotate(${deg.toFixed(2)})`;
+        if (transform !== last.leaves[i]) {
+          el.setAttribute('transform', transform);
+          last.leaves[i] = transform;
+        }
       }
-
-      animId = requestAnimationFrame(update);
     };
 
-    animId = requestAnimationFrame(update);
+    const start = () => {
+      if (frameSubRef.current) return;
+      frameSubRef.current = subscribe(update, { fps });
+    };
+    const stop = () => {
+      frameSubRef.current?.stop();
+      frameSubRef.current = null;
+    };
+
+    const node = svgRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (node && typeof IntersectionObserver !== 'undefined') {
+      /* Wind only while the corner is actually on screen. */
+      observer = new IntersectionObserver(
+        ([entry]) => (entry.isIntersecting ? start() : stop()),
+        { threshold: 0 }
+      );
+      observer.observe(node);
+    } else {
+      start();
+    }
 
     return () => {
-      cancelAnimationFrame(animId);
+      observer?.disconnect();
+      stop();
     };
-  }, [phase, cfg, leavesMeta]);
+  }, [phase, cfg, leavesMeta, tier]);
 
   const stemLen = 310;
 
   return (
     <svg
+      ref={svgRef}
       className={`deco-corner botanical-corner ${className}`}
       viewBox="0 0 300 300"
       fill="none"

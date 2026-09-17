@@ -3,6 +3,7 @@
 import { CalendarDays, Clock3, ExternalLink, MapPin, Users } from 'lucide-react';
 import { useLightbox } from '@/components/LightboxContext';
 import { eventRegistrationLink } from '@/lib/inquiry';
+import { responsiveImage } from '@/lib/imageSrc';
 import type { StudioEvent } from '@/lib/types';
 
 function eventImages(event: StudioEvent): string[] {
@@ -51,7 +52,14 @@ export default function UpcomingEventsSection({ events }: { events: StudioEvent[
                       aria-label={`View ${event.title} photo ${index + 1} larger`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={`${event.title} — photo ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} />
+                      {/* WebP derivative at the width this slot actually uses, with
+                          real dimensions so the card never shifts as it loads. */}
+                      <img
+                        {...responsiveImage(src, '(max-width: 640px) 92vw, 420px', 960)}
+                        alt={`${event.title} — photo ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <span className="registration-event-image-hint" aria-hidden>View larger</span>
                     </button>
                   ))}

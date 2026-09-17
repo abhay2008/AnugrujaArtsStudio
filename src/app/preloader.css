@@ -749,3 +749,69 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-crest {
     animation: none !important;
   }
 }
+
+/* ================================================================
+   Performance tier — lite intro.
+   ================================================================
+   The veil itself is kept whole (crest, letter cascade, gold beam, iris exit).
+   What goes is the per-letter blur pass, the per-letter shimmer sweep and the
+   rotating masked conic halo — the three things that made the intro compete
+   with the very page load it is waiting on.
+   ================================================================ */
+
+/* Letter cascade: rise + rotateX settle, no blur transition per letter. */
+html[data-perf='lite'] .pl-ch {
+  filter: none;
+  transition:
+    opacity 0.55s ease,
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-perf='lite'] .pl-ch.is-in {
+  filter: none;
+}
+
+/* The travelling gold sweep repaints every letter, every frame — gold stays,
+   the sweep sits this tier out. */
+html[data-perf='lite'][data-preloader='on'] .pl-ch.is-in {
+  animation: none;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* Rotating masked conic gradient: keep the halo, park the rotation. */
+html[data-perf='lite'] .pl-crest-halo {
+  animation: none;
+}
+
+/* Breathing radial glow becomes a steady one. */
+html[data-perf='lite'] .pl-pulse.is-anchored {
+  animation: plFadeIn 0.6s ease-out both;
+  opacity: 0.55;
+}
+
+/* Fewer motes, longer cycle. */
+html[data-perf='lite'] .pl-mote {
+  animation-duration: 6s;
+}
+
+html[data-perf='lite'] .pl-mote:nth-child(n + 8) {
+  display: none;
+}
+
+html[data-perf='lite'] .pl-content-out,
+html[data-perf='lite'] .pl-root[data-entering='true'] .pl-ch,
+html[data-perf='lite'] .pl-root[data-entering='true'] .pl-tagline,
+html[data-perf='lite'] .pl-root[data-entering='true'] .pl-beam,
+html[data-perf='lite'] .pl-root[data-entering='true'] .pl-hint,
+html[data-perf='lite'] .pl-root[data-entering='true'] .pl-crest {
+  animation-name: plContentOutLite;
+}
+
+/* Same exit, minus the 8px blur that has to be rasterised on the way out. */
+@keyframes plContentOutLite {
+  to {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.94);
+  }
+}
