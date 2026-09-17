@@ -92,6 +92,19 @@ assert(validateInput('What time is the weekend art class?').ok, 'class question 
 assert(validateInput('Do you also conduct dance or music classes?').ok, 'sister-arts question passes (soft steering, not refusal)');
 assert(validateInput('hello').ok, 'greeting passes the topicality gate');
 
+// Gibberish detector: nonsense is refused BEFORE the LLM; one real word passes.
+const mash = validateInput('asdfghjkl qwerty');
+assert(!mash.ok && mash.reason === 'gibberish', 'keyboard mash refused as gibberish');
+assert(!validateInput('aaaaaa aaaaaa').ok, 'repeated-character spam refused');
+assert(!validateInput('sdghjkl mnbpqrst').ok, 'vowelless consonant runs refused');
+assert(!validateInput('123456789012345 987654321').ok, 'long digit runs refused');
+assert(!validateInput('!!!!! ????? ...').ok, 'punctuation-only refused');
+assert(validateInput('hmmmm ok').ok, 'elongated-but-real expressions pass');
+assert(validateInput('Is watercolor hard to learn for a beginner?').ok, 'genuine question still passes the gibberish gate');
+assert(validateInput('வணக்கம், ஓவியம் விலை என்ன?').ok, 'Tamil text passes (non-Latin scripts never classified as gibberish)');
+assert(validateInput('painting 7 price').ok, 'painting number lookup passes');
+assert(validateInput('gm').ok, 'short greeting passes');
+
 // ── 3. Output sanitization ─────────────────────────────────────────────────
 section('Output sanitization');
 const studioPhone = sanitizeOutput('Call us at +91 96112 55949 anytime.');

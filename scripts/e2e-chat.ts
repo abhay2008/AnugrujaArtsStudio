@@ -160,6 +160,9 @@ assert(injection.layer === 'guardrail', `injection refusal labeled as guardrail,
   const empty = await chat([userMsg('   ')]);
   assert(empty.status === 200 && empty.text.length > 0, 'whitespace-only message gets a friendly refusal, not an error');
 
+  const gibberish = await chat([userMsg('asdfghjkl qwerty zzzxxx')]);
+  assert(gibberish.status === 200 && gibberish.text.includes("didn't quite catch"), 'gibberish refused BEFORE the LLM (saves a request)');
+
   // ── 5. Oversized legacy history: trimmed, not rejected ─────────────────────
   console.log('\n--- History robustness ---');
   const big: { role: 'user' | 'assistant'; content: string }[] = [];

@@ -9,7 +9,7 @@
 /** Results of validating a visitor message before it reaches the model. */
 export type InputVerdict =
   | { ok: true; text: string }
-  | { ok: false; reason: 'empty' | 'too_long' | 'injection' | 'banned_topic' | 'off_topic' };
+  | { ok: false; reason: 'empty' | 'too_long' | 'injection' | 'banned_topic' | 'off_topic' | 'gibberish' };
 
 export const MAX_MESSAGE_CHARS = 1000;
 export const MAX_SESSION_MESSAGES = 20;
@@ -69,6 +69,42 @@ function isOffTopicInput(text: string): boolean {
 }
 
 /**
+ * Gibberish / keyboard-mash detector — refuses nonsense BEFORE the LLM so it
+ * cannot burn a free-tier request. Deliberately conservative: a message is
+ * gibberish only when it contains NO recognizable token at all ("asdfghjkl",
+ * "aaaaaaa", "!!!???", emoji-only). One real word anywhere lets the message
+ * through, so genuine questions are never refused. Non-Latin scripts (Tamil,
+ * Hindi, emoji-adjacent writing systems) always pass — we don't classify
+ * scripts we can't tokenize.
+ */
+const VOWEL_RE = /[aeiou]/;
+/** Elongated real expressions: "hmmmm", "okkk", "shhh", "ohhh". */
+const GIBBERISH_ALLOW_RE = /^(hm+|hmm+|mhm|shh+|ok+|oh+|ah+|uh+|um+|ya+|yo+)$/;
+/** Real English words with no aeiou vowels — never flag them. */
+const VOWELLESS_WORDS_RE = /^(rhythm|myth|hymn|gym|sync|psst|tsk)$/;
+/** Canonical keyboard-row mashes, with or without vowels. */
+const KEYBOARD_MASH_RE = /^(qwert|qwerty|qwertyu|qwertyuiop|asdfg|asdfgh|asdfghjkl|zxcvb|zxcvbn|zxcvbnm|poiuy|lkjhgf|mnbvcx)$/;
+
+function isRecognizableToken(tok: string): boolean {
+  if (/\P{ASCII}/u.test(tok)) return true; // Tamil/Hindi/accented scripts: never classified
+  if (/^\d+$/.test(tok)) return tok.length <= 4; // "12" = painting number; long digit runs = spam
+  if (!/^\p{L}+$/u.test(tok)) return true; // mixed tokens like "p1" or "3d"
+  if (tok.length <= 3) return true; // short tokens are low-signal ("gm", "ok", "u")
+  if (GIBBERISH_ALLOW_RE.test(tok)) return true;
+  if (VOWELLESS_WORDS_RE.test(tok)) return true;
+  if (/(.)\1{3,}/.test(tok)) return false; // "aaaaaa" — same char 4+ times
+  if (KEYBOARD_MASH_RE.test(tok)) return false;
+  const vowels = (tok.match(/[aeiou]/g) ?? []).length;
+  return vowels / tok.length >= 0.2; // real words rarely dip below ~20% vowels
+}
+
+function isGibberishInput(text: string): boolean {
+  const tokens = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  if (tokens.length === 0) return true; // "!!!???" or emoji-only
+  return !tokens.some(isRecognizableToken);
+}
+
+/**
  * Topics the studio assistant must never engage with. Kept narrow — the
  * system prompt handles soft off-topic steering; these are hard refusals.
  */
@@ -89,11 +125,12 @@ export function validateInput(raw: string): InputVerdict {
   if (INJECTION_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'injection' };
   if (BANNED_TOPIC_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'banned_topic' };
   if (isOffTopicInput(text)) return { ok: false, reason: 'off_topic' };
+  if (isGibberishInput(text)) return { ok: false, reason: 'gibberish' };
 
   return { ok: true, text: text.slice(0, MAX_MESSAGE_CHARS) };
 }
 
-export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | 'empty' | 'off_topic'): string {
+export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | 'empty' | 'off_topic' | 'gibberish'): string {
   switch (reason) {
     case 'injection':
       return "I'm Chitra, the studio's art assistant — I can only chat about paintings, classes, events and the studio. How can I help you with art today? 🎨";
@@ -101,6 +138,8 @@ export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | '
       return "I'm not able to help with that. I'm here for anything about the studio — paintings, prices, classes, workshops or commissions! You can also reach us directly on WhatsApp. 🎨";
     case 'off_topic':
       return "That's a little outside my palette! I'm best with paintings, prices, classes, workshops and commissions — ask me any of those, or reach the studio directly on WhatsApp. 🎨";
+    case 'gibberish':
+      return "I didn't quite catch that! Could you type your question in words? I'm best with paintings, prices, classes, workshops and commissions. 🎨";
     case 'too_long':
       return `That's a very long message! Could you split it into a shorter question (under ${MAX_MESSAGE_CHARS} characters)? I answer best one question at a time.`;
     case 'empty':
