@@ -173,6 +173,8 @@ export function sanitizeOutput(reply: string): string {
   // Drop links outside the allowlist.
   const allowedHosts = [
     'wa.me',
+    'maps.google.com',
+    'www.google.com',
     'anugruja.com',
     'abhay2008.github.io',
     'posts.gle',

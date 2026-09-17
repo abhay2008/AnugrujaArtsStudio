@@ -27,6 +27,21 @@ export default function ContactActionButtons() {
           </svg>
           <span>WhatsApp</span>
         </a>
+
+        {/* Google Maps Directions */}
+        {studioMeta.mapsUrl && (
+          <a
+            href={studioMeta.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="touch-target flex-1 min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#310b49]/80 hover:bg-studio-sunset/20 border border-studio-gold/40 text-amber-100 hover:text-white font-blippo text-sm sm:text-base font-bold transition-all transform hover:scale-105 active:scale-95 shadow-md"
+          >
+            <svg className="w-5 h-5 fill-current text-studio-gold" viewBox="0 0 24 24">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+            </svg>
+            <span>Maps</span>
+          </a>
+        )}
       </div>
     </div>
   );

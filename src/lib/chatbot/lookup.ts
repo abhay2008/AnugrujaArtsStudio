@@ -95,6 +95,19 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   const brand = content.brand;
   const tanglish = detectTanglish(q);
 
+  // Visitors often ask "do you conduct classes in chennai?" or "is there a
+  // branch in bangalore?" — the location question fires before the generic
+  // classes intent so the answer carries the real city and the maps link.
+  if (
+    matchesAny(q, [/bangalore/i, /chennai/i, /bengaluru/i, /hyderabad/i]) &&
+    matchesAny(q, [/class|course|branch|studio|visit|located|location|address|conduct|teach|batch/])
+  ) {
+    return {
+      matched: true,
+      text: locationReply(brand),
+    };
+  }
+
   // ── Direct painting lookup ─────────────────────────────────────────────
   // Exact or fuzzy match by number, then by title keywords. "panting 7
   // price" and "how much is paintng 12" land here instead of the LLM.
@@ -334,8 +347,11 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
     /bangalore/i,
     /chennai/i,
     /bengaluru/i,
+    /hyderabad/i,
+    /directions/i,
+    /google\s+maps/i,
   ])) {
-    if (matchesAny(q, [/where/i, /location/i, /address/i, /studio\s+located/i, /bangalore/i, /chennai/i, /bengaluru/i])) {
+    if (matchesAny(q, [/where/i, /location/i, /address/i, /studio\s+located/i, /bangalore/i, /chennai/i, /bengaluru/i, /hyderabad/i, /directions/i, /google\s+maps/i])) {
       return {
         matched: true,
         text: locationReply(brand),
@@ -634,10 +650,13 @@ function shippingReply(faqs: { question: string; answer: string }[], brand: { ph
   return "Originals are shipped safely packed across India and internationally. The studio will quote shipping on WhatsApp depending on size and destination: " + brand.phoneDisplay + ".";
 }
 
-function locationReply(brand: { locationLabel: string; phoneDisplay: string; email: string }): string {
+function locationReply(brand: { locationLabel: string; phoneDisplay: string; email: string; mapsUrl?: string | undefined }): string {
+  // The widget renders this tag as a Google Maps button; the URL is always
+  // the studio's own CMS place link (never a model-generated URL).
+  const maps = brand.mapsUrl ? `\n[MAPS:${brand.mapsUrl}]` : '';
   return [
     "The studio operates from " + brand.locationLabel + ".",
-    "For visits, classes or commissions, reach us on WhatsApp: " + brand.phoneDisplay + " or email " + brand.email + ".",
+    "For visits, classes or commissions, reach us on WhatsApp: " + brand.phoneDisplay + " or email " + brand.email + "." + maps,
   ].join('\n');
 }
 

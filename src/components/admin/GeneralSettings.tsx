@@ -111,6 +111,32 @@ export default function GeneralSettings() {
               className="w-full px-3 py-2 rounded-xl bg-[#260a3a] border border-studio-gold/30 text-yellow-100 text-sm focus:outline-none focus:border-yellow-300"
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-yellow-200/60 mb-1">
+              Location Label
+            </label>
+            <input
+              type="text"
+              value={brandForm.locationLabel}
+              onChange={(e) => setBrandForm({ ...brandForm, locationLabel: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl bg-[#260a3a] border border-studio-gold/30 text-yellow-100 text-sm focus:outline-none focus:border-yellow-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-yellow-200/60 mb-1">
+              Google Maps URL
+            </label>
+            <input
+              type="text"
+              value={brandForm.mapsUrl || ''}
+              onChange={(e) => setBrandForm({ ...brandForm, mapsUrl: e.target.value })}
+              placeholder="https://www.google.com/maps/place/…"
+              className="w-full px-3 py-2 rounded-xl bg-[#260a3a] border border-studio-gold/30 text-yellow-100 text-sm focus:outline-none focus:border-yellow-300"
+            />
+            <p className="mt-1 text-[11px] text-yellow-100/40">Shown as a Maps icon in the header and used by the chatbot for directions.</p>
+          </div>
         </div>
 
         <h3 className="font-blippo text-lg text-studio-gold border-b border-purple-900 pb-2 pt-4">

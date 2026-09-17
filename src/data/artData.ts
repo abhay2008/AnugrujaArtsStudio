@@ -53,6 +53,8 @@ export const studioMeta = {
   whatsappWaMe: `https://wa.me/${phoneDigits}`,
   email: cur.brand.email,
   locationLabel: cur.brand.locationLabel,
+  /** Google Maps place URL — header icon, contact section, chatbot directions. */
+  mapsUrl: cur.brand.mapsUrl || '',
   facebookUrl: cur.social?.find((s) => s.network === 'facebook')?.url || 'https://www.facebook.com/profile.php?id=100063772818685',
   instagramUrl: cur.social?.find((s) => s.network === 'instagram')?.url || 'https://instagram.com/anugruja_arts',
   instagramSaleUrl: cur.social?.find((s) => s.network === 'instagram-sale')?.url || 'https://www.instagram.com/anugruja_painting4sale',

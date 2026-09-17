@@ -86,11 +86,12 @@ function buildCoreChunk(content: SiteContent): RagChunk {
   const lines = [
     'CORE STUDIO FACTS (always current — trust these exactly):',
     `- Studio: ${brand.name} ("${brand.tagline}") — founded by ${brand.founder}, ${studioData.artist.title}, ${studioData.artist.experience}.`,
-    `- Locations: ${brand.locationLabel}. All purchases, commissions and class registrations are handled personally on WhatsApp ${brand.phoneDisplay} (no online checkout).`,
+    `- Location: ${brand.locationLabel}. All purchases, commissions and class registrations are handled personally on WhatsApp ${brand.phoneDisplay} (no online checkout).`,
     `- Sale catalog: ${sale.length} original paintings — ${available} available, ${sold} sold. ${priceRange}`,
     `- Classes & courses: ${content.sections?.courses?.title ?? 'Classes & Courses'} — ${content.sections?.courses?.subtitle ?? 'online & offline'}. Programs: regular batches, 1-year fine arts diploma, summer camps, entrance-exam coaching (NATA, NID, NIFT, CEED, UCEED, BFA). Fees are confirmed personally on WhatsApp.`,
     `- ${nextEvent}`,
     `- Shipping: originals ship safely packed across India and internationally; quoted per piece on WhatsApp.`,
+    `- Directions: ${brand.mapsUrl ? `Google Maps place page — ${brand.mapsUrl}` : 'share the studio address personally on WhatsApp'}.`,
     `- Website pages: Home, /sale (paintings for sale), /classes (courses), /about (the artist).`,
   ];
 

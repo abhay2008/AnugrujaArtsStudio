@@ -27,7 +27,9 @@ const initialContent = {
     phoneRaw: '919611255949',
     whatsapp: 'https://wa.link/ghtuox',
     email: 'anugruja@gmail.com',
-    locationLabel: 'Bengaluru & Chennai',
+    locationLabel: 'Hyderabad, Telangana',
+    mapsUrl:
+      'https://www.google.com/maps/place/Anugruja+Arts+Studio+-+by+Anuradha+Govarthanan/@17.4714592,78.3050879,15.31z/data=!4m6!3m5!1s0x3bcb932ff5c06875:0x2ba4955525eedcff!8m2!3d17.4735308!4d78.3136112!16s%2Fg%2F11vz46_mc0',
   },
   social: [
     { network: 'whatsapp', url: studioMeta.whatsappUrl, color: 'green' },

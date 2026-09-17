@@ -86,7 +86,7 @@ export function buildStudioContext(): string {
       'STUDIO & BUSINESS',
       `- Name: ${brand.name} ("${brand.tagline}")`,
       `- Founder & lead artist: ${brand.founder} — ${artist.title}, ${artist.experience}, originally ${artist.origin}`,
-      `- Locations: ${brand.locationLabel}`,
+      `- Location: ${brand.locationLabel}`,
       `- Phone / WhatsApp: ${brand.phoneDisplay} (all purchases & commissions are handled personally on WhatsApp)`,
       `- Email: ${brand.email}`,
       `- Website sections: Home, Sale (paintings for sale), Classes, About`,

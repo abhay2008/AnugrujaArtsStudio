@@ -183,6 +183,8 @@ export interface SiteBrand {
   whatsapp: string;
   email: string;
   locationLabel: string;
+  /** Google Maps place URL for the studio (header icon, contact, chatbot). */
+  mapsUrl?: string;
 }
 
 export interface SiteMeta {

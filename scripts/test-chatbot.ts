@@ -136,6 +136,18 @@ assert(catalog.matched && /\[WA:[^\]]+\]$/.test(catalog.text), 'catalog reply en
 const wa = whatsappTag({ whatsapp: '919611255949', phoneDisplay: '+91 96112 55949' }, 'Hi! I want painting 7');
 assert(wa === 'https://wa.me/919611255949?text=Hi!%20I%20want%20painting%207', 'whatsappTag builds the right deep link');
 
+// Location answers carry the real city and the maps tag.
+const locReply = lookupAndReply('where is the studio located?');
+assert(locReply.matched && locReply.text.includes('Hyderabad'), 'location answer names Hyderabad');
+assert(locReply.matched && /\[MAPS:https:\/\/www\.google\.com\/maps/.test(locReply.text), 'location answer carries a Google Maps tag');
+const chennaiQ = lookupAndReply('do you conduct classes in chennai?');
+assert(chennaiQ.matched && chennaiQ.text.includes('Hyderabad'), '“classes in chennai?” corrects to the Hyderabad studio');
+const bangaloreQ = lookupAndReply('is there a branch in bangalore?');
+assert(bangaloreQ.matched && bangaloreQ.text.includes('Hyderabad'), '“branch in bangalore?” corrects to the Hyderabad studio');
+const directionsQ = lookupAndReply('how do I get directions to the studio?');
+assert(directionsQ.matched && directionsQ.text.includes('MAPS:'), 'directions question returns the maps link');
+assert(sanitizeOutput(`Directions: https://www.google.com/maps/place/Anugruja+Arts+Studio`).includes('google.com/maps'), 'sanitizer allows Google Maps links');
+
 // ── 2d. Tanglish detection + bilingual greeting ──────────────────────────
 section('Tanglish greeting');
 assert(detectTanglish('vanakkam'), '“vanakkam” detected as Tanglish');
@@ -235,7 +247,7 @@ assert(reply('When is your next workshop?')?.includes('next') || reply('When is 
 assert(reply('How do I buy a painting?')?.includes('WhatsApp'), 'answers purchasing question with WhatsApp');
 assert(reply('Can I commission a custom painting?')?.includes('commission'), 'answers commission question');
 assert(reply('Do you ship paintings?')?.includes('shipped') || reply('Do you ship paintings?')?.includes('ship'), 'answers shipping question');
-assert(reply('Where is the studio located?')?.includes('Bengaluru') || reply('Where is the studio located?')?.includes('Chennai'), 'answers location question');
+assert(reply('Where is the studio located?')?.includes('Hyderabad'), 'answers location question with Hyderabad');
 assert(reply('Tell me about Anuradha')?.includes('Anuradha'), 'answers artist/about question');
 assert(reply('Painting #1 price')?.includes('Original Fine Art Painting #1'), 'looks up painting by number');
 assert(reply('painting 7')?.includes('Original Fine Art Painting #7') || reply('painting 7')?.includes('#7'), 'looks up painting by number tokens');

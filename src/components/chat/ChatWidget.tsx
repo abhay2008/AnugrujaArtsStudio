@@ -14,6 +14,8 @@ interface ChatMsg {
   error?: boolean;
   /** WhatsApp deep link (prefilled message) from the reply's meta event. */
   wa?: string;
+  /** Google Maps place link (directions) from the reply's meta event. */
+  maps?: string;
   /** Studio CMS image to show as a thumbnail card above the reply. */
   image?: string;
   /** Which layer answered (preprogrammed/faq/cached/llm/guardrail). */
@@ -254,17 +256,18 @@ export default function ChatWidget() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser((ev: SseEvent) => {
-          const data = JSON.parse(ev.data) as { text?: string; model?: string; layer?: string; wa?: string; image?: string };
+          const data = JSON.parse(ev.data) as { text?: string; model?: string; layer?: string; wa?: string; image?: string; maps?: string };
           if (ev.event === 'meta') {
             // Structured reply metadata: which layer answered, WhatsApp
-            // deep link, painting thumbnail. Attaches to the pending bubble.
-            const { wa, image, layer } = data;
-            if (wa || image || layer) {
+            // deep link, painting thumbnail, maps directions. Attaches to
+            // the pending bubble.
+            const { wa, image, maps, layer } = data;
+            if (wa || image || maps || layer) {
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next[next.length - 1];
                 if (last?.role === 'assistant' && last.pending) {
-                  next[next.length - 1] = { ...last, wa, image, layer };
+                  next[next.length - 1] = { ...last, wa, image, maps, layer };
                 }
                 return next;
               });
@@ -427,6 +430,19 @@ export default function ChatWidget() {
                 >
                   <MessageCircle className="h-4 w-4" />
                   Continue on WhatsApp
+                </a>
+              )}
+              {m.maps && !m.pending && (
+                <a
+                  href={m.maps}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-studio-gold/40 bg-purple-900/60 px-3 py-2 text-[12.5px] font-bold text-yellow-100 transition-colors hover:bg-purple-800"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+                  </svg>
+                  Get Directions
                 </a>
               )}
             </div>

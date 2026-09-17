@@ -104,6 +104,14 @@ function extractImgTag(text: string): { text: string; image?: string } {
   return { text: (text.slice(0, at) + text.slice(at + m[0].length)).trim(), image: m[1] };
 }
 
+/** Extract a `[MAPS:…]` Google Maps tag, if any (removed from text). */
+function extractMapsTag(text: string): { text: string; maps?: string } {
+  const m = text.match(/\n?\[MAPS:([^\]]+)\]/);
+  if (!m) return { text };
+  const at = m.index ?? 0;
+  return { text: (text.slice(0, at) + text.slice(at + m[0].length)).trim(), maps: m[1] };
+}
+
 /**
  * Wrap a plain-text reply (guardrail refusal, safe fallback) in the same SSE
  * protocol the model stream uses, so clients only speak one protocol.
@@ -112,10 +120,12 @@ function extractImgTag(text: string): { text: string; image?: string } {
  */
 function sseTextResponse(rawText: string, layer?: string): Response {
   const { text: noWa, wa } = extractWaTag(rawText);
-  const { text, image } = extractImgTag(noWa);
+  const { text: noImg, image } = extractImgTag(noWa);
+  const { text, maps } = extractMapsTag(noImg);
   const meta: Record<string, unknown> = { layer };
   if (wa) meta.wa = wa;
   if (image) meta.image = image;
+  if (maps) meta.maps = maps;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(sseEncode('start', {}));
