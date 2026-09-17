@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
+import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -206,7 +207,12 @@ export default function ChatWidget() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })) }),
+          // The server caps the conversation at MAX_SESSION_MESSAGES; sending
+          // more would be rejected with "Invalid conversation length" — so
+          // trim here. The model only receives the last few turns anyway.
+          body: JSON.stringify({
+            messages: history.slice(-MAX_SESSION_MESSAGES).map(({ role, content }) => ({ role, content })),
+          }),
           signal: controller.signal,
         });
 

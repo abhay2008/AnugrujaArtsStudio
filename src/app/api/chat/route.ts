@@ -130,12 +130,17 @@ export async function POST(req: NextRequest) {
   }
 
   const history = Array.isArray(body.messages) ? body.messages : [];
-  if (history.length === 0 || history.length > MAX_SESSION_MESSAGES) {
+  // Empty conversations are invalid; absurdly long ones are abusive. Anything
+  // in between is trimmed to the last MAX_SESSION_MESSAGES messages: an older
+  // cached widget bundle may still send its full stored history, and the chat
+  // must keep working instead of dead-ending with "Invalid conversation length".
+  if (history.length === 0 || history.length > MAX_SESSION_MESSAGES * 5) {
     return Response.json({ error: 'Invalid conversation length.' }, { status: 400 });
   }
   if (history.some((m) => (m?.role !== 'user' && m?.role !== 'assistant') || typeof m?.content !== 'string' || m.content.length > 1200)) {
     return Response.json({ error: 'Invalid message format.' }, { status: 400 });
   }
+  const trimmedHistory = history.slice(-MAX_SESSION_MESSAGES);
 
   // ── 2. Guardrails: abuse caps + input filter (zero API cost) ──────────
   const ip = clientIp(req);
@@ -158,7 +163,7 @@ export async function POST(req: NextRequest) {
     return llmRate;
   };
 
-  const lastUser = [...history].reverse().find((m) => m.role === 'user');
+  const lastUser = [...trimmedHistory].reverse().find((m) => m.role === 'user');
   const verdict = validateInput(lastUser?.content ?? '');
   if (!verdict.ok) {
     // Pre-LLM refusal — costs zero OpenRouter requests. Sent over the same
@@ -192,7 +197,7 @@ export async function POST(req: NextRequest) {
 
   // Fresh sessions only: a repeat question deep in a conversation may depend
   // on earlier turns, so a cached answer could contradict what was just said.
-  const isFreshSession = history.length <= 2;
+  const isFreshSession = trimmedHistory.length <= 2;
   const revision = contentRevisionHash(content);
   const langHint = languageHint(verdict.text);
   const models = [primaryModel(), ...fallbackModels()];
@@ -239,10 +244,9 @@ export async function POST(req: NextRequest) {
           model,
           stream: true,
           temperature: 0.4,
-          max_tokens: 900,
-          messages: [
+          max_tokens: 900,            messages: [
             { role: 'system', content: systemPrompt(liveContext, langHint) },
-            ...history.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 400) })),
+            ...trimmedHistory.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 400) })),
           ],
         }),
       });
