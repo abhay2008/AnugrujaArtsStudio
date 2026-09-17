@@ -18,9 +18,10 @@ export const MAX_SESSION_MESSAGES = 20;
 const INJECTION_PATTERNS: RegExp[] = [
   /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?|messages?)/i,
   /disregard\s+(all\s+)?(previous|prior|your)\s+(instructions?|prompts?|rules?)/i,
-  /(reveal|show|print|repeat|output|give)\s+(me\s+)?(your|the)\s+(system|initial|original|hidden)\s+(prompt|instructions?|message|rules?)/i,
+  /(reveal|show|print|repeat|output|give)\s+(me\s+)?(your|the)\s+(system|initial|original|hidden)?\s*(prompt|instructions?|message|rules?)/i,
   /system\s*prompt/i,
   /you\s+are\s+now\s+(a|an|no longer)/i,
+  /you\s+(are|will\s+be)\s+no\s+longer\s+(an?|the)\b/i,
   /(new|updated|override)\s+(system\s+)?(instructions?|rules?|persona)\s*:/i,
   /\bDAN\s+mode\b|\bjailbreak\b/i,
   /pretend\s+(you\s+are|to\s+be)\s+(an?\s+)?(unrestricted|uncensored|different)/i,
@@ -38,7 +39,7 @@ const BANNED_TOPIC_PATTERNS: RegExp[] = [
   /\b(hack(er|ing)?|ddos|botnet|malware|ransomware|phishing)\b/i,
   /\bmake\s+(a\s+)?(bomb|explosive|weapon|drug|meth|cocaine)\b/i,
   /\b(kill|murder|suicide)\s+(myself|someone|him|her|them)\b/i,
-  /\b(credit\s+card|ssn|aadhaar|passport)\s+numbers?\b.*\b(generate|fake|stolen)\b/i,
+  /\b(credit\s+card|ssn|aadhaar|passport)\s+numbers?\b.*\b(generate|fake|stolen)\b|\b(generate|make|fake|stolen)\b.*\b(credit\s+card|ssn|aadhaar|passport)\b/i,
   /\b(launder|laundering)\s+money\b/i,
 ];
 
@@ -139,6 +140,7 @@ export function looksOffTopic(reply: string): boolean {
   const t = reply.toLowerCase();
   return (
     /as an ai (language )?model/.test(t) ||
+    /(i am|i'm) an ai (language )?model/.test(t) ||
     /i cannot provide (financial|legal|medical) advice/.test(t) ||
     /(stock market|crypto|bitcoin) (tip|advice|price)/.test(t)
   );

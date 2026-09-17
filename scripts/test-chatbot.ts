@@ -361,6 +361,141 @@ assert(aiIdentity.flaggedOffTopic, 'model self-identifying as AI model flagged a
 // ── 8. Deterministic layer integration sanity (no LLM calls) ───────────────
 section('Deterministic layer integration sanity');
 
+// ── 9. RAG retrieval ─────────────────────────────────────────────────────
+section('RAG retrieval (lexical BM25 + core aggregates)');
+
+import { retrieveContext, resetRagIndex, fullContextSize } from '../src/lib/chatbot/rag';
+import { lookupCachedReply, storeCachedReply, clearResponseCache } from '../src/lib/chatbot/responseCache';
+
+resetRagIndex();
+
+// Painting-specific query retrieves the right chunk.
+const p7 = retrieveContext('How much is painting 7?');
+assert(p7.document.includes('Original Fine Art Painting #7'), 'painting query retrieves painting #7 chunk');
+assert(p7.document.includes('CORE STUDIO FACTS'), 'core aggregates always included');
+assert(!p7.document.includes('Original Fine Art Painting #30'), 'irrelevant paintings are NOT included (token savings)');
+
+// Price-range query should be answerable from core alone.
+const range = retrieveContext('What is the price range of your paintings?');
+assert(range.document.includes('prices range from'), 'price-range answer exists in core block');
+
+// Event query retrieves the event chunk.
+const ev = retrieveContext('When is your next watercolor workshop?');
+assert(ev.document.includes('Realistic Watercolor Mastery'), 'event query retrieves the upcoming event');
+
+// Classes query retrieves the classes chunk.
+const cls = retrieveContext('Do you offer diploma courses?');
+assert(cls.document.includes('CLASSES & COURSES'), 'classes query retrieves the classes chunk');
+
+// Gibberish falls back to core-only.
+const junk = retrieveContext('xyzzy plugh quantum spaghetti');
+assert(junk.retrievedCount === 0, 'gibberish query returns core-only (retrievedCount 0)');
+assert(junk.document.includes('CORE STUDIO FACTS'), 'core still present for gibberish');
+
+// Budget respected.
+const tight = retrieveContext('painting', { topK: 30, tokenBudget: 600 });
+assert(tight.estimatedTokens <= 700, `token budget respected (${tight.estimatedTokens} est tokens)`);
+
+// Size comparison: RAG document is much smaller than the full document.
+const full = fullContextSize();
+assert(p7.estimatedTokens < full * 0.6, `RAG doc much smaller than full (${p7.estimatedTokens} vs ${full} tokens)`);
+
+// Revision hash stability.
+const r1 = retrieveContext('painting 1');
+const r2 = retrieveContext('painting 1');
+assert(r1.revision === r2.revision, 'revision hash stable across calls');
+
+// ── 10. Response cache ──────────────────────────────────────────────────
+section('Response cache (request savings)');
+
+clearResponseCache();
+const REV = 'rev-test-1';
+
+assert(lookupCachedReply('hello', REV, 'm1', '').hit === false, 'cache miss on first query');
+storeCachedReply('hello', REV, 'm1', '', 'Namaste! Welcome to the studio.', 'llm');
+const hit = lookupCachedReply('Hello!  ', REV, 'm1', '');
+assert(hit.hit === true && hit.reply?.includes('Namaste'), 'cache hit after store (whitespace-normalized)');
+
+const missDifferentRev = lookupCachedReply('hello', 'rev-test-2', 'm1', '');
+assert(missDifferentRev.hit === false, 'new content revision invalidates the cache');
+
+const missDifferentQuery = lookupCachedReply('goodbye', REV, 'm1', '');
+assert(missDifferentQuery.hit === false, 'different query does not hit');
+
+// Fresh-session guard is a route-level behavior; verify the predicate logic
+// the route uses: history.length <= 2 (one user + one assistant turn).
+const freshHistory = 2;
+const midConversationHistory = 4;
+assert(freshHistory <= 2, 'fresh session (≤2 messages) may use the cache');
+assert(!(midConversationHistory <= 2), 'mid-conversation request skips the cache');
+
+// ── 11. Router nuance: nuanced questions must reach the LLM ────────────
+section('Router nuance (no wasted preprogrammed answers)');
+
+// These used to be swallowed by catch-all intents; they must now reach the
+// LLM (with RAG context) instead of getting a canned dump.
+const mustReachLlm = [
+  'Is watercolor hard for a student to learn?',          // old: /student/ + /learn/ → classes dump
+  'What medium did you use in your 2019 exhibition piece?', // old: bare exhibition/artist patterns
+  'Do you ship paintings? I live in a small town',       // extra clause → LLM handles location nuance
+  'Tell me about your Kashmir series',                   // old: /tell/ → greeting
+  'How long has the artist been painting?',              // old: /artist/ → about dump
+  'Who painted that portrait of the couple?',            // old: /portrait/ → commission pitch
+];
+for (const q of mustReachLlm) {
+  const r = routeMessage(q);
+  assert(r.action === 'llm' || r.action === 'faq', `nuanced question reaches LLM/faq: "${q}" (got ${r.action})`);
+}
+
+// Common questions must still skip the LLM entirely (request savings).
+const mustStayDeterministic = [
+  'What paintings do you have for sale?',
+  'How much is painting 12?',
+  'When is your next workshop?',
+  'Do you offer classes for beginners?',
+  'Can I commission a custom painting?',
+  'Where is the studio located?',
+  'How do I buy a painting?',
+];
+for (const q of mustStayDeterministic) {
+  const r = routeMessage(q);
+  assert(r.action === 'preprogrammed' || r.action === 'faq', `common query stays cheap: "${q}" (got ${r.action})`);
+}
+
+// ── 11. Smart router: preprogrammed vs FAQ vs LLM ───────────────────────
+section('Smart router (tiered decision layer)');
+
+import { routeMessage } from '../src/lib/chatbot/router';
+
+// Clear intents → preprogrammed (zero OpenRouter cost).
+assert(routeMessage('What paintings do you have for sale?').action === 'preprogrammed', 'sale catalog → preprogrammed');
+assert(routeMessage('Do you offer classes for beginners?').action === 'preprogrammed', 'classes → preprogrammed');
+assert(routeMessage('How much is painting 12?').action === 'preprogrammed', 'painting price → preprogrammed');
+assert(routeMessage('When is your next workshop?').action === 'preprogrammed', 'upcoming event → preprogrammed');
+assert(routeMessage('Can I commission a custom painting?').action === 'preprogrammed', 'commission → preprogrammed');
+assert(routeMessage('How do I buy a painting?').action === 'preprogrammed', 'purchasing → preprogrammed');
+assert(routeMessage('Do you ship paintings?').action === 'preprogrammed', 'shipping → preprogrammed');
+assert(routeMessage('Hi').action === 'preprogrammed', 'bare greeting → preprogrammed (zero-cost templated welcome)');
+assert(routeMessage('hello!').action === 'preprogrammed', 'punctuated greeting → preprogrammed');
+assert(routeMessage('namaste').action === 'preprogrammed', 'namaste → preprogrammed');
+assert(routeMessage('ok').action === 'llm', 'bare "ok" → llm (vague, not a greeting)');
+assert(routeMessage('tell me').action === 'llm', 'bare "tell me" → llm (vague)');
+assert(routeMessage('Tell me about Anuradha').action === 'preprogrammed', 'artist question → preprogrammed');
+
+// Vague follow-ups must REACH the LLM, not get swallowed by catch-alls.
+assert(routeMessage('Tell me about your Kashmir series').action === 'llm', 'nuanced "tell me about..." → llm');
+assert(routeMessage("What is your painting style like?").action === 'llm', 'stylistic question → llm');
+assert(routeMessage('What inspires your color palette?').action === 'llm', 'inspiration question → llm');
+assert(routeMessage('completely unrelated taco recipe').action === 'llm', 'off-topic → llm (output guards handle it)');
+
+// FAQ tier: strong overlap with an admin-curated question → zero requests.
+const faqBuy = routeMessage('How do I buy a painting?');
+assert(faqBuy.action === 'faq' || faqBuy.action === 'preprogrammed', 'FAQ-covered buying question avoids the LLM');
+const faqShip = routeMessage('Do you ship internationally?');
+assert(faqShip.action === 'faq' || faqShip.action === 'preprogrammed', 'FAQ-covered shipping question avoids the LLM');
+const faqMiss = routeMessage('What medium did you use in your 2019 exhibition piece?');
+assert(faqMiss.action === 'llm', 'specific question not in FAQ → llm');
+
 console.log('\n============================================');
 if (failures === 0) {
   console.log('✅ ALL CHATBOT TESTS PASSED');

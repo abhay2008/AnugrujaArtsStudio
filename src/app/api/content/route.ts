@@ -4,6 +4,8 @@ import { getSiteContentSync, writeSiteContentSync } from '@/lib/serverContent';
 import { commitTextFile, getRemoteTextFile, githubConfigured } from '@/lib/github';
 import { cookieIsValid, COOKIE_NAME } from '@/lib/adminAuth';
 import { CHATBOT_CONTEXT_TAG, resetStudioContextCache } from '@/lib/chatbot/context';
+import { resetRagIndex } from '@/lib/chatbot/rag';
+import { invalidateResponseCache } from '@/lib/chatbot/responseCache';
 import type { SiteContent } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -84,6 +86,11 @@ export async function POST(req: NextRequest) {
     try {
       revalidateTag(CHATBOT_CONTEXT_TAG);
       resetStudioContextCache();
+      // Drop the RAG chunk index and any cached chatbot replies so the
+      // assistant picks up new paintings / prices / events on its very next
+      // message — never answers from the previous catalog revision.
+      resetRagIndex();
+      invalidateResponseCache();
     } catch {}
 
     return NextResponse.json({

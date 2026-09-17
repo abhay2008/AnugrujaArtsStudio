@@ -63,5 +63,18 @@ export function createRateLimiter(options: { perMinute?: number; perDay?: number
   };
 }
 
-/** Singleton used by the chat route. */
+/**
+ * Limiter for the OpenRouter LLM path only — sized to protect the free-tier
+ * quota (8/min, 40/day). Because the route only consults this AFTER the
+ * preprogrammed/FAQ/cache layers, deterministic answers never consume the
+ * studio's OpenRouter budget.
+ */
 export const chatRateLimiter = createRateLimiter();
+
+/**
+ * Generous abuse cap applied to ALL chat traffic, including free layers.
+ * Deterministic replies cost the studio nothing, so good-faith visitors get
+ * plenty of headroom (30/min, 240/day) — but scrapers hammering the catalog
+ * through the preprogrammed layer still hit a soft stop.
+ */
+export const freeLayerRateLimiter = createRateLimiter({ perMinute: 30, perDay: 240 });

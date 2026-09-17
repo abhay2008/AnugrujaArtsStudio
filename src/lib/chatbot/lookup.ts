@@ -56,6 +56,10 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
     /tell\s+me\s+about\s+your\s+paint(?:ings|ing)/i,
     /gallery/i,
     /catalog/i,
+    // "painting N" without # also lands here via the numeric lookup above;
+    // keep the generic title-word match but require a sale-signal word so a
+    // bare "painting" question falls to the LLM instead of a catalog dump.
+    /(?:painting|art ?work)s?\s+(?:catalog|list|collection)/i,
   ])) {
     return {
       matched: true,
@@ -64,32 +68,27 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   }
 
   // ── Classes / courses (specific — before generic price intent) ──────────
+  // Bare /class/, /student/, /learn/, /offer/, /watercolor/ were removed:
+  // they hijacked nuanced LLM-bound questions ("is watercolor hard for a
+  // student to learn?", "what does a class cost compared to a workshop?").
+  // Now requires a real program noun or an explicit classes question.
   if (matchesAny(q, [
-    /class/i,
-    /course/i,
+    /classes?\b/i,
+    /courses?\b/i,
     /diploma/i,
-    /student/i,
-    /learn/i,
-    /beginner/i,
-    /training/i,
-    /coaching/i,
-    /nata/i,
-    /nid/i,
-    /nift/i,
-    /ceed/i,
-    /ueed/i,
-    /bfa/i,
-    /entrance/i,
-    /exam/i,
-    /watercolor/i,
-    /water\s*colour/i,
-    /fine\s*arts?/i,
+    /students?\s+(do|get|learn|use|make|work)/i,
+    /do\s+you\s+(teach|run|hold)/i,
+    /(art|painting|drawing)\s+(lessons?|training|programs?)\b/i,
+    /(online|offline|weekend|kids|children|adults?)\s+(classes?|courses?|batches?)/i,
+    /beginners?\s+(class|course|batch|program)/i,
+    /batch\b/i,
+    /nata|nid|nift|ceed|uceed|bfa/i,
+    /entrance[- ]?exam/i,
+    /(fine\s*arts?)\s+(diploma|course|program)/i,
     /curriculum/i,
     /syllabus/i,
-    /batch/i,
-    /offer/i,
-    /do\s+you\s+(offer|have|teach|run|start|have\s+for)/i,
-    /for\s+beginners?/i,
+    /summer\s+camp/i,
+    /watercolou?r\s+(course|class|masterclass|diploma)/i,
   ])) {
     return {
       matched: true,
@@ -98,15 +97,18 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   }
 
   // ── Specific purchase intents before generic price questions ────────────
+  // Requires a commission noun or an explicit custom-order verb phrase.
+  // Bare /portrait/ and /for me/ were removed: "who painted that portrait?"
+  // belongs to the LLM, not a commission pitch.
   if (matchesAny(q, [
     /commission/i,
-    /custom/i,
-    /portrait/i,
-    /mural/i,
-    /deity/i,
-    /make\s+me/i,
-    /for\s+me/i,
-    /my\s+idea/i,
+    /custom\s+(painting|art ?work|piece|portrait|mural|order)/i,
+    /(?:get|order|request)\s+(?:a\s+)?(?:custom|commission|made)/i,
+    /made\s+to\s+order/i,
+    /murals?\b/i,
+    /deit(y|ies)\s+(painting|art|mural)/i,
+    /make\s+(me|us)\s+(a|an)/i,
+    /paint\s+(my|our|a\s+custom)/i,
   ])) {
     return {
       matched: true,
@@ -115,12 +117,12 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   }
 
   if (matchesAny(q, [
-    /ship/i,
-    /shipping/i,
+    /ship(?:ping|ped|s)?\b/i,
     /delivery/i,
-    /post/i,
-    /send/i,
-    /transport/i,
+    /courier/i,
+    /(do|can)\s+you\s+(ship|deliver|post)/i,
+    /how\s+(do|would)\s+(you|it)\s+(ship|travel|arrive)/i,
+    /(safe|safely)\s+(packed|packaged|shipped)/i,
   ])) {
     return {
       matched: true,
@@ -208,21 +210,24 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   }
 
   // ── Events / workshops / next session ───────────────────────────────────
+  // Requires an event noun or a temporal signal. Bare /when/i and
+  // /exhibition/i were removed: they hijacked past-exhibition and history
+  // questions ("what medium did you use in your 2019 exhibition piece?")
+  // and answered them with the upcoming event.
   if (matchesAny(q, [
     /workshop/i,
-    /event/i,
-    /next/i,
-    /coming/i,
+    /\bevents?\b/i,
+    /next\s+(up|event|workshop|session|batch|class)/i,
+    /when\s+(is|are|does|do)\s+(the\s+)?(next|upcoming)/i,
+    /coming\s+up/i,
     /upcoming/i,
-    /when/i,
     /calendar/i,
     /masterclass/i,
-    /weekend/i,
+    /weekend\s+(batch|class|session|workshop)/i,
     /retreat/i,
-    /session/i,
-    /camp/i,
-    /exhibition/i,
-    /exhibit/i,
+    /exhibitions?\s+(schedule|calendar|upcoming|next|list)/i,
+    /summer\s+camp/i,
+    /art\s+camp/i,
   ])) {
     if (events.length > 0) {
       return {
@@ -284,22 +289,19 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   }
 
   // ── Artist / about ──────────────────────────────────────────────────────
+  // Bare /artist/ and /background/ removed: "how long has the artist been
+  // painting?" style nuance now reaches the LLM (which has the bio chunk
+  // via RAG). Kept: name, founder, awards, and explicit about-phrases.
   if (matchesAny(q, [
     /anuradha/i,
     /founder/i,
-    /artist/i,
-    /ma'am/i,
-    /about/i,
-    /tell\s+me\s+about/i,
-    /who/i,
-    /background/i,
-    /journey/i,
+    /who\s+(is|was)\s+(the\s+)?(artist|painter|founder|she)/i,
+    /tell\s+me\s+about\s+(the\s+)?(artist|founder|anuradha|her)/i,
+    /about\s+(the\s+)?(artist|studio|founder|painter|her)\b/i,
     /achievement/i,
     /award/i,
-    /honour/i,
-    /exhibition/i,
-    /exhibit/i,
-    /experienced/i,
+    /honou?r/i,
+    /(her|their|his)\s+(journey|story|background)/i,
   ])) {
     return {
       matched: true,
@@ -307,28 +309,21 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
     };
   }
 
-  // ── General welcome / fallback catch-all for very vague prompts ────────
+  // ── General welcome / fallback for greetings & vague prompts ───────────
+  // Kept to genuine greetings/thanks/capability questions. Bare verbs like
+  // "tell", "show", "give", "please" were removed: they swallowed follow-up
+  // questions ("tell me about your Kashmir series") that belong to the LLM.
   if (matchesAny(q, [
-    /hello/i,
-    /hi\b/i,
-    /hey/i,
+    /^hello\b/i,
+    /^hi\b/i,
+    /^hey\b/i,
     /namaste/i,
     /good\s+(morning|afternoon|evening)/i,
     /thanks/i,
     /thank\s+you/i,
-    /help/i,
-    /what\s+can/i,
-    /who\s+are/i,
-    /what\s+are/i,
-    /what\s+do/i,
-    /tell/i,
-    /give/i,
-    /show/i,
-    /maybe/i,
-    /sure/i,
-    /ok\b/i,
-    /okay/i,
-    /please/i,
+    /what\s+can\s+you\s+(do|help)/i,
+    /who\s+are\s+you/i,
+    /help\s+me\s+with/i,
   ])) {
     return {
       matched: true,
@@ -353,12 +348,15 @@ function findSalePaintingByTitleTokens(sale: { id: string; title: string; price?
   // If the query mentions a painting number already handled above, skip.
   if (/#\s*\d+/.test(q)) return undefined;
 
-  // Tokenize query and match significant title tokens.
+  // Tokenize query and match significant title tokens. Generic catalog words
+  // are excluded so "original fine art painting 12" matches via the number,
+  // not via words every title shares.
+  const GENERIC_TITLE_WORDS = new Set(['original', 'fine', 'art', 'painting', 'the', 'a', 'an', 'for', 'sale', 'your', 'studio']);
   const qTokens = new Set(
     q
       .replace(/[^a-z0-9#\s]/g, ' ')
       .split(/\s+/)
-      .filter((t) => t.length >= 2),
+      .filter((t) => t.length >= 2 && !GENERIC_TITLE_WORDS.has(t)),
   );
 
   let best: { id: string; title: string; price?: number | string; status?: string | undefined } | undefined = undefined;
