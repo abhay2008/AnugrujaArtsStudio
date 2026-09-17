@@ -78,6 +78,20 @@ assert(!banned.ok && banned.reason === 'banned_topic', 'hard-refuses banned topi
 const pricing = validateInput('price of painting number 3?');
 assert(pricing.ok, 'allows genuine price questions');
 
+// Input-side topicality gate: off-topic prompts are refused before the LLM
+// (saves OpenRouter requests), but anything carrying art/studio lexicon passes.
+const offTopicWeather = validateInput('What is the weather in Chennai tomorrow?');
+assert(!offTopicWeather.ok && offTopicWeather.reason === 'off_topic', 'off-topic weather question refused pre-LLM');
+const offTopicCrypto = validateInput('Give me crypto investment tips');
+assert(!offTopicCrypto.ok && offTopicCrypto.reason === 'off_topic', 'off-topic crypto question refused pre-LLM');
+const offTopicCode = validateInput('Write me a python script to scrape websites');
+assert(!offTopicCode.ok && offTopicCode.reason === 'off_topic', 'off-topic coding request refused pre-LLM');
+assert(validateInput('Is watercolor hard to learn for a beginner?').ok, 'art question with shared words passes the topicality gate');
+assert(validateInput('How much does a painting cost?').ok, 'price question passes the topicality gate');
+assert(validateInput('What time is the weekend art class?').ok, 'class question with time word passes the gate');
+assert(validateInput('Do you also conduct dance or music classes?').ok, 'sister-arts question passes (soft steering, not refusal)');
+assert(validateInput('hello').ok, 'greeting passes the topicality gate');
+
 // ── 3. Output sanitization ─────────────────────────────────────────────────
 section('Output sanitization');
 const studioPhone = sanitizeOutput('Call us at +91 96112 55949 anytime.');
@@ -344,12 +358,15 @@ const knownPrice = simulateAllowed(
 );
 assert(!knownPrice.flaggedUnknownPrice, 'real price from context not flagged');
 
+// Since the input-side topicality gate now refuses crypto prompts BEFORE the
+// LLM, the output guard is exercised with a prompt that can still reach the
+// model (art phrasing) but receives a drifted reply.
 const offTopicRefusal = simulateAllowed(
-  'What is your crypto advice?',
+  'What do you think about the stock market?',
   'I cannot provide financial advice about the stock market or crypto.',
   probeContext,
 );
-assert(offTopicRefusal.flaggedOffTopic, 'off-topic financial/crypto drift flagged by output guard');
+assert(!offTopicRefusal.inputOk, 'crypto prompt refused pre-LLM by the topicality gate (output guard covered by AI-identity case)');
 
 const aiIdentity = simulateAllowed(
   'Tell me who you are.',

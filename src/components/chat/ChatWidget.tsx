@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Square } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
 
@@ -10,6 +10,8 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
   pending?: boolean;
+  /** Local error notice — never sent back to the API as conversation history. */
+  error?: boolean;
 }
 
 interface ChatbotConfig {
@@ -182,7 +184,10 @@ export default function ChatWidget() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  const stoppedRef = useRef(false);
+
   const stop = useCallback(() => {
+    stoppedRef.current = true;
     abortRef.current?.abort();
     abortRef.current = null;
     setStreaming(false);
@@ -195,13 +200,23 @@ export default function ChatWidget() {
 
       setShowChips(false);
       const userMsg: ChatMsg = { role: 'user', content: trimmed };
-      const history = [...messages.filter((m) => !m.pending), userMsg];
+      // Error/pending bubbles are local UI state only — the API must receive
+      // a clean conversation, or it would echo our own error copy back.
+      const history = [...messages.filter((m) => !m.pending && !m.error), userMsg];
       setMessages([...history, { role: 'assistant', content: '', pending: true }]);
       setInput('');
       setStreaming(true);
 
       const controller = new AbortController();
       abortRef.current = controller;
+      stoppedRef.current = false;
+      // Dead-stream guard: if the server never completes, stop hanging and
+      // surface a helpful message instead of an endless spinner.
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 60000);
 
       try {
         const res = await fetch('/api/chat', {
@@ -220,7 +235,7 @@ export default function ChatWidget() {
           const err = (await res.json().catch(() => ({}))) as { error?: string };
           setMessages((prev) => [
             ...prev.filter((m) => !m.pending),
-            { role: 'assistant', content: err.error || 'Something went wrong — please try again!' },
+            { role: 'assistant', content: err.error || 'Something went wrong — please try again!', error: true },
           ]);
           setStreaming(false);
           return;
@@ -262,16 +277,40 @@ export default function ChatWidget() {
           parser.push(decoder.decode(chunk.value, { stream: true }));
         }
       } catch (e) {
-        if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          if (timedOut) {
+            setMessages((prev) => [
+              ...prev.filter((m) => !m.pending),
+              {
+                role: 'assistant',
+                content: 'Chitra is taking longer than usual to reply — please try again in a moment, or WhatsApp the studio directly! 🙏',
+                error: true,
+              },
+            ]);
+          }
+          // User-initiated stop: the finally block cleans up the empty bubble.
+        } else {
           setMessages((prev) => [
             ...prev.filter((m) => !m.pending),
-            { role: 'assistant', content: 'The connection dropped — please try that again! 🙏' },
+            { role: 'assistant', content: 'The connection dropped — please try that again! 🙏', error: true },
           ]);
         }
       } finally {
+        clearTimeout(timeout);
         setStreaming(false);
         abortRef.current = null;
-        setMessages((prev) => prev.map((m) => ({ ...m, pending: false })));
+        setMessages((prev) => {
+          const cleared = prev.map((m) => ({ ...m, pending: false }));
+          // A stream that never produced text leaves an empty bubble: remove
+          // it when the user pressed Stop, else show a graceful fallback.
+          return cleared.flatMap((m) => {
+            if (m.role === 'assistant' && !m.error && m.content.trim() === '') {
+              if (stoppedRef.current) return [];
+              return [{ ...m, content: 'Hmm, the reply got lost on its way here. Please ask again — or WhatsApp the studio! 🎨', error: true }];
+            }
+            return [m];
+          });
+        });
       }
     },
     [messages, streaming]
@@ -376,14 +415,25 @@ export default function ChatWidget() {
           aria-label="Type your message"
           className="min-w-0 flex-1 rounded-xl border border-studio-gold/30 bg-purple-950/50 px-4 py-3 text-[14px] text-yellow-50 placeholder-yellow-100/35 transition-colors focus:border-studio-gold/70 focus:bg-purple-950/80 focus:outline-none focus:shadow-[0_0_0_3px_rgba(242,215,112,0.12)]"
         />
-        <button
-          type="submit"
-          disabled={!input.trim() || streaming}
-          aria-label="Send message"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 text-purple-950 shadow-md transition-all hover:scale-105 hover:from-amber-400 hover:to-yellow-400 hover:shadow-[0_4px_16px_rgba(242,215,112,0.35)] active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
-        >
-          {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-        </button>
+        {streaming ? (
+          <button
+            type="button"
+            onClick={stop}
+            aria-label="Stop generating"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-studio-gold/40 bg-purple-900/70 text-yellow-100 shadow-md transition-all hover:bg-purple-800 active:scale-95"
+          >
+            <Square className="h-4 w-4 fill-current" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            aria-label="Send message"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 text-purple-950 shadow-md transition-all hover:scale-105 hover:from-amber-400 hover:to-yellow-400 hover:shadow-[0_4px_16px_rgba(242,215,112,0.35)] active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
+          >
+            <Send className="h-5 w-5" />
+          </button>
+        )}
       </form>
     </div>
   );

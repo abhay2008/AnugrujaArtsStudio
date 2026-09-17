@@ -9,7 +9,7 @@
 /** Results of validating a visitor message before it reaches the model. */
 export type InputVerdict =
   | { ok: true; text: string }
-  | { ok: false; reason: 'empty' | 'too_long' | 'injection' | 'banned_topic' };
+  | { ok: false; reason: 'empty' | 'too_long' | 'injection' | 'banned_topic' | 'off_topic' };
 
 export const MAX_MESSAGE_CHARS = 1000;
 export const MAX_SESSION_MESSAGES = 20;
@@ -31,6 +31,44 @@ const INJECTION_PATTERNS: RegExp[] = [
 ];
 
 /**
+ * Input-side topicality gate.
+ *
+ * Chitra answers ONLY studio/art questions. With a free-tier OpenRouter
+ * budget, every off-topic prompt is a wasted request — so borderline topics
+ * are refused locally, before the LLM. This is a deliberately LOW-noise net:
+ * it only fires when a prompt BOTH (a) matches a known non-studio topic and
+ * (b) carries NO art/studio lexicon. Genuine art questions always pass —
+ * the greenest phrasing still mentions art, painting, class, or the studio.
+ */
+const ART_LEXICON: RegExp[] = [
+  /paint|draw|sketch|art|artwork|canvas|watercolou?r|acrylic|oil|gouache|charcoal|pastel/i,
+  /class|course|diploma|workshop|batch|student|learn|teach|curriculum|syllabus|fee/i,
+  /sale|price|pric(e|ing)|cost|buy|purchase|commission|order|shipping|delivery/i,
+  /anugruja|anuradha|chitra|govarthanan|studio|gallery|exhibit|artist|painter/i,
+  /nata|nid|nift|ceed|uceed|bfa|entrance|portfolio|portrait|mural|deity/i,
+  /event|exhibition|award|frame|framing|original|craft|kalakaar|fabriano/i,
+];
+
+/** Non-studio topics that would otherwise burn an OpenRouter request. */
+const OFF_TOPIC_PATTERNS: RegExp[] = [
+  /\b(weather|cricket|match|score|ipl|election|politic|government|minister)/i,
+  /\b(movie|netflix|series|song|lyrics|actor|actress|bollywood|kollywood)/i,
+  /\b(recipe|cook|bake|calorie|diet|workout|gym|medicine|symptom|disease|doctor)/i,
+  /\b(stock|share market|crypto|bitcoin|loan|tax|insurance|salary|income)/i,
+  /\b(code|program|javascript|python|java\b|react|sql|website traffic|seo)/i,
+  /\b(joke|riddle|love|date|girlfriend|boyfriend|marry|horoscope|lottery)/i,
+  /\b(capital of|population of|distance between|time zone|translate)/i,
+  /\b(other|another)\s+(shop|store|business|website)s?\b/i,
+];
+
+function isOffTopicInput(text: string): boolean {
+  if (OFF_TOPIC_PATTERNS.some((re) => re.test(text))) {
+    return !ART_LEXICON.some((re) => re.test(text));
+  }
+  return false;
+}
+
+/**
  * Topics the studio assistant must never engage with. Kept narrow — the
  * system prompt handles soft off-topic steering; these are hard refusals.
  */
@@ -50,16 +88,19 @@ export function validateInput(raw: string): InputVerdict {
   if (text.length > MAX_MESSAGE_CHARS) return { ok: false, reason: 'too_long' };
   if (INJECTION_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'injection' };
   if (BANNED_TOPIC_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'banned_topic' };
+  if (isOffTopicInput(text)) return { ok: false, reason: 'off_topic' };
 
   return { ok: true, text: text.slice(0, MAX_MESSAGE_CHARS) };
 }
 
-export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | 'empty'): string {
+export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | 'empty' | 'off_topic'): string {
   switch (reason) {
     case 'injection':
       return "I'm Chitra, the studio's art assistant — I can only chat about paintings, classes, events and the studio. How can I help you with art today? 🎨";
     case 'banned_topic':
       return "I'm not able to help with that. I'm here for anything about the studio — paintings, prices, classes, workshops or commissions! You can also reach us directly on WhatsApp. 🎨";
+    case 'off_topic':
+      return "That's a little outside my palette! I'm best with paintings, prices, classes, workshops and commissions — ask me any of those, or reach the studio directly on WhatsApp. 🎨";
     case 'too_long':
       return `That's a very long message! Could you split it into a shorter question (under ${MAX_MESSAGE_CHARS} characters)? I answer best one question at a time.`;
     case 'empty':

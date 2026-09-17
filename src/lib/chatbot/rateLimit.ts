@@ -29,8 +29,22 @@ export function createRateLimiter(options: { perMinute?: number; perDay?: number
   const DAY_MS = 24 * 60 * 60 * 1000;
   const store = new Map<string, WindowState>();
 
+  // Bound memory: drop windows that can no longer affect any decision
+  // (older than the 24h day window). Runs at most once a minute.
+  let lastPrune = 0;
+  const prune = (now: number) => {
+    if (now - lastPrune < 60_000) return;
+    lastPrune = now;
+    if (store.size < 500) return;
+    for (const [key, win] of store) {
+      const newest = win.dayTimestamps[win.dayTimestamps.length - 1];
+      if (newest !== undefined && now - newest >= DAY_MS) store.delete(key);
+    }
+  };
+
   return {
     check(identifier: string, now: number = Date.now()): RateVerdict {
+      prune(now);
       const window: WindowState = store.get(identifier) ?? { minuteTimestamps: [], dayTimestamps: [] };
 
       // Prune expired entries.

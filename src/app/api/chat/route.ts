@@ -104,7 +104,9 @@ function sseTextResponse(text: string, layer?: string): Response {
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store, no-transform',
-      'X-ChatLayer': layer ?? 'llm',
+      // Refusals (no layer passed) never touched the model — label them
+      // honestly instead of inheriting the 'llm' default.
+      'X-ChatLayer': layer ?? 'guardrail',
     },
   });
 }
@@ -269,9 +271,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 6. Relay the stream, sanitizing output on the way out ─────────────
+  // ── 7. Relay the stream, sanitizing output on the way out ────────────
   const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
   let buffer = '';
   let full = '';
   let started = false;
@@ -331,14 +332,13 @@ export async function POST(req: NextRequest) {
         } else {
           const sanitized = sanitizeOutput(full);
           if (mentionsUnknownPrice(sanitized, liveContext) || looksOffTopic(sanitized)) {
+            // The partial stream may already be wrong/hallucinated — REPLACE
+            // it with the safe fallback instead of appending more text.
             controller.enqueue(
-              sseEncode(
-                'delta',
-                {
-                  text:
-                    "Hmm, I want to be careful with that answer. The studio team can confirm details instantly on WhatsApp — or ask me about paintings, prices, classes or events!",
-                },
-              )
+              sseEncode('replace', {
+                text:
+                  "Hmm, I want to be careful with that answer. The studio team can confirm details instantly on WhatsApp — or ask me about paintings, prices, classes or events!",
+              }),
             );
           } else {
             // Cache the sanitized success for future identical questions.
@@ -366,7 +366,7 @@ export async function POST(req: NextRequest) {
       'Cache-Control': 'no-store, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
-      'X-Chat-Layer': 'llm',
+      'X-ChatLayer': 'llm',
     },
   });
 }
