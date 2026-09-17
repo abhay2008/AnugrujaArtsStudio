@@ -504,7 +504,8 @@
         "title": "Original Fine Art Painting #1",
         "category": "Paintings for Sale",
         "description": "Original watercolour on paper — one of a kind, signed by the artist.",
-        "price": 4500
+        "price": 12500,
+        "status": "Reserved"
       },
       {
         "id": "p2",
