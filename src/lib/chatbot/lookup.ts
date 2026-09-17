@@ -3,8 +3,77 @@ import { getSiteContentSync } from '@/lib/serverContent';
 import { formatPrice } from '@/lib/price';
 
 export type PreprogrammedReply =
-  | { matched: true; text: string }
-  | { matched: false; text?: undefined };
+  | { matched: true; text: string; action?: { type: 'whatsapp'; message: string } }
+  | { matched: false; text?: undefined; action?: undefined };
+
+/**
+ * Best available WhatsApp deep link for the studio.
+ *
+ * `brand.whatsapp` may be a shortlink (e.g. https://wa.link/…), which cannot
+ * carry a prefilled message — so digits are preferred from phoneRaw, then
+ * phoneDisplay. A shortlink is the last-resort link (button works, but the
+ * message can't be prefilled); returns undefined when nothing is usable.
+ */
+export function whatsappLink(brand: { whatsapp?: string | undefined; phoneRaw?: string | undefined; phoneDisplay: string }, message?: string): string | undefined {
+  for (const candidate of [brand.phoneRaw, brand.phoneDisplay]) {
+    if (!candidate || /^https?:\/\//i.test(candidate)) continue;
+    const digits = candidate.replace(/\D/g, '');
+    if (digits.length >= 10 && digits.length <= 15) {
+      return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+    }
+  }
+  if (brand.whatsapp && /^https?:\/\//i.test(brand.whatsapp)) return brand.whatsapp;
+  return undefined;
+}
+
+/** Build a wa.me deep link carrying a prefilled message for the visitor. */
+export function whatsappTag(brand: { whatsapp?: string | undefined; phoneRaw?: string | undefined; phoneDisplay: string }, message: string): string {
+  return whatsappLink(brand, message) ?? 'https://wa.me/919611255949';
+}
+
+/**
+ * Detect Tamil-written-in-Latin ("Tanglish") greetings/phrases so the
+ * deterministic layer can greet visitors in their own language. Fires only
+ * on whole common words — never on Tamil-script text (that is handled by the
+ * script hint in the LLM path).
+ */
+const TANGLISH_WORDS = /\b(vanakkam|vaanga|kandippa|romba|nandri|eppadi|irukkinga|theriyuma|venum|vellai|ollu)\b/i;
+export function detectTanglish(q: string): boolean {
+  return TANGLISH_WORDS.test(q);
+}
+
+/** Levenshtein edit distance, capped for short tokens. Zero deps. */
+function editDistance(a: string, b: string, cap: number): number {
+  if (Math.abs(a.length - b.length) > cap) return cap + 1;
+  const prev = new Array<number>(b.length + 1);
+  const cur = new Array<number>(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    cur[0] = i;
+    let rowMin = cur[0];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > cap) return cap + 1; // early exit — cannot beat the cap
+    for (let j = 0; j <= b.length; j++) prev[j] = cur[j];
+  }
+  return prev[b.length];
+}
+
+/** Fuzzy-match tolerance grows with token length: 1 typo for 4-6 chars, 2 for 7+. */
+function fuzzyTokenMatch(queryToken: string, targetToken: string): boolean {
+  const qt = queryToken.replace(/[^a-z0-9]/g, '');
+  const tt = targetToken.replace(/[^a-z0-9]/g, '');
+  if (!qt || !tt) return false;
+  const cap = qt.length >= 7 ? 2 : qt.length >= 4 ? 1 : 0;
+  if (cap === 0) return qt === tt;
+  return editDistance(qt, tt, cap) <= cap;
+}
 
 /**
  * Deterministic replies for the most common studio questions.
@@ -24,27 +93,17 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   const chatbot = content.chatbot;
   const faqs = chatbot?.faqs ?? [];
   const brand = content.brand;
+  const tanglish = detectTanglish(q);
 
   // ── Direct painting lookup ─────────────────────────────────────────────
-  // Try to match by number or by title keywords.
-  const numericMatch = q.match(/painting(?:\s+#?)?\s*(?:no(?:\.)?|number)?\s*(\d+)/i);
-  if (numericMatch) {
-    const num = parseInt(numericMatch[1], 10);
-    const painting = findSalePaintingByNumber(sale, num);
-    if (painting) {
-      return {
-        matched: true,
-        text: paintingLookupReply(painting, brand),
-      };
-    }
-  }
-
-  // Title keyword match: e.g. "original fine art painting 12", "painting 7"
-  const titleMatch = findSalePaintingByTitleTokens(sale, q);
-  if (titleMatch) {
+  // Exact or fuzzy match by number, then by title keywords. "panting 7
+  // price" and "how much is paintng 12" land here instead of the LLM.
+  const painting = findPainting(sale, q);
+  if (painting) {
     return {
       matched: true,
-      text: paintingLookupReply(titleMatch, brand),
+      text: paintingLookupReply(painting, brand),
+      action: { type: 'whatsapp', message: `Hi! I'm interested in "${painting.title}". Is it still available?` },
     };
   }
 
@@ -318,6 +377,8 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
     /^hi\b/i,
     /^hey\b/i,
     /namaste/i,
+    /vanakkam/i,
+    /nandri/i,
     /good\s+(morning|afternoon|evening)/i,
     /thanks/i,
     /thank\s+you/i,
@@ -327,7 +388,7 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   ])) {
     return {
       matched: true,
-      text: greetingReply(brand),
+      text: greetingReply(brand, tanglish),
     };
   }
 
@@ -336,15 +397,38 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function findSalePaintingByNumber(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], num: number): { id: string; title: string; price?: number | string; status?: string | undefined } | undefined {
-  // Match by explicit painting number in the title, e.g. "Original Fine Art Painting #12".
-  return sale.find((p) => {
-    const m = p.title.match(/#\s*(\d+)/i);
-    return m && parseInt(m[1], 10) === num;
-  });
+interface PaintingRef { id: string; title: string; price?: number | string; status?: string | undefined; src?: string | undefined; description?: string | undefined }
+
+/**
+ * Find a sale painting from a query — exact first, then fuzzy.
+ *
+ * 1. A number after any of several mistyped/abbreviated "painting" words
+ *    ("painting 7", "panting 7 price", "paintng no 12") resolves by number.
+ * 2. Otherwise, title tokens are matched exactly, then fuzzily.
+ */
+function findPainting(sale: PaintingRef[], q: string): PaintingRef | undefined {
+  // Painting-number regex: an explicit list of common mistypings of
+  // "painting" plus the usual "no / number / #" forms — deterministic, no
+  // clever fuzzy word regex that could match unrelated words ("picking 7").
+  const m = q.match(/(?:paintings?|pantings?|paintngs?|paitings?|paintigs?|painings?|piantings?|no|number|#)\s*(?:no\.?|number)?\s*#?\s*(\d{1,3})/);
+  if (m) {
+    const num = parseInt(m[1], 10);
+    const byNumber = sale.find((p) => {
+      const tm = p.title.match(/#\s*(\d+)/i);
+      return tm && parseInt(tm[1], 10) === num;
+    });
+    if (byNumber) return byNumber;
+  }
+
+  // Exact title-token match first (unchanged behavior)…
+  const exact = matchByTitleTokens(sale, q, false);
+  if (exact) return exact;
+
+  // …then a single fuzzy title-token pass (tolerates one typo per word).
+  return matchByTitleTokens(sale, q, true);
 }
 
-function findSalePaintingByTitleTokens(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], q: string): { id: string; title: string; price?: number | string; status?: string | undefined } | undefined {
+export function matchByTitleTokens(sale: PaintingRef[], q: string, fuzzy: boolean): PaintingRef | undefined {
   // If the query mentions a painting number already handled above, skip.
   if (/#\s*\d+/.test(q)) return undefined;
 
@@ -352,33 +436,38 @@ function findSalePaintingByTitleTokens(sale: { id: string; title: string; price?
   // are excluded so "original fine art painting 12" matches via the number,
   // not via words every title shares.
   const GENERIC_TITLE_WORDS = new Set(['original', 'fine', 'art', 'painting', 'the', 'a', 'an', 'for', 'sale', 'your', 'studio']);
-  const qTokens = new Set(
-    q
-      .replace(/[^a-z0-9#\s]/g, ' ')
-      .split(/\s+/)
-      .filter((t) => t.length >= 2 && !GENERIC_TITLE_WORDS.has(t)),
+  const qTokens = Array.from(
+    new Set(
+      q
+        .replace(/[^a-z0-9#\s]/g, ' ')
+        .split(/\s+/)
+        .filter((t) => t.length >= 2 && !GENERIC_TITLE_WORDS.has(t)),
+    ),
   );
 
-  let best: { id: string; title: string; price?: number | string; status?: string | undefined } | undefined = undefined;
+  let best: PaintingRef | undefined = undefined;
   let bestScore = 0;
 
   for (const p of sale) {
     const title = p.title.toLowerCase();
-    const pTokens = new Set(
-      title
-        .replace(/[^a-z0-9#\s]/g, ' ')
-        .split(/\s+/)
-        .filter((t) => t.length >= 2),
+    const pTokens = Array.from(
+      new Set(
+        title
+          .replace(/[^a-z0-9#\s]/g, ' ')
+          .split(/\s+/)
+          .filter((t) => t.length >= 2),
+      ),
     );
 
     let hits = 0;
     for (const t of qTokens) {
-      if (pTokens.has(t)) hits += 1;
+      if (pTokens.includes(t)) hits += 1;
+      else if (fuzzy && pTokens.some((pt) => fuzzyTokenMatch(t, pt))) hits += 1;
     }
 
     // Prefer matches on the more unique numeric/token tail of the title.
     const numericToken = title.match(/#\s*(\d+)/i);
-    if (numericToken && qTokens.has(numericToken[1])) hits += 2;
+    if (numericToken && qTokens.includes(numericToken[1])) hits += 2;
 
     if (hits > bestScore && hits >= 2) {
       bestScore = hits;
@@ -396,14 +485,17 @@ function matchesAny(q: string, patterns: RegExp[]): boolean {
 // ── Reply builders ─────────────────────────────────────────────────────────
 
 function paintingLookupReply(
-  painting: { title: string; price?: number | string; status?: string | undefined; description?: string | undefined },
+  painting: { title: string; price?: number | string; status?: string | undefined; description?: string | undefined; src?: string | undefined },
   brand: { phoneDisplay: string },
 ): string {
   const title = painting.title;
   const price = painting.price !== undefined && painting.price !== '' ? formatPrice(painting.price) : 'price on request';
   const status = painting.status ?? 'Available';
   const desc = painting.description ? ` ${painting.description}` : '';
-  return `**${title}** — ${price} — ${status}.${desc}\n\nIf you’d like to own it, confirm availability and next steps on WhatsApp: ${brand.phoneDisplay}.`;
+  // The widget renders this tag as a thumbnail card; the image is always the
+  // studio's own CMS asset (never a model-generated URL).
+  const img = painting.src ? `\n[IMG:${painting.src}]` : '';
+  return `**${title}** — ${price} — ${status}.${desc}${img}\n\nIf you’d like to own it, confirm availability and next steps on WhatsApp: ${brand.phoneDisplay}.`;
 }
 
 function saleCatalogReply(sale: { id: string; title: string; price?: number | string; status?: string | undefined }[], brand: { phoneDisplay: string }): string {
@@ -440,6 +532,7 @@ function saleCatalogReply(sale: { id: string; title: string; price?: number | st
     head,
     highlights,
     "\nBrowse the full gallery with photos on our Sale page (/sale), or ask me about a specific painting by name or number.",
+    `[WA:Hi! I'd like to know more about your paintings for sale.]`,
   ].join('\n');
 }
 
@@ -461,6 +554,7 @@ function salePriceRangeReply(sale: { id: string; title: string; price?: number |
     range,
     "If you have a particular painting in mind, ask me by name or number and I can share its exact price and status.",
     "For ownership, framing, shipping or payment, the studio handles everything personally on WhatsApp: " + brand.phoneDisplay + ".",
+    `[WA:Hi! I'd like to know the price of a painting.]`,
   ].join('\n');
 }
 
@@ -488,6 +582,7 @@ function saleStatusReply(sale: { id: string; title: string; price?: number | str
   parts.push(
     "\nIf you want a specific piece or one like a sold piece, we can often create a similar original — ask me about commissions.",
     "For anything you’d like to buy now, the studio confirms availability and next steps on WhatsApp: " + brand.phoneDisplay + ".",
+    `[WA:Hi! I'd like to buy a painting from the sale collection.]`,
   );
 
   return parts.join('\n');
@@ -518,6 +613,7 @@ function purchasingReply(brand: { phoneDisplay: string }): string {
     "All purchases, commissions and class registrations happen personally on WhatsApp.",
     "Reach the studio at " + brand.phoneDisplay + " — we’ll help you choose, confirm availability, frames, shipping and payment.",
     "There’s no online checkout; everything is handled with a human touch.",
+    `[WA:Hi! I'd like to buy a painting / join a class.]`,
   ].join('\n');
 }
 
@@ -526,6 +622,7 @@ function commissionReply(brand: { phoneDisplay: string }): string {
     "Custom commissions are a studio specialty — portraits, deities, murals and custom watercolors.",
     "Share your idea, size, medium and timeline on WhatsApp: " + brand.phoneDisplay + ".",
     "We’ll send a quote and work with you personally until it’s done.",
+    `[WA:Hi! I'd like to commission a custom painting.]`,
   ].join('\n');
 }
 
@@ -582,7 +679,14 @@ function artistAndAboutReply(content: SiteContent, brand: { phoneDisplay: string
   ].join('\n');
 }
 
-function greetingReply(brand: { phoneDisplay: string }): string {
+function greetingReply(brand: { phoneDisplay: string }, tanglish: boolean): string {
+  if (tanglish) {
+    return [
+      "வணக்கம்! 🙏 Namaste! I'm Chitra, the studio's assistant.",
+      "Paintings, prices, classes, workshops, commissions — edhu patti-yum kekkalaam. Ask me anything about the studio!",
+      "If you're ready to buy or book, the studio handles everything personally on WhatsApp: " + brand.phoneDisplay + ".",
+    ].join('\n');
+  }
   return [
     "Namaste! I'm Chitra, the studio's assistant.",
     "Ask me about paintings for sale, prices, classes, workshops, commissions or the artist.",

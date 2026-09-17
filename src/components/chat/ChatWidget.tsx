@@ -12,6 +12,12 @@ interface ChatMsg {
   pending?: boolean;
   /** Local error notice — never sent back to the API as conversation history. */
   error?: boolean;
+  /** WhatsApp deep link (prefilled message) from the reply's meta event. */
+  wa?: string;
+  /** Studio CMS image to show as a thumbnail card above the reply. */
+  image?: string;
+  /** Which layer answered (preprogrammed/faq/cached/llm/guardrail). */
+  layer?: string;
 }
 
 interface ChatbotConfig {
@@ -21,6 +27,10 @@ interface ChatbotConfig {
 }
 
 const WHATSAPP_URL = 'https://wa.me/919611255949';
+
+/** Shown when the CMS doesn't define suggested prompts — guide visitors to
+ *  the cheap, well-answered paths (preprogrammed layer, zero LLM cost). */
+const DEFAULT_CHIPS = ['What paintings are for sale?', 'What classes do you offer?', 'How much is painting 7?'];
 
 /** Bold segments (**…**) and internal links within one line — no HTML injection. */
 function boldify(text: string): React.ReactNode[] {
@@ -244,8 +254,22 @@ export default function ChatWidget() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser((ev: SseEvent) => {
-          const data = JSON.parse(ev.data) as { text?: string; model?: string };
-          if (ev.event === 'delta' && data.text) {
+          const data = JSON.parse(ev.data) as { text?: string; model?: string; layer?: string; wa?: string; image?: string };
+          if (ev.event === 'meta') {
+            // Structured reply metadata: which layer answered, WhatsApp
+            // deep link, painting thumbnail. Attaches to the pending bubble.
+            const { wa, image, layer } = data;
+            if (wa || image || layer) {
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === 'assistant' && last.pending) {
+                  next[next.length - 1] = { ...last, wa, image, layer };
+                }
+                return next;
+              });
+            }
+          } else if (ev.event === 'delta' && data.text) {
             setMessages((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
@@ -377,6 +401,16 @@ export default function ChatWidget() {
                   : 'chat-bubble--bot border border-studio-gold/20 bg-purple-950/70 text-yellow-50'
               }`}
             >
+              {m.image && !m.pending && (
+                <a
+                  href="/sale"
+                  className="mb-2.5 block overflow-hidden rounded-xl border border-studio-gold/25"
+                  title="View in the sale gallery"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.image} alt="Painting thumbnail" className="h-36 w-full object-cover" loading="lazy" />
+                </a>
+              )}
               {m.content ? renderRich(m.content) : m.pending ? (
                 <span className="chat-typing flex items-center gap-1 py-0.5" aria-label="Chitra is typing">
                   <span className="chat-dot" />
@@ -384,13 +418,24 @@ export default function ChatWidget() {
                   <span className="chat-dot" style={{ animationDelay: '0.3s' }} />
                 </span>
               ) : null}
+              {m.wa && !m.pending && (
+                <a
+                  href={m.wa}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2.5 flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-emerald-500"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Continue on WhatsApp
+                </a>
+              )}
             </div>
           </div>
         ))}
 
-        {showChips && config.suggestedPrompts.length > 0 && (
+        {showChips && (config.suggestedPrompts.length > 0 ? config.suggestedPrompts : DEFAULT_CHIPS).length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1.5">
-            {config.suggestedPrompts.slice(0, 6).map((p, i) => (
+            {(config.suggestedPrompts.length > 0 ? config.suggestedPrompts : DEFAULT_CHIPS).slice(0, 6).map((p, i) => (
               <button
                 key={p}
                 onClick={() => void send(p)}

@@ -12,6 +12,8 @@ import {
   MAX_SESSION_MESSAGES,
 } from '@/lib/chatbot/guardrails';
 import { chatRateLimiter, freeLayerRateLimiter } from '@/lib/chatbot/rateLimit';
+import { logLlmQuery } from '@/lib/chatbot/queryLog';
+import { whatsappLink } from '@/lib/chatbot/lookup';
 import { routeMessage } from '@/lib/chatbot/router';
 import { getSiteContentSync } from '@/lib/serverContent';
 
@@ -84,17 +86,40 @@ function sseEncode(event: string, data: unknown): Uint8Array {
   return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
+/** Extract the `[WA:…]` WhatsApp deep-link tag, if any (removed from text). */
+function extractWaTag(text: string): { text: string; wa?: string } {
+  const m = text.match(/\n?\[WA:([^\]]+)\]\s*$/);
+  if (!m) return { text };
+  const wa = whatsappLink(getSiteContentSync().brand, m[1]);
+  if (!wa) return { text };
+  const at = m.index ?? 0;
+  return { text: text.slice(0, at).trimEnd(), wa };
+}
+
+/** Extract a leading/inline `[IMG:…]` CMS image tag (removed from text). */
+function extractImgTag(text: string): { text: string; image?: string } {
+  const m = text.match(/\n?\[IMG:([^\]]+)\]/);
+  if (!m) return { text };
+  const at = m.index ?? 0;
+  return { text: (text.slice(0, at) + text.slice(at + m[0].length)).trim(), image: m[1] };
+}
+
 /**
  * Wrap a plain-text reply (guardrail refusal, safe fallback) in the same SSE
  * protocol the model stream uses, so clients only speak one protocol.
+ * `[WA:…]`/`[IMG:…]` tags are pulled out and shipped as structured metadata
+ * the widget renders as action buttons / thumbnails.
  */
-function sseTextResponse(text: string, layer?: string): Response {
+function sseTextResponse(rawText: string, layer?: string): Response {
+  const { text: noWa, wa } = extractWaTag(rawText);
+  const { text, image } = extractImgTag(noWa);
+  const meta: Record<string, unknown> = { layer };
+  if (wa) meta.wa = wa;
+  if (image) meta.image = image;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(sseEncode('start', {}));
-      if (layer) {
-        controller.enqueue(sseEncode('meta', { layer }));
-      }
+      controller.enqueue(sseEncode('meta', meta));
       controller.enqueue(sseEncode('delta', { text }));
       controller.enqueue(sseEncode('done', {}));
       controller.close();
@@ -179,7 +204,8 @@ export async function POST(req: NextRequest) {
   // everything nuanced falls through to the RAG-backed LLM path.
   const routed = routeMessage(verdict.text);
   if (routed.action === 'preprogrammed') {
-    return sseTextResponse(sanitizeOutput(routed.text), 'preprogrammed');
+    const pre = sanitizeOutput(routed.text);
+    return sseTextResponse(pre, 'preprogrammed');
   }
   if (routed.action === 'faq') {
     return sseTextResponse(sanitizeOutput(routed.text), 'faq');
@@ -204,6 +230,13 @@ export async function POST(req: NextRequest) {
   const langHint = languageHint(verdict.text);
   const models = [primaryModel(), ...fallbackModels()];
   const primary = models[0];
+
+  // FAQ mining: record which questions fell through to the LLM (never for
+  // greetings/one-worders — the log filters those). Admin can view clusters
+  // via /api/chatbot-queries and promote frequent ones into FAQs, which
+  // then answer at zero OpenRouter cost forever.
+  logLlmQuery({ q: verdict.text, lang: langHint, model: primary });
+
   if (isFreshSession) {
     const cached = lookupCachedReply(verdict.text, revision, primary, langHint);
     if (cached.hit && cached.reply) {
@@ -272,6 +305,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 7. Relay the stream, sanitizing output on the way out ────────────
+  // Generic WhatsApp deep link (no prefilled text) for LLM-path replies.
+  const llmWaLink = whatsappLink(content.brand);
   const decoder = new TextDecoder();
   let buffer = '';
   let full = '';
@@ -280,7 +315,7 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      controller.enqueue(sseEncode('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount }));
+      controller.enqueue(sseEncode('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink }));
 
       const reader = upstream!.body!.getReader();
       try {

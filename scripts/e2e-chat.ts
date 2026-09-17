@@ -37,7 +37,7 @@ interface SseEvent {
 /** POST /api/chat and collect the full SSE event list. */
 async function chat(
   messages: { role: 'user' | 'assistant'; content: string }[],
-): Promise<{ status: number; events: SseEvent[]; text: string; layer: string; error?: string; retryAfter?: string }> {
+): Promise<{ status: number; events: SseEvent[]; text: string; layer: string; wa?: string; image?: string; error?: string; retryAfter?: string }> {
   const res = await fetch(`${BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,6 +52,8 @@ async function chat(
   }
 
   const events: SseEvent[] = [];
+  let wa: string | undefined;
+  let image: string | undefined;
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -70,7 +72,10 @@ async function chat(
       }
       if (data) {
         try {
-          events.push({ event, data: JSON.parse(data) as Record<string, unknown> });
+          const parsed = JSON.parse(data) as Record<string, unknown>;
+          events.push({ event, data: parsed });
+          if (typeof parsed.wa === 'string') wa = parsed.wa;
+          if (typeof parsed.image === 'string') image = parsed.image;
         } catch {
           /* ignore malformed */
         }
@@ -92,7 +97,7 @@ async function chat(
   const metaEvent = events.find((e) => e.event === 'meta');
   const layer = ((metaEvent?.data as { layer?: string } | undefined)?.layer) ?? (res.headers.get('x-chatlayer') ?? '');
 
-  return { status: res.status, events, text: finalText, layer };
+  return { status: res.status, events, text: finalText, layer, wa, image };
 }
 
 function userMsg(content: string) {
@@ -139,6 +144,18 @@ async function main(): Promise<void> {
   const paint12 = await chat([userMsg('How much is painting 12?')]);
   assert(paint12.layer === 'preprogrammed', `painting lookup uses preprogrammed layer (got: ${paint12.layer})`);
   assert(paint12.text.includes('#12'), 'painting 12 reply names the right painting');
+  assert(typeof paint12.wa === 'string' && paint12.wa.startsWith('https://wa.me/919611255949?text='), `painting lookup carries a WhatsApp deep link (got: ${paint12.wa})`);
+
+  const fuzzyPaint = await chat([userMsg('panting 7 price')]);
+  assert(fuzzyPaint.layer === 'preprogrammed', `typo “panting 7 price” still hits the free layer (got: ${fuzzyPaint.layer})`);
+  assert(fuzzyPaint.text.includes('#7'), 'fuzzy lookup answers the right painting');
+
+  const tanglish = await chat([userMsg('vanakkam')]);
+  assert(tanglish.layer === 'preprogrammed' && tanglish.text.includes('வணக்கம்'), 'vanakkam gets the bilingual greeting');
+
+  const tamil = await chat([userMsg('பெயிண்டிங் 7 விலை என்ன?')]);
+  assert(tamil.status === 200, 'Tamil-script question returns 200');
+  assert(tamil.text.length > 0, 'Tamil question gets a reply (LLM replies in Tamil)');
 
   // ── 4. Pre-LLM guardrails (zero OpenRouter cost by construction) ───────────
   console.log('\n--- Pre-LLM guardrails ---');

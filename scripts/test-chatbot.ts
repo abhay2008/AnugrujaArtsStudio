@@ -16,6 +16,8 @@ import {
   MAX_MESSAGE_CHARS,
 } from '../src/lib/chatbot/guardrails';
 import { createRateLimiter } from '../src/lib/chatbot/rateLimit';
+import { detectTanglish, whatsappTag, matchByTitleTokens } from '../src/lib/chatbot/lookup';
+import { logLlmQuery, getLlmQueryStats, clearLlmQueryLog } from '../src/lib/chatbot/queryLog';
 
 let failures = 0;
 
@@ -104,6 +106,57 @@ assert(validateInput('Is watercolor hard to learn for a beginner?').ok, 'genuine
 assert(validateInput('வணக்கம், ஓவியம் விலை என்ன?').ok, 'Tamil text passes (non-Latin scripts never classified as gibberish)');
 assert(validateInput('painting 7 price').ok, 'painting number lookup passes');
 assert(validateInput('gm').ok, 'short greeting passes');
+
+// ── 2b. Fuzzy painting lookups (typo tolerance) ────────────────────────────
+section('Fuzzy painting lookups');
+const fuzzy1 = lookupAndReply('panting 7 price');
+assert(fuzzy1.matched && fuzzy1.text.includes('Painting #7'), '“panting 7 price” resolves via fuzzy number match');
+const fuzzy2 = lookupAndReply('how much is paintng 12');
+assert(fuzzy2.matched && fuzzy2.text.includes('Painting #12'), '“paintng 12” resolves via fuzzy number match');
+const fuzzy3 = lookupAndReply('paiting no 7');
+assert(fuzzy3.matched && fuzzy3.text.includes('#7'), '“paiting no 7” resolves');
+const fuzzyTitle = matchByTitleTokens(
+  [
+    { id: 'a', title: 'Kashmir Valley Morning', src: '/images/k1.jpeg' },
+    { id: 'b', title: 'Temple Festival Evening', src: '/images/t1.jpeg' },
+  ],
+  'kashmir vally seris price',
+  true,
+);
+assert(fuzzyTitle?.title === 'Kashmir Valley Morning', 'fuzzy title match finds “Kashmir Valley” despite typos');
+assert(!matchByTitleTokens([{ id: 'a', title: 'Kashmir Valley Morning' }], 'tell me about your painting journey', true), 'vague query does not fuzzy-match any painting');
+assert(!lookupAndReply('picking 7 for my living room wall').matched, 'unrelated word “picking 7” does NOT trigger a painting lookup');
+const exact7 = lookupAndReply('painting 7 price');
+assert(exact7.matched && exact7.action?.type === 'whatsapp' && exact7.action.message.includes('Painting #7'), 'painting lookup carries a WhatsApp action with the title prefilled');
+
+// ── 2c. Structured reply tags (WhatsApp action + image) ───────────────────
+section('Reply tags (WA/IMG)');
+const catalog = lookupAndReply('what paintings are for sale?');
+assert(catalog.matched && /\[WA:[^\]]+\]$/.test(catalog.text), 'catalog reply ends with a [WA:…] tag');
+const wa = whatsappTag({ whatsapp: '919611255949', phoneDisplay: '+91 96112 55949' }, 'Hi! I want painting 7');
+assert(wa === 'https://wa.me/919611255949?text=Hi!%20I%20want%20painting%207', 'whatsappTag builds the right deep link');
+
+// ── 2d. Tanglish detection + bilingual greeting ──────────────────────────
+section('Tanglish greeting');
+assert(detectTanglish('vanakkam'), '“vanakkam” detected as Tanglish');
+assert(detectTanglish('hi, eppadi irukkinga?'), '“eppadi irukkinga” detected');
+assert(!detectTanglish('hello there'), 'plain English not flagged');
+const tg = lookupAndReply('vanakkam');
+assert(tg.matched && tg.text.includes('வணக்கம்'), 'Tanglish greeting gets the bilingual welcome');
+const eg = lookupAndReply('hello');
+assert(eg.matched && !eg.text.includes('வணக்கம்'), 'English greeting stays English');
+assert(validateInput('வணக்கம்! பெயிண்டிங் விலை என்ன?').ok, 'Tamil-script question passes the input gate');
+
+// ── 2e. LLM query log (FAQ mining) ────────────────────────────────────────
+section('LLM query log');
+clearLlmQueryLog();
+logLlmQuery({ q: 'Do you ship paintings to Hyderabad?' });
+logLlmQuery({ q: 'do you ship paintings to hyderabad' });
+logLlmQuery({ q: 'hi' });
+logLlmQuery({ q: 'tell' });
+const stats = getLlmQueryStats(24);
+assert(stats.total === 2, 'greetings/one-worders skipped; 2 real queries logged');
+assert(stats.clusters[0]?.count === 2, 'identical questions cluster together');
 
 // ── 3. Output sanitization ─────────────────────────────────────────────────
 section('Output sanitization');

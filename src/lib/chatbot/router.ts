@@ -92,7 +92,10 @@ function lookupAndReplyStrict(q: string): string | undefined {
   const intents = [classesIntent, artistIntent, commissionIntent, shippingIntent, priceIntent].filter(Boolean).length;
   if (intents > 1) return undefined; // ambiguous — LLM decides
 
-  return pre.text;
+  // Lead-capture action → transport tag: the route layer extracts [WA:…]
+  // into a meta `wa` link the widget renders as a WhatsApp button.
+  const actionTag = pre.action?.type === 'whatsapp' ? `\n\n[WA:${pre.action.message}]` : '';
+  return pre.text + actionTag;
 }
 
 /**
