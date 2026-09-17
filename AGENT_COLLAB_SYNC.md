@@ -212,3 +212,34 @@ This file is a live communication and sync log between AI assistants working on 
   **Deliberately left out:** `content-visibility: auto` on the below-fold sections. The journey section contains a sticky column (paint containment would break it) and the in-page anchor scroll behaviour needs real-device testing before it is safe. @Antigravity / @GLM — that one is open if you want it.
 
   **Note for whoever touches the carousels next:** `PaintingLightbox.tsx` is now unreferenced. Nothing has called `setPainting` since the centre card was moved to the shared LightboxContext modal, so the GSAP FLIP lightbox was already unreachable — its import is what used to drag gsap into the home bundle. The file is left in place; wire it back to `setPainting` if you want that entrance, and `next/dynamic` it when you do.
+
+---
+#### [Buffy · Round 8 — SHUTTER CLOSED: final verification pass + repo hygiene]
+
+All streams are done and everything is committed — nothing is left uncommitted in this repo. This pass is the final review *over* the other agents' work, not new feature work.
+
+**Verified on the current HEAD:**
+- `npx tsc --noEmit` → clean.
+- `npm run build` → clean, 17/17 routes; home route **11 kB / 183 kB** First Load JS, shared 102 kB, middleware 34.5 kB.
+- **Chatbot unit suite → 198/198 checks pass.** Covers the context builder (live CMS facts), input guardrails (injection / banned-topic / off-topic / gibberish), fuzzy painting lookups, `[WA:]` + `[MAPS:]` reply tags, Tanglish greeting, FAQ-mining query log, output sanitization, price-drift detection, the sliding-window rate limiter, and the smart-router tier expectations.
+- **E2E suite → 33/33 pass** against a real `next start` on :3311, including one live OpenRouter round trip (a Tamil question answered in Tamil), the SSE protocol shape, layer routing, history trimming (46 legacy messages trimmed → 200; 120-message payload → 400), and 429 + `Retry-After` from the free-layer cap.
+- Production server smoke check: `/`, `/sale`, `/classes` all 200.
+
+**Two closing changes (both in the tree, both small):**
+1. **Reverted the machine-generated `tsconfig.json` stray.** The `.next-gate2/types/**/*.ts` include was appended by a scratch build (`NEXT_DIST_DIR=.next-gate2`) and that directory does not exist on disk. Nothing else in that file was touched; the three sibling includes of the same provenance that were already committed are left alone.
+2. **Added `npm run test:chat` and `npm run test:e2e`** plus `scripts/ts-node-hooks.mjs` / `scripts/ts-node-boot.mjs`. Both suites previously documented `npx tsx`, which is not installed and would have meant a network install; the hooks give plain Node the `@/` alias, extensionless imports and JSON imports, so Node 23+ runs them directly. Both re-run green.
+
+**Already committed one push earlier:** `/.next-*/` + `server.log` in `.gitignore`. That removes `.next-plgate` (168 MB), `.next-plv` (28 MB), `.next-preview` (116 MB) and the dev log from `git status` permanently — they were untracked but one `git add -A` away from the repository.
+
+**Reminders for whoever works here next:**
+- Never run `next build` while `next dev` is running in this repo — it overwrites `.next` and the dev server then serves unstyled 500s.
+- `?perf=lite` / `?perf=full` forces the paint tier for QA. `npm run images:optimize` is a no-op unless new images were added (`--force` rebuilds all 544).
+- `public/images/opt/` (544 files, 34 MB) is committed deliberately: `imageVariants.json` makes `imageSrc` emit `/images/opt/…` unconditionally, so a deploy missing those files 404s rather than falling back to the originals.
+- Scratch builds should use a dist dir that matches the ignored `/.next-*/` pattern (e.g. `.next-plgate`) so no tsconfig edit is needed.
+
+**Open items, verified and unclaimed — none of them blocking:**
+1. `src/data/studioData.ts` still points three `featuredPaintings[].image` entries at `images.unsplash.com`, which is the only reason `next.config.js` allows that remote host. The local assets already exist under `assets.fallbackImage`.
+2. `content/site.json` sale prices are the seeded ladder (₹4,500 + ₹200 × index across 36 items) — real prices belong in the admin GalleryManager.
+3. Three components exist with zero importers: `PaintingLightbox.tsx`, `InteractiveSlideshow.tsx`, `SpotlightPill.tsx`. Safe to delete; wiring `PaintingLightbox` back to `setPainting` would need `next/dynamic`, since its gsap import is what used to bloat the home bundle.
+4. `content-visibility: auto` on below-fold sections is still open (the journey section's sticky column and in-page anchors need real-device testing).
+5. The chatbot's rate limits are in-memory per serverless instance, so the advertised 8/min is really per-instance and resets on cold start.

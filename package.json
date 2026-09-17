@@ -12,7 +12,9 @@
     "lint": "next lint",
     "vite:dev": "vite",
     "vite:build": "vite build",
-    "images:optimize": "node scripts/optimize-images.mjs"
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "test:chat": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chatbot.ts",
+    "test:e2e": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/e2e-chat.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
