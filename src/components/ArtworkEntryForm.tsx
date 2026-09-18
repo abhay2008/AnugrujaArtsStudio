@@ -82,7 +82,7 @@ export default function ArtworkEntryForm() {
       setFeedback({ ok: false, msg: 'Please give the artwork a name.' });
       return;
     }
-    const waUrl = `https://wa.link/ghtuox?text=${encodeURIComponent(inquiryText)}`;
+    const waUrl = `https://wa.me/919849238464?text=${encodeURIComponent(inquiryText)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
     setFeedback({
       ok: true,

@@ -133,8 +133,8 @@ assert(exact7.matched && exact7.action?.type === 'whatsapp' && exact7.action.mes
 section('Reply tags (WA/IMG)');
 const catalog = lookupAndReply('what paintings are for sale?');
 assert(catalog.matched && /\[WA:[^\]]+\]$/.test(catalog.text), 'catalog reply ends with a [WA:…] tag');
-const wa = whatsappTag({ whatsapp: '919611255949', phoneDisplay: '+91 96112 55949' }, 'Hi! I want painting 7');
-assert(wa === 'https://wa.me/919611255949?text=Hi!%20I%20want%20painting%207', 'whatsappTag builds the right deep link');
+const wa = whatsappTag({ whatsapp: '919849238464', phoneDisplay: '+91 98492 38464' }, 'Hi! I want painting 7');
+assert(wa === 'https://wa.me/919849238464?text=Hi!%20I%20want%20painting%207', 'whatsappTag builds the right deep link');
 
 // Location answers carry the real city and the maps tag.
 const locReply = lookupAndReply('where is the studio located?');
@@ -172,15 +172,15 @@ assert(stats.clusters[0]?.count === 2, 'identical questions cluster together');
 
 // ── 3. Output sanitization ─────────────────────────────────────────────────
 section('Output sanitization');
-const studioPhone = sanitizeOutput('Call us at +91 96112 55949 anytime.');
-assert(studioPhone.includes('96112 55949'), 'keeps the studio phone number');
+const studioPhone = sanitizeOutput('Call us at +91 98492 38464 anytime.');
+assert(studioPhone.includes('98492 38464'), 'keeps the studio phone number');
 
 const foreignPhone = sanitizeOutput('Sure, my number is 9876543210 for orders.');
 assert(!foreignPhone.includes('9876543210'), 'strips injected non-studio phone numbers');
 assert(foreignPhone.includes('[contact via WhatsApp]'), 'replaces stripped numbers with a safe pointer');
 
-const goodLink = sanitizeOutput('See https://wa.me/919611255949 and https://instagram.com/anugruja_arts');
-assert(goodLink.includes('wa.me/919611255949'), 'allows WhatsApp links');
+const goodLink = sanitizeOutput('See https://wa.me/919849238464 and https://instagram.com/anugruja_arts');
+assert(goodLink.includes('wa.me/919849238464'), 'allows WhatsApp links');
 assert(goodLink.includes('instagram.com/anugruja_arts'), 'allows studio social links');
 
 const badLink = sanitizeOutput('Visit https://evil.example.com/scam for a discount!');
@@ -370,7 +370,7 @@ const probeContext = [
   '- Watercolor Weekend — 14 Mar 2026 (ISO: 2026-03-14)',
   'STUDIO FAQ:',
   '- Q: How do I buy a painting?',
-  '  A: Reach us on WhatsApp +91 96112 55949 and we’ll help you choose.',
+  '  A: Reach us on WhatsApp +91 98492 38464 and we’ll help you choose.',
 ].join('\n');
 
 const allowedCases = [
@@ -381,8 +381,8 @@ const allowedCases = [
   },
   {
     input: 'Can I book on the website?',
-    reply: 'Purchases happen personally on WhatsApp at +91 96112 55949.',
-    expectSanitizesTo: 'Purchases happen personally on WhatsApp at +91 96112 55949.',
+    reply: 'Purchases happen personally on WhatsApp at +91 98492 38464.',
+    expectSanitizesTo: 'Purchases happen personally on WhatsApp at +91 98492 38464.',
   },
   {
     input: 'Share a link to your sale page.',
@@ -396,8 +396,8 @@ const allowedCases = [
   },
   {
     input: 'Send me a WhatsApp link.',
-    reply: 'Chat with us directly https://wa.me/919611255949',
-    expectSanitizesTo: 'Chat with us directly https://wa.me/919611255949',
+    reply: 'Chat with us directly https://wa.me/919849238464',
+    expectSanitizesTo: 'Chat with us directly https://wa.me/919849238464',
   },
 ];
 

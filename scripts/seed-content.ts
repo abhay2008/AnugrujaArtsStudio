@@ -23,9 +23,9 @@ const initialContent = {
     tagline: 'Discover ourselves through colors',
     subtitle: 'Learn and buy art!',
     founder: 'Anuradha Govarthanan',
-    phoneDisplay: '+91 96112 55949',
-    phoneRaw: '919611255949',
-    whatsapp: 'https://wa.link/ghtuox',
+    phoneDisplay: '+91 98492 38464',
+    phoneRaw: '919849238464',
+    whatsapp: 'https://wa.me/919849238464',
     email: 'anugruja@gmail.com',
     locationLabel: 'Hyderabad, Telangana',
     mapsUrl:

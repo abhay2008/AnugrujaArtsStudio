@@ -28,7 +28,7 @@ interface ChatbotConfig {
   suggestedPrompts: string[];
 }
 
-const WHATSAPP_URL = 'https://wa.me/919611255949';
+const WHATSAPP_URL = 'https://wa.me/919849238464';
 
 /** Shown when the CMS doesn't define suggested prompts — guide visitors to
  *  the cheap, well-answered paths (preprogrammed layer, zero LLM cost). */

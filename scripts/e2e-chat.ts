@@ -144,7 +144,7 @@ async function main(): Promise<void> {
   const paint12 = await chat([userMsg('How much is painting 12?')]);
   assert(paint12.layer === 'preprogrammed', `painting lookup uses preprogrammed layer (got: ${paint12.layer})`);
   assert(paint12.text.includes('#12'), 'painting 12 reply names the right painting');
-  assert(typeof paint12.wa === 'string' && paint12.wa.startsWith('https://wa.me/919611255949?text='), `painting lookup carries a WhatsApp deep link (got: ${paint12.wa})`);
+  assert(typeof paint12.wa === 'string' && paint12.wa.startsWith('https://wa.me/919849238464?text='), `painting lookup carries a WhatsApp deep link (got: ${paint12.wa})`);
 
   const fuzzyPaint = await chat([userMsg('panting 7 price')]);
   assert(fuzzyPaint.layer === 'preprogrammed', `typo “panting 7 price” still hits the free layer (got: ${fuzzyPaint.layer})`);

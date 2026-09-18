@@ -28,7 +28,7 @@ export function whatsappLink(brand: { whatsapp?: string | undefined; phoneRaw?: 
 
 /** Build a wa.me deep link carrying a prefilled message for the visitor. */
 export function whatsappTag(brand: { whatsapp?: string | undefined; phoneRaw?: string | undefined; phoneDisplay: string }, message: string): string {
-  return whatsappLink(brand, message) ?? 'https://wa.me/919611255949';
+  return whatsappLink(brand, message) ?? 'https://wa.me/919849238464';
 }
 
 /**

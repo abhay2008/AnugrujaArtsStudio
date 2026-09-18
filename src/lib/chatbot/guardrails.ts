@@ -151,7 +151,7 @@ export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | '
 // ── Output guardrails ─────────────────────────────────────────────────────
 
 /** The only phone digits allowed to appear in a bot reply (studio number). */
-const STUDIO_PHONE_DIGITS = '919611255949';
+const STUDIO_PHONE_DIGITS = '919849238464';
 
 /**
  * Strips phone numbers that aren't the studio's (guards against prompt
@@ -164,7 +164,7 @@ export function sanitizeOutput(reply: string): string {
   out = out.replace(/(\+?\d[\d\s\-()]{7,}\d)/g, (match) => {
     const digits = match.replace(/\D/g, '');
     if (!digits) return match;
-    if (digits === STUDIO_PHONE_DIGITS || digits === '9611255949') return match;
+    if (digits === STUDIO_PHONE_DIGITS || digits === '9849238464') return match;
     // 10-digit local numbers that don't match the studio's get neutralized.
     if (digits.length >= 8 && digits.length <= 14) return '[contact via WhatsApp]';
     return match;
