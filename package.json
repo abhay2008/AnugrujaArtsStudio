@@ -10,10 +10,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "vite:dev": "vite",
     "vite:build": "vite build",
     "images:optimize": "node scripts/optimize-images.mjs",
     "audit:css": "node scripts/audit-css-compat.mjs",
+    "test:framing": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-photo-framing.ts",
     "test:chat": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chatbot.ts",
     "test:e2e": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/e2e-chat.ts"
   },

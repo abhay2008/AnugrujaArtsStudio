@@ -1,3 +1,33 @@
+/** Longest edge kept when re-encoding an upload. */
+export const MAX_IMAGE_DIMENSION = 2000;
+
+/** Encoding quality for WebP/JPEG uploads. */
+export const UPLOAD_QUALITY = 0.88;
+
+/**
+ * Encode a finished canvas as the upload payload. WebP where the browser
+ * supports it, JPEG otherwise — the same choice the optimizer makes, so a
+ * cropped export and an untouched original arrive in the same format.
+ */
+export function encodeCanvasToDataUrl(
+  canvas: HTMLCanvasElement,
+  sourceName: string,
+  quality = UPLOAD_QUALITY
+): { dataUrl: string; filename: string } {
+  let dataUrl = canvas.toDataURL('image/webp', quality);
+  if (!dataUrl.startsWith('data:image/webp')) {
+    dataUrl = canvas.toDataURL('image/jpeg', quality);
+  }
+
+  const baseName =
+    (sourceName || 'artwork')
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 40) || 'artwork';
+  const ext = dataUrl.startsWith('data:image/webp') ? 'webp' : 'jpg';
+  return { dataUrl, filename: `${baseName}.${ext}` };
+}
+
 /**
  * High performance image optimization for desktop and mobile uploads.
  * Preserves ultra high resolution art details while resizing/compressing
@@ -41,7 +71,7 @@ export async function optimizeImageForUpload(
     if (objectUrl) {
       try {
         const img = await loadImage(objectUrl);
-        const MAX_DIMENSION = 2000;
+        const MAX_DIMENSION = MAX_IMAGE_DIMENSION;
         let width = img.naturalWidth || img.width;
         let height = img.naturalHeight || img.height;
 
@@ -65,15 +95,7 @@ export async function optimizeImageForUpload(
           ctx.drawImage(img, 0, 0, width, height);
 
           // Convert to efficient WebP or JPEG
-          let quality = 0.88;
-          let outputDataUrl = canvas.toDataURL('image/webp', quality);
-          if (!outputDataUrl.startsWith('data:image/webp')) {
-            outputDataUrl = canvas.toDataURL('image/jpeg', quality);
-          }
-
-          const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-          const ext = outputDataUrl.startsWith('data:image/webp') ? 'webp' : 'jpg';
-          return { dataUrl: outputDataUrl, filename: `${baseName}.${ext}` };
+          return encodeCanvasToDataUrl(canvas, file.name);
         }
       } catch (drawErr) {
         console.warn('Canvas optimization fallback:', drawErr);
