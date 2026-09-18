@@ -60,6 +60,16 @@ export const studioMeta = {
   instagramSaleUrl: cur.social?.find((s) => s.network === 'instagram-sale')?.url || 'https://www.instagram.com/anugruja_painting4sale',
   youtubeUrl: cur.social?.find((s) => s.network === 'youtube')?.url || 'https://www.youtube.com/@anugrujaarts202',
   eventsUrl: 'https://posts.gle/SGYFWZ',
-  developerGithub: 'https://github.com/abhay2008',
+  /**
+   * Developer credit shown at the end of every page ("want a site like this?").
+   * Deliberately separate from the studio contact above — the phone number and
+   * links here belong to the developer, NOT to the artist.
+   */
   developerName: 'Abhay Kashyap',
+  developerRole: 'Full stack Developer',
+  developerAffiliation: 'UG BMSCE blr',
+  developerGithub: 'https://github.com/abhay2008',
+  developerLinkedin: 'https://www.linkedin.com/in/abhay-kashyap-54929a238/',
+  developerPhone: '+91 7019289545',
+  developerPhoneHref: 'tel:+917019289545',
 };

@@ -2,8 +2,10 @@
 
 import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Award, Globe2, MapPin, Users2, BadgeCheck } from 'lucide-react';
+import { Award, Globe2, MapPin, Users2, BadgeCheck, Plus } from 'lucide-react';
 import { studioData } from '@/data/studioData';
+import { useLightbox } from '@/components/LightboxContext';
+import { imageUrl } from '@/lib/imageSrc';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -15,6 +17,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
  */
 export default function AccoladesSection() {
   const reducedMotion = useReducedMotion();
+  const { openLightbox } = useLightbox();
   const { achievements, exhibitions, outreach } = studioData;
 
   /* Ticker only needs the places that prove global reach. */
@@ -58,8 +61,23 @@ export default function AccoladesSection() {
             transition={{ duration: 0.6, ease: EASE, delay: reducedMotion ? 0 : index * 0.12 }}
             whileHover={reducedMotion ? undefined : { y: -6 }}
           >
-            {item.image && (
-              <div className="accolade-artifact">
+            {item.image ? (
+              <button
+                type="button"
+                className="accolade-artifact"
+                onClick={() =>
+                  openLightbox(
+                    // The zoomed view fetches the widest WebP derivative;
+                    // the card only ever needed the ~300px one.
+                    imageUrl(item.image, 1600),
+                    item.title,
+                    `${item.institution} · ${item.year}`,
+                    undefined,
+                    'Award'
+                  )
+                }
+                aria-label={`View the ${item.title} recognition image larger`}
+              >
                 <Image
                   src={item.image}
                   alt={`${item.title} — ${item.institution}`}
@@ -68,16 +86,23 @@ export default function AccoladesSection() {
                   className="accolade-artifact-img object-cover"
                 />
                 <span className="accolade-artifact-veil" aria-hidden />
+                <span className="accolade-artifact-zoom" aria-hidden>
+                  <Plus />
+                </span>
+              </button>
+            ) : (
+              /* No photo for this one — a quiet emblem keeps the ribbon rhythm
+                 without the big empty void the plain cards used to show. */
+              <div className="accolade-emblem-slot" aria-hidden>
+                <span className="accolade-emblem">
+                  <Award />
+                </span>
               </div>
             )}
 
             <div className="accolade-head">
               <span className="accolade-year-badge">{item.year}</span>
-              {item.image ? (
-                <BadgeCheck className="accolade-seal h-5 w-5" aria-hidden />
-              ) : (
-                <Award className="accolade-seal h-5 w-5" aria-hidden />
-              )}
+              {item.image && <BadgeCheck className="accolade-seal h-5 w-5" aria-hidden />}
             </div>
             <h3 className="accolade-title font-editorial">{item.title}</h3>
             <p className="accolade-inst">{item.institution}</p>

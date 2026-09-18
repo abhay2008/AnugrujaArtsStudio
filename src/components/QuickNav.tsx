@@ -28,6 +28,13 @@ export default function QuickNav({ items }: { items: PageListing[] }) {
   const [visible, setVisible] = useState(false);
   const [activeHref, setActiveHref] = useState<string>('');
 
+  // The pill floats over the page, so it would otherwise sit on top of the
+  // footer's last lines. Flag the body and let CSS reserve the room beneath.
+  useEffect(() => {
+    document.body.classList.add('has-quicknav');
+    return () => document.body.classList.remove('has-quicknav');
+  }, []);
+
   useEffect(() => {
     if (!items.length) return;
 

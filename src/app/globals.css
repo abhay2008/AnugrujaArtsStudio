@@ -1497,6 +1497,65 @@ body::before {
   border-top-color: rgba(160, 145, 128, 0.22);
 }
 
+/* ── Developer credit (end of every page) ──────────────────────────────
+   A self-contained "want a site like this?" card for the site's developer,
+   kept visually distinct from the studio's own contact details so the two
+   phone numbers and link sets can never be confused for one another. */
+.dev-credit {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.16));
+  border: 1px solid var(--border-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+[data-theme='light'] .dev-credit {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42));
+  border-color: rgba(140, 106, 30, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dev-credit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease,
+    transform 200ms ease;
+}
+
+.dev-credit-btn:hover,
+.dev-credit-btn:focus-visible {
+  color: var(--gold-text);
+  border-color: var(--gold-text);
+  background: rgba(232, 201, 106, 0.1);
+  transform: translateY(-1px);
+}
+
+.dev-credit-btn:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dev-credit-btn:hover,
+  .dev-credit-btn:focus-visible {
+    transform: none;
+  }
+}
+
+/* The sticky quick-nav pill floats above the page (see QuickNav.tsx), so it
+   would otherwise cover the footer's closing lines. While it is mounted,
+   reserve room beneath the footer equal to the pill's footprint. Declared
+   twice on purpose: engines without `env()` support keep the first value. */
+body.has-quicknav .site-footer {
+  padding-bottom: 6.75rem;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6.75rem);
+}
+
 /* ------------------------------- */
 /* Custom Scrollbar                */
 /* ------------------------------- */
@@ -3995,31 +4054,132 @@ body::before {
   box-shadow: 0 22px 52px -24px rgba(0, 0, 0, 0.62);
 }
 
+/* Museum-slot artifact: a framed, square window for the award photo.
+   The old slot was a 120–168px strip with object-fit: cover, which
+   beheaded every portrait submission photo; the award images are square
+   or portrait, so the slot is square too and `cover` trims edges only. */
 .accolade-artifact {
   position: relative;
-  height: clamp(120px, 15vw, 168px);
-  margin: -1.75rem -1.75rem 1.25rem;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0 0 1.25rem;
+  padding: 0;
   overflow: hidden;
+  border: 1px solid var(--atelier-hairline);
+  border-radius: 4px;
   background: var(--surface-inset);
+  cursor: zoom-in;
+  text-align: left;
+}
+
+/* On the 4-col desktop grid the square would grow past ~18rem; a gentle
+   cap keeps the ribbon proportioned (cover crops a little top/bottom). */
+@media (min-width: 1280px) {
+
+  .accolade-artifact,
+  .accolade-emblem-slot {
+    max-height: 15.5rem;
+  }
 }
 
 .accolade-artifact-img {
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
 }
 
-.accolade-card:hover .accolade-artifact-img {
-  transform: scale(1.05);
+.accolade-card:hover .accolade-artifact-img,
+.accolade-artifact:focus-visible .accolade-artifact-img {
+  transform: scale(1.045);
+  filter: brightness(1.06);
 }
 
+.accolade-artifact:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Soft bottom veil so the photo recedes into the card instead of ending
+   in a hard line. */
 .accolade-artifact-veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 4, 14, 0) 42%, rgba(8, 4, 14, 0.72) 100%);
+  background: linear-gradient(180deg, rgba(8, 4, 14, 0) 62%, rgba(8, 4, 14, 0.5) 100%);
   pointer-events: none;
 }
 
 [data-theme='light'] .accolade-artifact-veil {
-  background: linear-gradient(180deg, rgba(255, 253, 249, 0) 52%, rgba(255, 253, 249, 0.8) 100%);
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0) 68%, rgba(255, 253, 249, 0.55) 100%);
+}
+
+/* Zoom affordance — mirrors the event-photo hint chip. */
+.accolade-artifact-zoom {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 4, 13, 0.68);
+  color: #fff7df;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.accolade-artifact-zoom svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.accolade-artifact:hover .accolade-artifact-zoom,
+.accolade-artifact:focus-visible .accolade-artifact-zoom {
+  opacity: 1;
+}
+
+/* Card without a photo: a quiet gilded emblem plate keeps the ribbon
+   rhythm and kills the big empty void above the year badge. */
+.accolade-emblem-slot {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  margin: 0 0 1.25rem;
+  border: 1px dashed var(--atelier-hairline);
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(212, 175, 55, 0.07), transparent 68%),
+    var(--surface-inset);
+}
+
+.accolade-emblem {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.08);
+  color: var(--atelier-gold-ink);
+}
+
+.accolade-emblem svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+[data-theme='light'] .accolade-emblem-slot {
+  border-color: rgba(122, 92, 30, 0.28);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(212, 175, 55, 0.12), transparent 68%),
+    rgba(235, 224, 204, 0.55);
+}
+
+[data-theme='light'] .accolade-emblem {
+  border-color: rgba(122, 92, 30, 0.4);
+  background: rgba(212, 175, 55, 0.14);
+  color: #7a5c1e;
 }
 
 .accolade-head {
@@ -4031,16 +4191,23 @@ body::before {
 }
 
 .accolade-year-badge {
-  display: inline-block;
-  padding: 0.26rem 0.6rem;
-  border-radius: 2px;
-  background: var(--atelier-seal-bg);
-  border: 1px solid var(--atelier-hairline);
-  font-size: clamp(0.6rem, 1.5vw, 0.7rem);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.38);
+  font-size: clamp(0.6rem, 1.5vw, 0.68rem);
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--atelier-gold-soft);
+  color: var(--atelier-gold-ink);
+}
+
+[data-theme='light'] .accolade-year-badge {
+  border-color: rgba(122, 92, 30, 0.35);
+  background: rgba(212, 175, 55, 0.16);
+  color: #77520d;
 }
 
 .accolade-seal {
@@ -4398,9 +4565,9 @@ body::before {
     padding: 1.4rem;
   }
 
-  .accolade-artifact {
-    height: 132px;
-    margin: -1.4rem -1.4rem 1.05rem;
+  .accolade-artifact,
+  .accolade-emblem-slot {
+    margin-bottom: 1.05rem;
   }
 
   .exhibition-item {
@@ -6303,21 +6470,12 @@ html.theme-transitioning .btn-atelier-solid {
   }
 }
 
-@media (max-width: 560px) {
-  .registration-event-images.is-gallery {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 12rem 7rem;
-  }
-
-  .registration-event-images.is-gallery .registration-event-image:first-child {
-    grid-column: 1 / span 2;
-    grid-row: auto;
-  }
-
-  .registration-event-images.is-gallery .registration-event-image {
-    min-height: 7rem;
-  }
-}
+/* The narrow-screen mosaic of the *first* card treatment used to live here.
+   It set `grid-column: 1 / span 2` on the first photo while the editorial pass
+   below re-declared `grid-row: 1 / span 2` on the same tile, so that one photo
+   claimed the whole 2x2 grid and the other two were pushed into an implicit
+   third row that painted on top of it. The single mobile definition now lives
+   with the rest of the card styling below — do not reintroduce a second one. */
 
 /* Light paper theme: preserve the same plum/gold identity while keeping every
    event label readable against the porcelain panel. */
@@ -6378,12 +6536,18 @@ html.theme-transitioning .btn-atelier-solid {
 
 .registration-events-list {
   display: grid;
+  /* Explicit single column. With no template, the implicit `auto` track
+     sized to the card's max-content (an unwrapped Cormorant sentence), so
+     the whole card overflowed the viewport and clipped the title, seats
+     chip and CTA at the right edge. */
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   gap: 1rem;
 }
 
 .registration-event-card {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(12rem, 0.78fr) minmax(0, 1.22fr);
   overflow: hidden;
   border: 1px solid var(--atelier-hairline);
@@ -6397,9 +6561,15 @@ html.theme-transitioning .btn-atelier-solid {
 .registration-event-images {
   display: grid;
   grid-template-columns: 1.35fr 0.65fr;
-  grid-template-rows: repeat(2, minmax(5rem, 1fr));
-  min-height: 15.5rem;
-  gap: 0.25rem;
+  /* Fixed row heights instead of 1fr stretch: the tiles keep a photo-like
+     proportion at any card height, and the mosaic doesn't deform when the
+     text column grows. */
+  grid-template-rows: repeat(2, minmax(9.5rem, 12.5rem));
+  align-self: stretch;
+  align-content: center;
+  min-height: 19rem;
+  gap: 0.4rem;
+  padding: 0.4rem;
   background: var(--surface-inset);
 }
 
@@ -6409,6 +6579,13 @@ html.theme-transitioning .btn-atelier-solid {
 }
 
 .registration-event-images.is-gallery .registration-event-image:first-child {
+  grid-row: 1 / span 2;
+}
+
+/* Two-photo events: fill the right column completely instead of leaving an
+   empty tile under the second photo. */
+.registration-event-images.is-gallery .registration-event-image:nth-child(2):last-child {
+  grid-column: 2;
   grid-row: 1 / span 2;
 }
 
@@ -6489,8 +6666,10 @@ html.theme-transitioning .btn-atelier-solid {
 
 .registration-event-seats {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.3rem;
+  margin-top: 0.15rem;
   border: 1px solid rgba(249, 115, 22, 0.32);
   border-radius: 999px;
   background: rgba(249, 115, 22, 0.08);
@@ -6501,12 +6680,12 @@ html.theme-transitioning .btn-atelier-solid {
 }
 
 .registration-event-title {
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   color: var(--text-primary);
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.45rem, 2.5vw, 1.95rem);
   font-weight: 600;
-  line-height: 1.06;
+  line-height: 1.12;
   text-wrap: balance;
 }
 
@@ -6567,20 +6746,21 @@ html.theme-transitioning .btn-atelier-solid {
 
 .registration-event-cta {
   display: inline-flex;
-  min-height: 2.55rem;
+  min-height: 2.7rem;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  margin-top: 0.9rem;
-  border: 1px solid rgba(242, 215, 112, 0.55);
-  border-radius: 0.65rem;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  border: 1px solid rgba(255, 235, 180, 0.6);
+  border-radius: 999px;
   background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-sunset) 100%);
-  padding: 0.62rem 1.1rem;
+  padding: 0.68rem 1.35rem;
   color: #1b0924;
-  font: 700 0.7rem/1 'Montserrat', system-ui, sans-serif;
-  letter-spacing: 0.08em;
+  font: 700 0.72rem/1 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.09em;
   text-decoration: none;
-  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.18);
+  text-transform: uppercase;
+  box-shadow: 0 10px 26px rgba(234, 88, 12, 0.22);
   transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -6631,17 +6811,50 @@ html.theme-transitioning .btn-atelier-solid {
     border-radius: 0.45rem;
   }
 
+  /* Photo mosaic. Every tile is placed explicitly — the hero photo across the
+     top, the remaining two side by side beneath it — so no photo can land in an
+     implicit row and overlap another. The height cap that used to clip the
+     strip is gone: the rows carry their own photo-like proportions instead. */
   .registration-event-images,
   .registration-event-images.is-gallery {
-    min-height: 8.75rem;
-    max-height: 8.75rem;
-    grid-template-columns: 1.25fr 0.75fr;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: clamp(8rem, 42vw, 11rem) clamp(6.5rem, 34vw, 9.5rem);
+    min-height: 0;
+    max-height: none;
   }
 
   .registration-event-images:not(.is-gallery) {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(11rem, 52vw, 15rem);
+  }
+
+  .registration-event-images.is-gallery .registration-event-image:first-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .registration-event-images.is-gallery .registration-event-image:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .registration-event-images.is-gallery .registration-event-image:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Two-photo events stack instead: hero on top, the second photo full width
+     beneath it (the right column has nothing to pair with here). */
+  .registration-event-images.is-gallery .registration-event-image:nth-child(2):last-child {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* Studio photos are usually tall portraits; a centred crop into a wide tile
+     lands on the subject's chest. Bias the window towards the top so faces and
+     the top of the frame survive the crop. */
+  .registration-event-images .registration-event-image img {
+    object-position: center 30%;
   }
 
   .registration-event-content {
@@ -7072,7 +7285,9 @@ html[data-os='windows'] [data-theme='light'] .gold-sunset-shimmer {
 }
 
 /* ── 2. Sticky glass panels → opaque panels (no failed backdrop paint) ── */
-html[data-os='windows'] .sticky-profile-card {
+html[data-os='windows'] .sticky-profile-card,
+html[data-os='windows'] .registration-event-card,
+html[data-os='windows'] .accolade-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background: var(--atelier-panel-solid);
@@ -7165,5 +7380,186 @@ html[data-os='windows'] .painting-lb-meta {
     max-height: 100vh;
     height: 100dvh;
     max-height: 100dvh;
+  }
+}
+
+/* ================================================================
+   BUY SPOTLIGHT — luxury vitrine pass
+   ================================================================
+   Everything here is additive and scoped to `--spotlight`, so the deck /
+   polaroid / rail carousels are untouched. Two rules govern the choices:
+     1. Depth is painted with `opacity` only — never a per-frame `filter`
+        (the file already learned that lesson twice: a blur on every moving
+        flank re-rasterises each frame, which is why 7213/7337 exist).
+     2. Overlays that sit on top of art are `pointer-events: none`, so a glow
+        can never swallow a tap meant for the painting. */
+
+/* ——— Vitrine: a pool of warm light behind the ring, plus the grounding
+       shadow that makes the plates read as floating above a surface. ——— */
+.c3d-stage--spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 44% 38% at 50% 50%, rgba(242, 215, 112, 0.1), transparent 72%),
+    radial-gradient(ellipse 68% 50% at 50% 56%, rgba(249, 115, 22, 0.06), transparent 76%),
+    radial-gradient(ellipse 42% 7% at 50% 94%, rgba(0, 0, 0, 0.5), transparent 72%);
+}
+
+/* ——— Gilding: the centre plate gets a double hairline (gold frame inside a
+       warm rim) and a deeper, longer-throw glow than the flanks. ——— */
+.c3d-root--spotlight {
+  --c3d-border: 1px solid rgba(242, 215, 112, 0.16);
+  --c3d-border-centre: 1px solid rgba(247, 228, 148, 0.68);
+  --c3d-shadow: 0 22px 48px -20px rgba(0, 0, 0, 0.8);
+  --c3d-shadow-centre:
+    0 30px 68px -20px rgba(0, 0, 0, 0.86),
+    0 0 44px -8px rgba(212, 175, 55, 0.3),
+    inset 0 0 0 1px rgba(255, 240, 190, 0.22);
+}
+
+/* The flanks recede in the DARK theme too — previously only the light theme
+   dimmed them, so the dark coverflow had no depth at all. Opacity is a
+   compositor property, so the moving cards stay cheap. */
+html:not([data-theme='light']) .c3d-root--spotlight .c3d-card-media:not(.is-centre) {
+  opacity: 0.6;
+}
+
+/* Silkier state changes: the frame, glow and recession ease instead of
+   snapping when the fan settles. Durations sit just under the movement
+   loop's own settle time so nothing lags behind the motion. */
+.c3d-root--spotlight .c3d-card-media {
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Softer glass: the old sheen washed out the top-left of the painting. */
+.c3d-root--spotlight .c3d-gloss {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.015) 38%,
+    transparent 66%
+  );
+}
+
+/* ——— Plaque: a gold hairline above the title, tabular price figures, and a
+       quiet lift on hover so the whole plate feels set in the page. ——— */
+.c3d-plaque--spotlight {
+  position: relative;
+  padding-top: 0.9rem;
+}
+
+.c3d-plaque--spotlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 5rem;
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(242, 215, 112, 0.72) 50%,
+    transparent
+  );
+}
+
+.c3d-root--spotlight .c3d-spot-name {
+  letter-spacing: 0.1em;
+  text-wrap: balance;
+}
+
+.c3d-root--spotlight .c3d-spot-price {
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* ——— Molten CTA: a single slow sheen sweep on hover, clipped to the pill.
+       `pointer-events: none` keeps it from eating the tap. ——— */
+.buy-painting-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.buy-painting-btn::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -62%;
+  width: 42%;
+  pointer-events: none;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.58),
+    transparent
+  );
+  opacity: 0;
+}
+
+.buy-painting-btn:hover::after,
+.buy-painting-btn:focus-visible::after {
+  opacity: 1;
+  animation: buy-painting-sheen 0.95s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@keyframes buy-painting-sheen {
+  from {
+    left: -62%;
+  }
+  to {
+    left: 124%;
+  }
+}
+
+/* ——— Controls: gold-ringed arrows, a growing gradient dot for the active
+       slide, and an eased cluster. ——— */
+.c3d-arrow {
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.c3d-arrow:hover {
+  background: rgba(242, 215, 112, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(242, 215, 112, 0.38);
+}
+
+.c3d-dot {
+  transition:
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.42s ease,
+    box-shadow 0.42s ease;
+}
+
+.c3d-dot.is-active {
+  background: linear-gradient(90deg, #f7e494, #d4af37);
+  box-shadow:
+    0 0 12px rgba(242, 215, 112, 0.8),
+    0 0 3px rgba(255, 255, 255, 0.55);
+}
+
+/* ——— Motion etiquette ——— */
+@media (prefers-reduced-motion: reduce) {
+  .c3d-root--spotlight .c3d-card-media,
+  .c3d-arrow,
+  .c3d-dot,
+  .buy-painting-btn {
+    transition: none;
+  }
+
+  .buy-painting-btn:hover::after,
+  .buy-painting-btn:focus-visible::after {
+    animation: none;
+    opacity: 0;
   }
 }

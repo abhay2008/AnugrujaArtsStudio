@@ -282,6 +282,15 @@ export default function LightboxModal() {
 
   // Pointer events for touch pinch, double tap, and drag pan
   const onPointerDown = (e: React.PointerEvent) => {
+    /* Never start a zoom/pan gesture on top of a control. Capturing the
+       pointer here retargets the derived `click` to THIS viewport, so a press
+       on an arrow (or the close/zoom buttons) reported its click to the
+       backdrop and the arrow appeared dead — verified in the browser: the
+       click landed on the viewport div, not the button. This is the same
+       failure mode as the 3D carousel stage, so it gets the same treatment:
+       the gesture yields to any interactive descendant. */
+    if ((e.target as HTMLElement).closest?.('button, a, [role="button"]')) return;
+
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     // Two finger touch pinch
@@ -304,7 +313,8 @@ export default function LightboxModal() {
       baseTy: tyRef.current,
       moved: false,
     };
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    /* Capture is taken later, once this is unambiguously a drag (see
+       onPointerMove). Capturing on pointer-down is what broke the arrows. */
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -333,6 +343,12 @@ export default function LightboxModal() {
     const dy = e.clientY - d.startY;
 
     if (Math.hypot(dx, dy) > 5) {
+      if (!d.moved) {
+        // First confirmed movement of this gesture: take capture now so the
+        // pan keeps tracking outside the viewport. Doing it here rather than
+        // on pointer-down leaves plain clicks/taps intact for the controls.
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      }
       d.moved = true;
     }
 
@@ -591,10 +607,17 @@ export default function LightboxModal() {
 
       {/* ── Bottom Information & Action Bar ── */}
       <div className="relative z-50 px-4 py-3 sm:px-6 sm:py-4 border-t border-studio-gold/15 bg-studio-dark/85 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-        <div className="min-w-0 max-w-2xl">
+        {/* `w-full` on the narrow layout keeps this inside the viewport: in the
+            column footer the caption is centred, so an over-wide caption bleeds
+            off BOTH edges and the title reads as if it starts mid-word. */}
+        <div className="min-w-0 w-full sm:w-auto sm:max-w-2xl">
           <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+            {/* Deliberately NOT `truncate`: its `white-space: nowrap` makes the
+                title's min-content the full string, so a long title (e.g. a
+                workshop name) forced this row wider than the screen and the
+                caption was clipped at both ends. `line-clamp` wraps instead. */}
             {activeTitle && (
-              <h2 className="font-decorative text-lg sm:text-xl font-bold text-studio-gold tracking-wide truncate">
+              <h2 className="min-w-0 max-w-full font-decorative text-lg sm:text-xl font-bold text-studio-gold tracking-wide line-clamp-2 sm:line-clamp-1">
                 {activeTitle}
               </h2>
             )}
@@ -605,7 +628,7 @@ export default function LightboxModal() {
             )}
           </div>
           {activeDescription && (
-            <p className="mt-1 font-editorial text-xs sm:text-sm text-theme-muted italic line-clamp-2">
+            <p className="mt-1 font-editorial text-xs sm:text-sm text-theme-muted italic line-clamp-2 break-words">
               {activeDescription}
             </p>
           )}

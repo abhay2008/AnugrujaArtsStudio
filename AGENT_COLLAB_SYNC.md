@@ -315,3 +315,53 @@ Everything in the tree is now committed in one coordinated commit. This round ap
 **Third stream noticed and verified, not altered:** the tree also carried unclaimed carousel-stage hardening (`transform-style: preserve-3d` + `contain` on the stages, measured `--c3d-stage-height` inline var, `object-fit: contain` + full-size card images, ≥1280px card-size steps) and wider journey/accolades grids at ≥1280px. Whoever owns it: it typechecks, builds, and passes the audit as committed; the `preserve-3d` unprefixed findings remain in the audit baseline pending the real-Safari `CSS.supports()` check from §8.
 
 **Verification:** `npx tsc --noEmit` clean · `npm run build` clean (home 183 kB unchanged) · `npm run audit:css` green (49 findings, 0 new) · chatbot suite green · compiled CSS confirms the slab fix and fallback cascade · served HTML script order `data-theme → data-os → data-perf`. Round 10's WebKit enablement ask (§9.3) and the real-Windows bisect (§6) remain the two open verification items.
+
+#### [Buffy — Round 12] Events + Accolades UI redesign (uncommitted — tree shared with an in-flight stream)
+
+User-reported: event card clipping mid-word at right edge; award photos cropped badly (faces cut off); award images not zoomable.
+
+Diagnosis
+- Event card overflow: `.registration-events-list` is a grid with NO `grid-template-columns`; the implicit `auto` track sized to the card's max-content (an unwrapped Cormorant sentence), so the whole card overflowed the viewport. Fixed with `grid-template-columns: minmax(0, 1fr)` + `min-width: 0` on the card.
+- Award crops: artifact slot was a 120–168px-wide strip with `object-fit: cover`; sources are 1080x1080 / 674x1424 / 1152x1600. Slot is now a framed square (`aspect-ratio: 1/1`, capped 15.5rem on the 4-col grid) — `cover` now only trims edges.
+
+Changes
+- AccoladesSection.tsx: artifacts are real buttons opening the shared lightbox (`openLightbox`, category "Award", `imageUrl(src, 1600)` so zoom fetches the wide derivative). Cards without a photo get an `accolade-emblem-slot` (gilded Award emblem) instead of a void. Zoom-chip affordance mirrors the event-photo hint.
+- globals.css: `.accolade-artifact` redesign (+zoom chip, focus ring, veil softened), `.accolade-emblem-slot`, pill-style `.accolade-year-badge`, mobile 132px strip override deleted. Events: explicit list track, fixed mosaic rows `minmax(9.5rem, 12.5rem)` + 0.4rem padding, seats chip `flex: 0 0 auto` (no crush), Playfair event title, pill CTA.
+- Windows block: `.registration-event-card` and `.accolade-card` added to the opaque-panel fallback (both are backdrop-filter glass).
+
+Verified: tsc clean, `npm run audit:css` green (54 findings, 0 new), `next build` clean. Served-output smoke test: 3 artifact buttons + 1 emblem slot render, compiled CSS carries the new rules.
+
+#### [Buffy — Round 13] Event-photo mosaic overlap + lightbox caption clipping (uncommitted, same shared tree)
+
+User-reported: the event photo collage overlapped itself; long artwork titles were cut off in the enlarged view.
+
+Diagnosis
+- **Mosaic overlap (real, not cosmetic):** two `@media` blocks both styled `.registration-event-images.is-gallery`. The older narrow-screen block gave the first tile `grid-column: 1 / span 2` and the editorial pass below re-declared `grid-row: 1 / span 2` on the same tile — one photo claimed the whole 2x2, and tiles 2-3 fell into an implicit third row that painted over it. Measured at 439px: all three tiles overlapped and the card bled past the viewport.
+- **Lightbox caption clipping:** the footer title used Tailwind `truncate`, i.e. `white-space: nowrap`, which makes a flex item's min-content the *full* string. In the column footer (<640px) the centred caption therefore could not shrink below its 539px text width inside a 439px footer (x = -50), so a long title read as if it began mid-word. The description inherited the same over-wide box.
+
+Changes
+- `globals.css`: deleted the stale narrow-screen mosaic block (replaced by a comment explaining the collision, so nobody re-adds a second definition); `.registration-event-images.is-gallery .registration-event-image:nth-child(2):last-child { grid-column: 2; grid-row: 1 / span 2 }` so a 2-photo event fills the right column instead of leaving an empty tile.
+- `LightboxModal.tsx`: caption wrapper `min-w-0 w-full sm:w-auto sm:max-w-2xl`; title `truncate` -> `line-clamp-2 sm:line-clamp-1` with `min-w-0 max-w-full`; description gains `break-words`. (A `/* */` JS block comment directly inside the `{cond && ( ... )}` container is a parse error in SWC — use a `{/* */}` JSX comment.)
+
+Verified live at 439px (viewport width of the user's screenshot): tiles `382x176 / 188x149 / 188x149`, `overlap: false`, `spillsOutside: false`, all 3 images loaded; 1- and 2-photo events simulated in the DOM with no empty tile and no overflow; lightbox caption now `407px @ x=16`, root and footer `scrollWidth == clientWidth`, title wraps to 2 fully visible lines. Sale/classes lightbox regression-checked (caption 407px, price pill + "Inquire to Buy" inside viewport). tsc clean, `npm run audit:css` green (54 findings, 0 new). Mosaic rows capped at `minmax(9.5rem, 12.5rem)` were verified on the narrow layout only — the `>=1024px` two-column card was reasoned about, not re-rendered.
+
+#### [Buffy — Round 14] Dead gallery arrows + luxury pass on the Buy spotlight
+
+User-reported: the prev/next arrows in the enlarged view do nothing; the Buy Paintings carousel should look smoother and more luxurious.
+
+Diagnosis (reproduced with real input, not inferred)
+- **Dead lightbox arrows — same failure mode as the carousel stage.** `LightboxModal`'s viewport called `setPointerCapture` on **every** `pointerdown`, and the arrows are descendants of that viewport. Instrumenting `click` showed the press started on the chevron `<svg>` and the click then landed on `DIV.relative.flex-1…` — the viewport — so `nextImage()` never ran (counter stayed `1 / 14`). Capture retargets the derived click to the capturing element.
+- The in-page carousel arrows (`.c3d-arrow`) are **not** affected: they render outside `.c3d-stage`, so the stage's handlers never see them. Confirmed by hit-test — `elementFromPoint` at each arrow's centre returns the SVG inside the button.
+
+Changes
+- `LightboxModal.tsx`: `onPointerDown` now returns early for gestures starting inside `button, a, [role="button"]`, and pointer capture moved into `onPointerMove` once a drag is confirmed (`moved`). Taps, double-tap-zoom and drag-pan on the artwork are unchanged; the zoomed view hides the arrows anyway, so pan is never interrupted by a control.
+- `Carousel3D.tsx` (defensive, same idea): bail out of `onPointerDown` for real `button, a` targets so a jittery press on an edge arrow can't capture the pointer and eat its click. Cards are `div[role=button]`, so drag/swipe from a card still works.
+- **Buy spotlight luxury pass** (`globals.css`, additive + scoped to `--spotlight`): vitrine light pool + grounding shadow via `::before` on the stage (`pointer-events: none`); gilded centre plate (gold rim, inset hairline, longer gold glow) through the `--c3d-border-centre` / `--c3d-shadow-centre` vars; **dark-theme flank recession** (`html:not([data-theme='light']) … opacity: 0.6`) — previously only the light theme dimmed the flanks, so the dark coverflow had no depth; silkier `opacity/box-shadow/border-color` transitions; softer gloss; gold hairline above the plaque title; tabular price figures; a slow sheen sweep on the Buy CTA (`pointer-events: none`); gold-ringed arrows and a gradient active dot. All with a `prefers-reduced-motion` reset.
+- `Carousel3D.tsx` motion: the spotlight gets a lower spring stiffness (`0.12` vs `0.17`) and a slower inertia decay (`0.938` vs `0.9`) — a longer, silkier ease-out and a flick that coasts. Scoped to `variant === 'spotlight'`; `variant` added to `step`'s deps.
+
+Operational finding (worth knowing before debugging a blank preview)
+- This checkout had **three** `next dev` processes; the one on 3000 (this thread) was the only one on the shared default `.next`, and another thread's `npm run build` wrote that cache underneath it. Result: `GET / → 500`, `TypeError: a[d] is not a function`, module counts oscillating 684↔2028, and a blank body in the browser that survived reloads. Fix: restart **your own** server with `NEXT_DIST_DIR=.next-preview` (already in tsconfig's `include`, so no tracked-file edit). Check `lsof -a -p <pid> -d cwd` before killing anything — one of those servers belongs to a different repo.
+
+Verified live at 439px on a clean cache: real click on the dialog's Next arrow advances `1 / 14 → 2 / 14` ("Class Session" → "Art Workshop Group"); the in-page carousel arrow advances dot 4→5 and the new glide **settles** (centre rect identical 400 ms apart); computed styles confirm the vitrine glow, gold rim, `opacity 0.6` flanks, hairline rule and sheen overlay with `pointer-events: none`; checked in **both themes** (light theme keeps its own gold values and its pre-existing blur recession — my rule is dark-only by construction). tsc clean, `npm run audit:css` green (57 findings, 0 new), dev log clean.
+
+Note: `.freebuff/run.md` could not be updated from this thread — the file tools reject paths under `.freebuff/` (read returns `[BLOCKED]`, `str_replace` reports the file missing), so the dist-dir procedure is recorded here instead.

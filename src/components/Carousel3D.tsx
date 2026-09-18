@@ -376,11 +376,16 @@ export default function Carousel3D({
    * the empty frames after they finish are gone.
    */
   const step = useCallback((): boolean => {
+    /* The Buy spotlight glides silkier than the other carousels: a lower
+       spring stiffness buys a longer, softer ease-out, and a slower inertia
+       decay lets a flick coast to a stop instead of halting. Both are tuned
+       here rather than in CSS because this loop owns the movement. */
+    const silky = variant === 'spotlight' && !reducedMotion;
     const d = dragRef.current;
     if (!d.active) {
       if (Math.abs(velRef.current) > 0.0018) {
         posRef.current += velRef.current;
-        velRef.current *= 0.9;
+        velRef.current *= silky ? 0.938 : 0.9;
         if (Math.abs(velRef.current) <= 0.0018) {
           velRef.current = 0;
           targetRef.current = Math.round(posRef.current);
@@ -388,7 +393,7 @@ export default function Carousel3D({
       } else {
         const target = targetRef.current;
         const delta = target - posRef.current;
-        const stiffness = reducedMotion ? 1 : 0.17;
+        const stiffness = reducedMotion ? 1 : silky ? 0.12 : 0.17;
         posRef.current += delta * stiffness;
         if (Math.abs(delta) < 0.002) posRef.current = target;
       }
@@ -415,7 +420,7 @@ export default function Carousel3D({
       Math.abs(targetRef.current - posRef.current) < 0.002;
     const tabHidden = typeof document !== 'undefined' && document.hidden;
     return !settled && !tabHidden;
-  }, [applyTransforms, count, reducedMotion, wrapIndex]);
+  }, [applyTransforms, count, reducedMotion, variant, wrapIndex]);
 
   const park = useCallback(() => {
     frameSubRef.current?.stop();
@@ -682,6 +687,12 @@ export default function Carousel3D({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (count < 2) return;
+    /* Controls win over the drag gesture. A press on an edge arrow that jitters
+       past the 5px drag threshold would otherwise capture the pointer in
+       onPointerMove and steal the arrow's own click. Only real <button>/<a>
+       elements bail out here — the cards are divs with role="button", so they
+       still start a drag/swipe as before. */
+    if ((e.target as HTMLElement).closest?.('button, a')) return;
     /* Do NOT setPointerCapture here. Capture retargets the subsequent click
        to the stage, so the image's onClick (enlarge) never fires. Capture is
        taken lazily in onPointerMove once a real drag is confirmed. */
