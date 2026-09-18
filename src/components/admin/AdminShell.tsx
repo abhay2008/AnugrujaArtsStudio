@@ -25,6 +25,13 @@ export function useCommitFlow() {
 
   const changes = getPendingChanges();
 
+  /**
+   * "Unsaved work" is the diff itself, not a flag. A boolean latch would keep
+   * claiming there is something to commit after the admin edits a field and
+   * changes it back — and the pill would then open an empty review sheet.
+   */
+  const dirty = changes.length > 0;
+
   const handleCommit = useCallback(async () => {
     setIsCommitting(true);
     setCommitStatus('Committing changes directly to the GitHub main branch…');
@@ -41,7 +48,7 @@ export function useCommitFlow() {
   }, [save]);
 
   return {
-    dirty: editor.dirty,
+    dirty,
     saving: editor.saving,
     status: editor.status,
     commitUrl: editor.commitUrl,
@@ -88,7 +95,8 @@ export function AdminTopBar({
   subtitle: string;
   active: 'chooser' | 'studio' | 'preview';
 }) {
-  const { signOut, editor } = useSite();
+  const { signOut, getPendingChanges } = useSite();
+  const hasPendingChanges = getPendingChanges().length > 0;
 
   return (
     <header className="sticky top-0 z-40 border-b border-studio-gold/25 bg-[#160523]/95 backdrop-blur-md">
@@ -145,7 +153,7 @@ export function AdminTopBar({
         </div>
       </div>
 
-      {editor.dirty && (
+      {hasPendingChanges && (
         <div className="border-t border-studio-gold/20 bg-[#1d062e] px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/90 md:px-6">
           Unsaved changes — use Save &amp; Commit to publish
         </div>

@@ -5,6 +5,7 @@ import {
   CalendarPlus,
   Check,
   History,
+  Pencil,
   Plus,
   Sparkles,
   Trash2,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import type { StudioEvent } from '@/lib/types';
+import type { CommitFlow } from './AdminShell';
+import { useConfirm } from './ConfirmDialog';
 
 function makeId(): string {
   return `ev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -181,9 +184,15 @@ function EventEditor({
 /**
  * Admin editor for `events` in content/site.json — the structured calendar
  * powering the home spotlight, and the chatbot's events knowledge.
+ *
+ * Each card carries a pencil (edit) and a tick (save & publish) so the two
+ * actions are never confused for one another; tapping the card itself asks
+ * which of the two was meant.
  */
-export default function EventsManager() {
+export default function EventsManager({ flow }: { flow: CommitFlow }) {
   const { content, updateEvents, uploadFile } = useSite();
+  // Deletions confirm through the console's own dialog, not window.confirm.
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const upcoming: StudioEvent[] = content.events?.upcoming ?? [];
   const past: StudioEvent[] = content.events?.past ?? [];
@@ -191,12 +200,22 @@ export default function EventsManager() {
   const [editing, setEditing] = useState<{ list: 'upcoming' | 'past'; id: string } | null>(null);
   const [draft, setDraft] = useState<StudioEvent | null>(null);
   const [uploading, setUploading] = useState(false);
+  /** Card whose "edit or save?" question is currently open. */
+  const [askingId, setAskingId] = useState<string | null>(null);
+
+  const canSave = flow.dirty && !flow.saving;
+
+  const openSave = () => {
+    setAskingId(null);
+    flow.setReviewOpen(true);
+  };
 
   const persist = (nextUpcoming: StudioEvent[], nextPast: StudioEvent[]) => {
     updateEvents({ upcoming: nextUpcoming, past: nextPast });
   };
 
   const startEdit = (list: 'upcoming' | 'past', item: StudioEvent) => {
+    setAskingId(null);
     setEditing({ list, id: item.id });
     setDraft({ ...item });
   };
@@ -296,46 +315,131 @@ export default function EventsManager() {
               ) : (
                 <div
                   key={item.id}
-                  className="flex items-start gap-3 rounded-2xl border border-purple-900/50 bg-[#160523]/80 p-3 transition-colors hover:border-studio-gold/40"
+                  className="rounded-2xl border border-purple-900/50 bg-[#160523]/80 p-3 transition-colors hover:border-studio-gold/40"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-sm text-[#fdf5cf]">{item.title}</span>
-                      <span className="rounded-full border border-amber-700/50 bg-amber-950/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
-                        {item.date}
+                  <div className="flex items-start gap-3">
+                    {/*
+                      The card body is the trigger for "edit or save?". It is a
+                      real button, but it holds only text so the action icons
+                      stay separate, focusable controls instead of nesting
+                      buttons inside a button.
+                    */}
+                    <button
+                      type="button"
+                      onClick={() => setAskingId((prev) => (prev === item.id ? null : item.id))}
+                      aria-expanded={askingId === item.id}
+                      title="Ask what to do with this event"
+                      className="min-w-0 flex-1 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-studio-gold/60"
+                    >
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-sm text-[#fdf5cf]">{item.title}</span>
+                        <span className="rounded-full border border-amber-700/50 bg-amber-950/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+                          {item.date}
+                        </span>
+                        {item.location && (
+                          <span className="text-[11px] text-yellow-100/50">📍 {item.location}</span>
+                        )}
                       </span>
-                      {item.location && (
-                        <span className="text-[11px] text-yellow-100/50">📍 {item.location}</span>
+                      <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-yellow-100/50">
+                        {item.eventType && <span>{item.eventType}</span>}
+                        {item.registrationDeadline && <span>Register by: {item.registrationDeadline}</span>}
+                        {item.seatsRemaining !== undefined && <span>{item.seatsRemaining} seats left</span>}
+                        {eventImagesCount(item) > 0 && <span>{eventImagesCount(item)} photos</span>}
+                      </span>
+                      {item.description && (
+                        <span className="mt-1 line-clamp-2 text-xs text-yellow-100/55">{item.description}</span>
+                      )}
+                    </button>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        title="Edit this event"
+                        aria-label={`Edit ${item.title}`}
+                        onClick={() => startEdit(list, item)}
+                        className="rounded-lg border border-purple-900/60 bg-purple-950/80 p-1.5 text-yellow-200 transition-colors hover:bg-purple-800"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title={
+                          canSave
+                            ? 'Save & publish the pending changes to the live site'
+                            : 'Nothing to save yet'
+                        }
+                        aria-label="Save and publish pending changes"
+                        disabled={!canSave}
+                        onClick={openSave}
+                        className={`rounded-lg border p-1.5 transition-colors ${
+                          canSave
+                            ? 'border-studio-gold/60 bg-gradient-to-br from-amber-500 to-yellow-500 text-black hover:from-amber-400 hover:to-yellow-400'
+                            : 'cursor-not-allowed border-purple-900/60 bg-purple-950/50 text-yellow-200/35'
+                        }`}
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Delete event"
+                        aria-label={`Delete ${item.title}`}
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Delete event',
+                            message: `Delete “${item.title}” from the studio calendar? It is staged as an unsaved change and can still be discarded before commit.`,
+                          });
+                          if (ok) removeItem(list, item.id);
+                        }}
+                        className="rounded-lg border border-red-900/50 bg-red-950/60 p-1.5 text-red-300 transition-colors hover:bg-red-900"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* The question the card asks when tapped. */}
+                  {askingId === item.id && (
+                    <div className="mt-2.5 rounded-xl border border-studio-gold/40 bg-[#1d062e] px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-semibold text-yellow-100/80">
+                          What would you like to do with “{item.title}”?
+                        </span>
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(list, item)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-purple-800 bg-purple-950/70 px-3 py-1.5 text-xs font-bold text-yellow-100 hover:bg-purple-900"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canSave}
+                            onClick={openSave}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-3 py-1.5 text-xs font-bold text-black shadow-sm hover:from-amber-400 hover:to-yellow-400 disabled:opacity-50"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            Save changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAskingId(null)}
+                            aria-label="Close this question"
+                            className="rounded-lg border border-purple-800 bg-purple-950/70 p-1.5 text-yellow-200/70 hover:bg-purple-900"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {!flow.dirty && (
+                        <p className="mt-1.5 text-[10px] text-yellow-200/50">
+                          Nothing to save yet — edit an event first, then Save changes publishes
+                          everything staged here, including paintings and listings.
+                        </p>
                       )}
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-yellow-100/50">
-                      {item.eventType && <span>{item.eventType}</span>}
-                      {item.registrationDeadline && <span>Register by: {item.registrationDeadline}</span>}
-                      {item.seatsRemaining !== undefined && <span>{item.seatsRemaining} seats left</span>}
-                      {eventImagesCount(item) > 0 && <span>{eventImagesCount(item)} photos</span>}
-                    </div>
-                    {item.description && <p className="mt-1 line-clamp-2 text-xs text-yellow-100/55">{item.description}</p>}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      title="Edit event"
-                      onClick={() => startEdit(list, item)}
-                      className="rounded-lg border border-purple-900/60 bg-purple-950/80 p-1.5 text-yellow-200 hover:bg-purple-800"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button
-                      title="Delete event"
-                      onClick={() => {
-                        if (window.confirm(`Delete "${item.title}" from the studio calendar? This is staged as an unsaved change and can still be discarded before commit.`)) {
-                          removeItem(list, item.id);
-                        }
-                      }}
-                      className="rounded-lg border border-red-900/50 bg-red-950/60 p-1.5 text-red-300 hover:bg-red-900"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  )}
                 </div>
               )
             )}
@@ -366,6 +470,8 @@ export default function EventsManager() {
         Changes appear in the review list before publishing. Use "Review &amp; Commit" to push them
         to the live site — the chatbot updates automatically on the next commit.
       </p>
+
+      {confirmDialog}
     </div>
   );
 }

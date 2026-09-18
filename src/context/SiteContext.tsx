@@ -97,6 +97,58 @@ export function useSite() {
   return useContext(SiteContext);
 }
 
+/**
+ * Field names that differ between two flat config objects, for the admin's
+ * review list. Every editable area must be listed: the commit sheet disables
+ * its confirm button when nothing is reported, so an unlisted change would be
+ * impossible to publish.
+ */
+function changedFields(
+  before: Record<string, unknown> | undefined,
+  after: Record<string, unknown> | undefined
+): string[] {
+  if (!before || !after) return ['content'];
+  return Object.keys({ ...before, ...after }).filter(
+    (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key])
+  );
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  (value ?? {}) as Record<string, unknown>;
+
+/** Human wording for a changed field, so the review list reads like English. */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'name',
+  tagline: 'tagline',
+  subtitle: 'subtitle',
+  founder: 'founder',
+  phoneDisplay: 'phone number',
+  phoneRaw: 'phone link',
+  whatsapp: 'WhatsApp',
+  email: 'email',
+  locationLabel: 'location',
+  mapsUrl: 'map link',
+  title: 'browser title',
+  description: 'description',
+  favicon: 'favicon',
+};
+
+const fieldLabel = (key: string): string => FIELD_LABELS[key] ?? key;
+
+/**
+ * Plain-English name for each top-level content area, used by the safety-net
+ * pass in `getPendingChanges` so an unreported area still reads properly.
+ */
+const CONTENT_AREA_LABELS: Partial<Record<keyof SiteContent, string>> = {
+  meta: 'SEO settings',
+  brand: 'studio details',
+  social: 'social links',
+  galleries: 'gallery artwork',
+  sections: 'page sections',
+  events: 'event calendar',
+  chatbot: 'chatbot settings',
+};
+
 export function SiteProvider({ children }: { children: ReactNode }) {
   const [content, setContentState] = useState<SiteContent>(initialFallback as unknown as SiteContent);
   const baselineRef = useRef<SiteContent>(initialFallback as unknown as SiteContent);
@@ -442,6 +494,11 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         github?: { commitUrl?: string; htmlUrl?: string };
       };
 
+      // The committed payload is the source of truth. Pushing it into state
+      // matters when an explicit override was saved (e.g. an upload publish):
+      // without it the editor would show stale galleries and report phantom
+      // "deleted artwork" changes against the new baseline.
+      setContentState(target);
       baselineRef.current = target;
       persist(target);
 
@@ -489,25 +546,44 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     const base = baselineRef.current;
     const curr = content;
     const changes: string[] = [];
+    /** Top-level areas already accounted for, so the safety net can skip them. */
+    const reported = new Set<keyof SiteContent>();
+    const report = (key: keyof SiteContent, text: string) => {
+      changes.push(text);
+      reported.add(key);
+    };
 
-    if (base.brand.name !== curr.brand.name) changes.push(`Brand Name: "${curr.brand.name}"`);
-    if (base.brand.founder !== curr.brand.founder) changes.push(`Founder: "${curr.brand.founder}"`);
-    if (base.brand.tagline !== curr.brand.tagline) changes.push(`Tagline: "${curr.brand.tagline}"`);
-    if (base.brand.phoneDisplay !== curr.brand.phoneDisplay) changes.push(`Phone: "${curr.brand.phoneDisplay}"`);
-    if (base.brand.whatsapp !== curr.brand.whatsapp) changes.push(`WhatsApp Contact updated`);
-    if (base.brand.email !== curr.brand.email) changes.push(`Email: "${curr.brand.email}"`);
-    if (base.meta.title !== curr.meta.title) changes.push(`SEO Title: "${curr.meta.title}"`);
-    if (base.meta.description !== curr.meta.description) changes.push(`SEO Meta Description updated`);
+    // Studio details & SEO are diffed field by field from the objects
+    // themselves, so a field added later is reported the day it is edited
+    // instead of silently going missing from this list.
+    const brandFields = changedFields(asRecord(base.brand), asRecord(curr.brand));
+    if (brandFields.length > 0) {
+      report('brand', `Studio details: ${brandFields.map(fieldLabel).join(', ')}`);
+    }
+    const metaFields = changedFields(asRecord(base.meta), asRecord(curr.meta));
+    if (metaFields.length > 0) {
+      report('meta', `SEO settings: ${metaFields.map(fieldLabel).join(', ')}`);
+    }
 
-    if (base.sections?.banner?.quote !== curr.sections?.banner?.quote) {
-      changes.push(`Hero Banner Quote updated: "${curr.sections?.banner?.quote}"`);
+    // Every section the console can edit, reported field by field.
+    (Object.keys(curr.sections ?? {}) as (keyof SiteContent['sections'])[]).forEach((key) => {
+      const fields = changedFields(
+        asRecord(base.sections?.[key]),
+        asRecord(curr.sections?.[key])
+      );
+      if (fields.length > 0) {
+        report('sections', `Updated "${String(key)}" section (${fields.join(', ')})`);
+      }
+    });
+
+    if (JSON.stringify(base.social) !== JSON.stringify(curr.social)) {
+      report('social', 'Social links updated');
     }
-    if (base.sections?.banner?.badge !== curr.sections?.banner?.badge) {
-      changes.push(`Hero Banner Badge updated: "${curr.sections?.banner?.badge}"`);
+    if (JSON.stringify(base.chatbot) !== JSON.stringify(curr.chatbot)) {
+      report('chatbot', 'Chatbot settings updated');
     }
-    if (base.sections?.aboutArtist?.headline !== curr.sections?.aboutArtist?.headline) {
-      changes.push(`About Artist Headline updated`);
-    }
+
+    const galleriesFrom = changes.length;
 
     (Object.keys(curr.galleries) as GalleryKey[]).forEach((gKey) => {
       const bList = base.galleries[gKey] || [];
@@ -546,6 +622,44 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       if (bList.length === cList.length && bList.length > 1) {
         const isReordered = cList.some((it, idx) => it.id !== bList[idx]?.id);
         if (isReordered) changes.push(`Reordered gallery: ${gKey}`);
+      }
+    });
+
+    if (changes.length > galleriesFrom) reported.add('galleries');
+    const eventsFrom = changes.length;
+
+    // Studio events — the calendar the Events tab edits.
+    (['upcoming', 'past'] as const).forEach((listKey) => {
+      const before = base.events?.[listKey] ?? [];
+      const after = curr.events?.[listKey] ?? [];
+      const beforeById = new Map(before.map((event) => [event.id, event]));
+      const afterById = new Map(after.map((event) => [event.id, event]));
+
+      after.forEach((event) => {
+        if (!beforeById.has(event.id)) changes.push(`Added ${listKey} event "${event.title}"`);
+      });
+      before.forEach((event) => {
+        if (!afterById.has(event.id)) changes.push(`Removed ${listKey} event "${event.title}"`);
+      });
+      after.forEach((event) => {
+        const previous = beforeById.get(event.id);
+        if (!previous) return;
+        const fields = changedFields(asRecord(previous), asRecord(event));
+        if (fields.length > 0) {
+          changes.push(`Edited ${listKey} event "${event.title}" (${fields.join(', ')})`);
+        }
+      });
+    });
+
+    if (changes.length > eventsFrom) reported.add('events');
+
+    // Safety net. Nothing in the console may edit without being committable:
+    // the review sheet disables its confirm button on an empty list, so any
+    // area that differs but produced no message above still has to be counted.
+    (Object.keys(curr) as (keyof SiteContent)[]).forEach((key) => {
+      if (reported.has(key)) return;
+      if (JSON.stringify(base[key]) !== JSON.stringify(curr[key])) {
+        changes.push(`Updated ${CONTENT_AREA_LABELS[key] ?? String(key)}`);
       }
     });
 

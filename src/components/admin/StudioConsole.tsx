@@ -103,10 +103,17 @@ export default function StudioConsole({ flow }: { flow: CommitFlow }) {
       </div>
 
       <div className="pb-24">
-        {activeTab === 'upload' && <MassUploadStudio />}
+        {/*
+          The upload wizard stays mounted and is only hidden. Its queue holds
+          real File objects that cannot be re-created, so switching tabs — or
+          glancing at the galleries mid-queue — must never throw the work away.
+        */}
+        <div className={activeTab === 'upload' ? '' : 'hidden'}>
+          <MassUploadStudio />
+        </div>
         {activeTab === 'galleries' && <GalleryManager />}
         {activeTab === 'quicknav' && <QuickNavManager />}
-        {activeTab === 'events' && <EventsManager />}
+        {activeTab === 'events' && <EventsManager flow={flow} />}
         {activeTab === 'settings' && <GeneralSettings />}
       </div>
 
