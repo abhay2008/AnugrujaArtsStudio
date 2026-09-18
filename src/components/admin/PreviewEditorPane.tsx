@@ -7,11 +7,14 @@ import { useSite } from '@/context/SiteContext';
 import { PREVIEW_SECTIONS } from '@/lib/previewSections';
 import SectionEditor from './SectionEditor';
 import { CommitReviewModal, useCommitFlow } from './AdminShell';
+import { useConfirm } from './ConfirmDialog';
 
 const inputClass =
   'w-full rounded-xl border border-studio-gold/30 bg-[#260a3a] px-3 py-2 text-sm text-yellow-100 placeholder:text-yellow-200/30 focus:border-yellow-300 focus:outline-none';
 
 function SiteWideFields() {
+  // The discard confirmation uses the console's own dialog, not window.confirm.
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const { content, updateMeta, updateBrand, reset } = useSite();
 
   return (
@@ -71,14 +74,22 @@ function SiteWideFields() {
 
       <button
         type="button"
-        onClick={() => {
-          if (window.confirm('Discard local edits and reload the last published content?')) reset();
+        onClick={async () => {
+          const ok = await confirm({
+            title: 'Discard local edits',
+            message: 'Discard local edits and reload the last published content?',
+            confirmLabel: 'Discard edits',
+            tone: 'default',
+          });
+          if (ok) reset();
         }}
         className="inline-flex items-center gap-1.5 rounded-xl border border-purple-800/60 bg-purple-950/60 px-3 py-2 text-xs font-semibold text-yellow-100/80 transition-colors hover:border-studio-gold/40 hover:text-white"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Reset to original content
       </button>
+
+      {confirmDialog}
     </div>
   );
 }

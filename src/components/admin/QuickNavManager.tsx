@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import { PageListing } from '@/lib/types';
+import { useConfirm } from './ConfirmDialog';
 
 const ICON_CHOICES = [
   { value: 'tag', label: 'Tag (Buy / Price)' },
@@ -35,6 +36,9 @@ function makeId(): string {
  * (sections.pageMeta.quickNav in content/site.json).
  */
 export default function QuickNavManager() {
+  // Destructive actions ask through the console's own dialog, never
+  // window.confirm — see ConfirmDialog for why.
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const { content, updateSection } = useSite();
   const items: PageListing[] = content.sections?.pageMeta?.quickNav ?? [];
 
@@ -271,10 +275,12 @@ export default function QuickNavManager() {
                     </button>
                     <button
                       title="Delete shortcut"
-                      onClick={() => {
-                        if (window.confirm(`Delete the "${item.label}" shortcut? This is staged as an unsaved change and can still be discarded before commit.`)) {
-                          removeItem(item.id);
-                        }
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Delete shortcut',
+                          message: `Delete the “${item.label}” shortcut? It is staged as an unsaved change and can still be discarded before commit.`,
+                        });
+                        if (ok) removeItem(item.id);
                       }}
                       className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-900/50"
                     >
@@ -292,6 +298,8 @@ export default function QuickNavManager() {
         Changes appear in the review list before publishing. Use “Review &amp; Publish” to commit
         them to the live site.
       </p>
+
+      {confirmDialog}
     </div>
   );
 }

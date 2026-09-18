@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, Trash2, LayoutGrid } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
+import { useConfirm } from './ConfirmDialog';
 import {
   GALLERY_DEFINITIONS,
   type ArtItem,
@@ -181,6 +182,8 @@ function GalleryRows({ gallery }: { gallery: GalleryKey }) {
 
 function LayoutRows() {
   const { content, updateSection } = useSite();
+  // Removal confirms through the console's own dialog, not window.confirm.
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const items: PageListing[] = content.sections?.pageMeta?.quickNav ?? [];
 
   const persist = (next: PageListing[]) => updateSection('pageMeta', { quickNav: next });
@@ -230,10 +233,12 @@ function LayoutRows() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm(`Remove the "${item.title || 'Untitled'}" shortcut? This is staged as an unsaved change and can still be discarded before commit.`)) {
-                    persist(items.filter((entry) => entry.id !== item.id));
-                  }
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: 'Remove shortcut',
+                    message: `Remove the “${item.title || 'Untitled'}” shortcut? It is staged as an unsaved change and can still be discarded before commit.`,
+                  });
+                  if (ok) persist(items.filter((entry) => entry.id !== item.id));
                 }}
                 className="rounded-lg border border-red-900/60 bg-red-950/50 p-1.5 text-red-300 hover:bg-red-900/60"
                 aria-label="Remove shortcut"
@@ -260,6 +265,8 @@ function LayoutRows() {
           </div>
         ))}
       </div>
+
+      {confirmDialog}
     </div>
   );
 }
