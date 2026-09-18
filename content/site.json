@@ -88,15 +88,15 @@
         "category": "Featured Collection"
       },
       {
-        "id": "g8",
-        "src": "/images/g8.jpeg",
-        "title": "Artwork #8",
-        "category": "Featured Collection"
-      },
-      {
         "id": "g9",
         "src": "/images/g9.jpeg",
         "title": "Artwork #9",
+        "category": "Featured Collection"
+      },
+      {
+        "id": "g8",
+        "src": "/images/g8.jpeg",
+        "title": "Artwork #8",
         "category": "Featured Collection"
       },
       {
