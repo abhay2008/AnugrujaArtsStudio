@@ -17,7 +17,7 @@ This is a full **Next.js App Router** application: a public gallery site, a buil
 |---|---|
 | **Public site** (`src/app/(site)/`) | Home, Art for Sale, Classes & exam coaching (NATA/NID/NIFT/BFA…), About the artist, events, commission & inquiry bridges (WhatsApp / email) |
 | **Artwork experience** | 3D drag carousels, a global lightbox (click any painting to enlarge — optimized variants, so it opens instantly), scroll reveals, reduced-motion support |
-| **Admin console** (`/admin`) | Password-gated studio console: gallery managers, mass upload studio with smart collection mapping, events & chatbot knowledge editor, live preview editor — every edit is *staged* and reviewed before one explicit **Commit** |
+| **Admin console** (`/admin`) | Password-gated studio console: photo-first upload wizard (pick photos → describe one at a time → crop/rotate/straighten → publish one or the batch), gallery managers, home-shortcut & events editors, brand/SEO settings, live preview editor — every edit is *staged* and reviewed before one explicit **Commit** |
 | **Chat assistant "Chitra"** | Floating chat widget backed by OpenRouter (server-side key only). Its knowledge is generated from the same `site.json` the site renders — new paintings are in the bot's context automatically |
 | **Image pipeline** | `next/image` + a custom optimizer: on upload, originals are compressed client-side; on display, right-sized variants (640/1080/1920) are served and cached |
 
@@ -56,7 +56,29 @@ Consequences of this design:
 
 ### Galleries & artwork statuses
 
-Artworks live in typed collections (`GalleryKey` in `src/lib/types.ts`, described by `GALLERY_CATALOG`): sellable collections (Art for Sale, Commissions) carry **price + status** (`Available / Sold / Reserved`); showcase collections (Featured, Awards, Testimonials, Student work…) carry no sales metadata at all. The admin upload flow auto-suggests the right collection from the filename and only shows price/status fields where they make sense.
+Artworks live in typed collections (`GalleryKey` in `src/lib/types.ts`, described by `GALLERY_CATALOG`). One of them — **Art for Sale** — is the commerce collection and the only place the public pages render a price; the rest are showcase galleries (Featured, Commissions, Classes, Watercolour, Workshops, Testimonials, Awards) that never show sales metadata.
+
+Whether a painting is *for sale* is therefore an explicit per-artwork decision, asked as the first question of the upload flow:
+
+- **Just show it** (default) — the photo goes to a showcase gallery. **No price is asked, none is stored**, and no availability badge is published.
+- **Sell it** — it goes to Art for Sale and the form asks for **Price (₹)** and **Availability** (`Available / Reserved / Sold`).
+
+Filenames still auto-suggest a collection (`krishna-sale-2.jpg` → Art for Sale, `student-boat.jpg` → Classes & Courses) and a photo with no hint lands in a showcase gallery — never in the sale catalogue by accident. Flipping the switch is non-destructive: it remembers the showcase gallery you had chosen and restores it.
+
+### Uploading artwork, and framing it
+
+The wizard is photo-first, exactly like a phone album:
+
+1. **Pick** one photo or many (file picker or drag & drop). Canvas pre-compression starts in the background immediately.
+2. **Describe them one at a time** — the painting fills one side while its own form sits beside it, with a filmstrip to jump between photos and a green tick on finished ones.
+3. **Frame each photo** — *Crop, rotate & straighten* opens a phone-style editor: pinch or scroll to zoom, drag to move, **Turn 90°** for sideways shots, a **Straighten** slider (±15°), and shape presets (*Whole photo · Square · Portrait · Landscape*). Straightening pulls the crop inward to real paint, so no grey wedges can reach the gallery. The geometry lives in `src/lib/photoFraming.ts` and is shared by the on-screen preview and the exported file, so what you frame is exactly what uploads.
+4. **Publish** — nothing needs ticking: the whole queue is included, `Publish this photo to …` sends just the one on screen, or `Publish all N photos` opens a review sheet listing every painting with its gallery, price and for-sale status before one commit.
+
+### Committing: everything staged is one commit
+
+Editing anywhere in the console stages the change immediately — there is no per-item "mark for commit" step. `getPendingChanges()` in `src/context/SiteContext.tsx` diffs the working content against the last published baseline (studio details, SEO, every page section, social links, chatbot settings, every gallery and artwork, the events calendar) and the review sheet lists all of it; the console's bar reads **All synced** only when that diff is genuinely empty. It also runs a safety-net pass over every top-level content key, so a field added later cannot go missing from the list and leave the commit button disabled.
+
+Destructive actions confirm through the console's own dialog (`src/components/admin/ConfirmDialog.tsx`) rather than `window.confirm`, which blocks the page's main thread, cannot be styled, and is silently suppressed by browsers after repeated use.
 
 ---
 
@@ -64,8 +86,8 @@ Artworks live in typed collections (`GalleryKey` in `src/lib/types.ts`, describe
 
 - The console at `/admin` (and `/login`) asks for the studio password **before** anything renders.
 - The password is **never in this repository** — it lives in the host's environment variables (`ADMIN_PASSWORD` on Vercel, `.env.local` locally).
-- Sessions are **HMAC-SHA256-signed cookies** (`src/lib/adminAuth.ts`), 24-hour expiry; sign-in is rate-limited with a lockout (`src/lib/loginThrottle.ts`).
-- Lost the password? Set a new value in the host's env vars and redeploy — no code change involved.
+- Sessions are **HMAC-SHA256-signed cookies** (`src/lib/adminAuth.ts`), **1-hour** expiry; sign-in is rate-limited with a lockout (`src/lib/loginThrottle.ts`).
+- Lost the password? Set a new value in the host's env vars and redeploy — no code change involved. Note that the signing secret is derived from the password, so changing it invalidates every existing session at once (visitors to `/admin` will see the "session expired" notice and simply sign in again).
 
 ---
 
@@ -84,7 +106,19 @@ npm run dev            # → http://localhost:3000
 
 Without any env vars the public site works fully from the committed `site.json`; the admin gate needs `ADMIN_PASSWORD`, and committing/uploading through the GitHub API needs a `GITHUB_TOKEN`.
 
-Useful scripts: `npm run build` (production build), `npm run typecheck` → `npx tsc --noEmit`, `npm run lint`.
+Useful scripts:
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Dev server (default `http://localhost:3000`) |
+| `npm run build` / `npm start` | Production build / serve it |
+| `npm run typecheck` | `tsc --noEmit` — the check to run before every commit |
+| `npm run lint` | Next.js ESLint |
+| `npm run test:framing` | 8 400+ assertions over the crop/rotate/straighten geometry (`scripts/test-photo-framing.ts`) |
+| `npm run test:chat` | Chat pipeline unit checks (fuzzy lookups, guardrails, pricing replies) |
+| `npm run test:e2e` | End-to-end chat conversation against the local pipeline |
+| `npm run images:optimize` | Rebuild the `public/images/opt/*` derivatives |
+| `npm run audit:css` | Cross-engine CSS compatibility audit |
 
 ---
 
@@ -98,8 +132,11 @@ Create `.env.local` (gitignored — **never commit real values**). Templates: [.
 | `GITHUB_TOKEN` | for commits/uploads | GitHub fine-grained PAT (Contents: read/write on this repo) — held server-side only |
 | `GITHUB_OWNER` / `GITHUB_REPO` / `GITHUB_BRANCH` | optional | Override commit target (defaults to this repo's `main`) |
 | `OPENROUTER_API_KEY` | for chatbot | Server-side key for the Chitra assistant |
-| `OPENROUTER_MODEL` / `OPENROUTER_FALLBACK_MODELS` | optional | Chat model + fallback chain |
+| `OPENROUTER_MODEL` / `OPENROUTER_FALLBACK_MODELS` | optional | Chat model + fallback chain (free-tier models rotate — check that the configured ones are still available) |
 | `NEXT_PUBLIC_SITE_URL` | optional | Public URL used for chatbot attribution headers |
+| `CHATBOT_RAG_TOP_K` / `CHATBOT_RAG_TOKEN_BUDGET` | optional | How much of the catalogue the assistant retrieves per question |
+| `CHATBOT_CACHE_TTL_SECONDS` / `CHATBOT_CACHE_MAX_ENTRIES` | optional | Response cache — repeat questions are answered with zero API calls, and entries expire when content changes |
+| `NEXT_DIST_DIR` | optional | Point a dev server at its own build directory, so two servers can run from one checkout without sharing a `.next` cache |
 
 **Security rules this project follows:**
 
@@ -134,16 +171,29 @@ AnugrujaArtsStudio/
 │   │       ├── upload/        # Image upload → public/images + GitHub commit
 │   │       ├── github/        # GitHub Contents API helpers (commit status, etc.)
 │   │       └── chat/          # Chitra: OpenRouter proxy, guardrails, rate limit
-│   ├── components/            # Carousels, lightbox, chat widget, admin managers
+│   ├── components/            # Carousels, lightbox, chat widget
+│   │   └── admin/             # Console: MassUploadStudio (wizard), ArtworkFramer
+│   │                          # (crop/rotate/straighten), GalleryManager,
+│   │                          # EventsManager, QuickNavManager, SectionEditor,
+│   │                          # AdminShell (commit flow), ConfirmDialog
 │   ├── context/
-│   │   └── SiteContext.tsx    # Live content store shared by site + admin
+│   │   └── SiteContext.tsx    # Live content store shared by site + admin;
+│   │                          # getPendingChanges() drives the review sheet
 │   └── lib/
 │       ├── serverContent.ts   # Reads site.json (+ GitHub fallback)
 │       ├── github.ts          # GitHub Contents API client
-│       ├── adminAuth.ts       # HMAC-SHA256 session cookies (24 h)
+│       ├── adminAuth.ts       # HMAC-SHA256 session cookies (1 h)
 │       ├── loginThrottle.ts   # Brute-force lockout for the admin gate
+│       ├── imageOptimize.ts   # Client-side compression + canvas encoding
+│       ├── photoFraming.ts    # Crop / rotate / straighten geometry (pure math)
 │       ├── types.ts           # Data model + GALLERY_CATALOG
 │       └── chatbot/           # context.ts, lookup.ts, guardrails.ts, rateLimit.ts
+├── scripts/
+│   ├── test-photo-framing.ts  # Geometry assertions (npm run test:framing)
+│   ├── test-chatbot.ts        # Chat pipeline checks
+│   ├── e2e-chat.ts            # End-to-end chat run
+│   ├── optimize-images.mjs    # Image derivative builder
+│   └── audit-css-compat.mjs   # Cross-engine CSS audit
 └── .env.example               # Template only — real values live in .env.local / Vercel
 ```
 

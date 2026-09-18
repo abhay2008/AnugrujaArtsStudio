@@ -24,18 +24,29 @@ Welcome to the **Anugruja Arts Studio Admin Console & CMS**. This portal is patt
 ## 🛠️ Management Modules
 
 ### 1. Mass Upload Studio (`/admin` -> Mass Upload Studio)
-* Drag & drop multiple painting photos from phone/desktop.
-* Background HTML5 canvas optimization compresses images without quality loss.
-* Set artwork titles, medium categories, and sale prices.
-* Select target destination gallery:
-  * Featured Gallery (Home)
-  * Art for Sale
+* **Step 1 — Pick photos:** press *Choose photos* (opens your gallery/camera roll) or drag & drop. Pick one photo or many at once.
+* **Step 2 — Describe them one at a time:** each photo fills the left side while its own form sits on the right. *Save details & next photo* walks the queue; *Previous / Next*, the progress bar, and the filmstrip let you jump around, and a green tick marks described photos.
+* **Is this painting for sale?** This is the first question, and it decides everything else:
+  * **Just show it** (default) — the painting goes to a showcase gallery as a portfolio piece. **No price is asked for it**, and none is stored. Pick which gallery it belongs in from *Which gallery should it appear in?*.
+  * **Sell it** — the painting goes to **Art for Sale** so buyers can buy it, and only then does the form ask for **Price (₹)** and **Availability** (*Available / Reserved / Sold*).
+  * Flipping the switch is safe: switching back returns the photo to the gallery you had chosen. Filenames still auto-match (`krishna-sale-2.jpg` → *Art for Sale*, `student-boat.jpg` → *Classes & Courses*), and a photo with no hint lands in a showcase gallery rather than being treated as stock for sale.
+* **Frame each photo — crop, rotate & straighten:** press *Crop, rotate & straighten* under the photo. It works like a phone's photo editor: **pinch with two fingers (or scroll) to zoom in**, **drag to move the painting**, tap **Turn 90°** for a photo that came out sideways, and nudge **Straighten** to level a slight tilt. Pick a shape — *Whole photo, Square, Portrait, Landscape* — and press **Done**. Straightening automatically pulls the crop in to real paint, so no grey wedges ever reach the gallery. *Adjust framing* reopens it, *Use the original* puts the untouched photo back.
+* **Step 3 — Publish:** nothing needs ticking — **every photo in the queue is included**. *Publish this photo to <gallery>* uploads and commits just the painting on screen; *Publish all N photos* commits the whole queue together after a review screen showing each painting with its gallery, price and for-sale status. To leave a photo out, remove it from the queue.
+* The queue survives switching tabs, so you can check the galleries or the events mid-queue without losing your photos.
+* Gallery auto-matching: filenames like `krishna-sale-2.jpg` or `student-boat.jpg` pick the right collection for you (shown as “✓ auto-matched from the filename”) — change the dropdown any time.
+* Background HTML5 canvas optimization compresses images without quality loss while you type.
+* Set artwork titles, section labels, medium and size; a price is asked for only when the piece is for sale.
+* Where an upload can appear — **showcase galleries** (no price):
+  * Featured Portfolio (home-page carousel)
   * Commissioned Works
   * Classes & Courses
   * Watercolor Courses
   * Workshops & Exhibitions
-  * Testimonials & Student Success
+  * Testimonials & Reviews
   * Achievements & Awards
+* …or the **commerce collection**, *Art for Sale* — the only gallery that shows prices, so it is the only one that asks for one. A painting that is already published can be moved between showcase and sale later in *Gallery Manager* ("Showcase piece — no price needed. Move it to Art for Sale below to sell it").
+
+**Nothing to tick to commit.** Every edit anywhere in the console is staged automatically — a price in *Gallery Manager*, an event in *Events & Chatbot*, a listing in *Pages & Listings*, the studio details in *Brand & SEO* (press *Apply Settings* to send that form up) — and they all publish together in one commit from the *Review & Commit* button. The bar reads **All synced** only when there is genuinely nothing left to publish, and the review screen lists every pending change, so you can always see exactly what one commit will push.
 
 ### 2. Gallery Manager (`/admin` -> Manage Galleries & Artworks)
 * Switch between 8 galleries with live artwork counts and badges.
