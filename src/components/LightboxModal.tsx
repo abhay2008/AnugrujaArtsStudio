@@ -52,6 +52,21 @@ export default function LightboxModal() {
   const [ty, setTy] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  /* Re-rasterisation guard — Chromium AND WebKit skip re-rastering a layer
+     while `will-change: transform` is set on a scaling element, so the zoomed
+     painting stays a magnified texture (blurry at 3×+) even when bigger source
+     pixels exist. The pattern from Carousel3D's `.is-live`: hold will-change
+     only while a gesture is actively running, release it when the transform
+     settles so the final frame re-rasterises at the new scale. */
+  const [isGesturing, setIsGesturing] = useState(false);
+  const gestureTimeoutRef = useRef<number | null>(null);
+  /* Deep zoom wants real pixels: `sizes` only ever described the unzoomed box,
+     so the browser never re-selected a larger derivative when the visitor
+     zoomed in (measured: 0.18 source px per device px at 5×, with a 1417px
+     derivative sitting unused on disk). Past ~1.5× describe the full viewport. */
+  const deepZoom = scale > 1.5;
+  const zoomSizes = deepZoom ? 'min(100vw, 1920px)' : '92vw';
+  const zoomFallbackWidth = deepZoom ? 1920 : lightboxWidth();
 
   const scaleRef = useRef(1);
   const txRef = useRef(0);
@@ -117,6 +132,29 @@ export default function LightboxModal() {
     };
   }, []);
 
+  /* Hold `will-change: transform` only while the transform is actively being
+     driven, then release it ~140ms after the last change so the final frame
+     re-rasterises at the new scale instead of magnifying the stale texture.
+     Every transform path (wheel, pinch, drag, buttons, keyboard) funnels
+     through `updateTransform`, so this one hook covers them all. */
+  const bumpGesture = useCallback(() => {
+    if (gestureTimeoutRef.current) window.clearTimeout(gestureTimeoutRef.current);
+    gestureTimeoutRef.current = window.setTimeout(() => {
+      gestureTimeoutRef.current = null;
+      setIsGesturing(false);
+    }, 140);
+    setIsGesturing(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    return () => {
+      if (gestureTimeoutRef.current) window.clearTimeout(gestureTimeoutRef.current);
+      gestureTimeoutRef.current = null;
+      setIsGesturing(false);
+    };
+  }, [isOpen]);
+
   const updateTransform = useCallback(
     (newScale: number, newTx: number, newTy: number) => {
       const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
@@ -126,11 +164,12 @@ export default function LightboxModal() {
       txRef.current = cx;
       tyRef.current = cy;
 
+      bumpGesture();
       setScale(clampedScale);
       setTx(cx);
       setTy(cy);
     },
-    [clampPan]
+    [bumpGesture, clampPan]
   );
 
   // Zoom to specific point
@@ -354,7 +393,11 @@ export default function LightboxModal() {
       role="dialog"
       aria-modal="true"
       aria-label={activeTitle ? `Artwork enlarged: ${activeTitle}` : 'Enlarged artwork viewer'}
-      className="fixed inset-0 z-[999999] flex flex-col justify-between bg-[#08040d]/95 backdrop-blur-2xl select-none animate-fadeIn overflow-hidden touch-none"
+      /* Fully opaque scrim on purpose: behind a 95% black the backdrop blur is
+         invisible to the eye, but it costs a full-viewport resample every
+         frame and wraps the zoomed image in a backdrop root (which is how the
+         enlargement could streak or blank under software compositing). */
+      className="fixed inset-0 z-[999999] flex flex-col justify-between bg-[#08040d] select-none animate-fadeIn overflow-hidden touch-none"
     >
       {/* ── Top Bar ── */}
       <div className="relative z-50 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-studio-gold/15 bg-studio-dark/80 backdrop-blur-md">
@@ -477,11 +520,17 @@ export default function LightboxModal() {
         )}
 
         {/* The Enlargeable Image */}
+        {/* No permanent will-change/transition here: a scaling element that
+            declares `will-change: transform` never re-rasterises (the zoom
+            magnifies a stale texture), and a transform transition promotes the
+            layer while it runs. The gesture hook above re-promotes the layer
+            only while the transform is actually moving. */}
         <div
-          className="relative max-w-full max-h-full flex items-center justify-center p-2 sm:p-4 will-change-transform transition-[transform] duration-75 ease-out select-none"
+          className="relative max-w-full max-h-full flex items-center justify-center p-2 sm:p-4 select-none"
           style={{
             transform: `translate3d(${tx}px, ${ty}px, 0px) scale(${scale})`,
             transformOrigin: 'center center',
+            willChange: isGesturing ? 'transform' : 'auto',
           }}
         >
           {/* Pre-built WebP derivatives when we have them: the exact file the
@@ -493,7 +542,7 @@ export default function LightboxModal() {
             const isLocal = src.startsWith('/');
             const built =
               isLocal && hasImageVariants(src)
-                ? responsiveImage(src, '92vw', lightboxWidth())
+                ? responsiveImage(src, zoomSizes, zoomFallbackWidth)
                 : {
                     src: isLocal
                       ? `/_next/image?url=${encodeURIComponent(src)}&w=1080&q=90`
@@ -519,15 +568,19 @@ export default function LightboxModal() {
                   ref={imgRef}
                   src={built.src}
                   srcSet={built.srcSet}
-                  sizes="92vw"
+                  sizes={zoomSizes}
                   alt={activeTitle || 'Enlarged Artwork'}
                   decoding="async"
                   fetchPriority="high"
                   draggable={false}
                   onLoad={() => setIsLoaded(true)}
                   onError={() => setIsLoaded(true)}
-                  className={`relative max-w-[92vw] max-h-[70vh] sm:max-h-[72vh] object-contain rounded-xl shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-studio-gold/25 transition-all duration-500 ${
-                    isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.985]'
+                  /* Opacity-only reveal: the element also carries the zoom
+                     scale, so a `transition-all` here would transform-animate
+                     the scaled layer on every entrance (a Windows smear and
+                     an pointless re-promote everywhere else). */
+                  className={`relative max-w-[92vw] max-h-[70vh] sm:max-h-[72vh] object-contain rounded-xl shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-studio-gold/25 transition-opacity duration-500 ${
+                    isLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
                 />
               </>

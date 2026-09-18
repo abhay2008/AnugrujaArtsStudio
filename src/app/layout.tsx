@@ -3,6 +3,7 @@ import './globals.css';
 import './preloader.css';
 import ThemeScript from '@/components/ThemeScript';
 import PerfTierScript from '@/components/PerfTierScript';
+import OsTagScript from '@/components/OsTagScript';
 import PreloaderScript from '@/components/PreloaderScript';
 import StudioPreloader from '@/components/StudioPreloader';
 
@@ -108,6 +109,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <ThemeScript />
+        {/* Windows compositing fallbacks must be keyed before any paint. */}
+        <OsTagScript />
         {/* Tier first: the preloader and every ambient layer below branch on it. */}
         <PerfTierScript />
         <PreloaderScript />

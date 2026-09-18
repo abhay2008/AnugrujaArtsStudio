@@ -27,9 +27,12 @@ export default function HomePage() {
       <LandingHero />
 
       {/* 2. BUY PAINTINGS — height-locked 100dvh showcase (zero page scroll) */}
+      {/* .buy-showcase-lock owns the viewport-height lock (vh first, dvh second —
+          older Windows Chromium engines ignore dvh units entirely and without
+          the fallback the section collapses to content height). */}
       <section
         id="buy-paintings"
-        className="landing-section relative mx-auto flex min-h-0 sm:h-[100dvh] sm:max-h-[100dvh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
+        className="buy-showcase-lock landing-section relative mx-auto flex min-h-0 w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
       >
         <Reveal className="showcase-head shrink-0 space-y-1.5 text-center">
           <div className="inline-flex items-center gap-2 rounded-full glass-pill px-3 py-1 text-section-kicker text-studio-sunset">

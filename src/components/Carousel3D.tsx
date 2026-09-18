@@ -12,6 +12,7 @@ import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
 import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
 import { hasImageVariants, imageUrl, lightboxWidth } from '@/lib/imageSrc';
 import { useReducedMotion } from '@/lib/useReducedMotion';
+import { readOsTag } from '@/lib/osTier';
 
 /**
  * Each variant is a deliberately different piece of UI so the four home-page
@@ -233,6 +234,7 @@ export default function Carousel3D({
 
   const [index, setIndex] = useState(0);
   const [spacing, setSpacing] = useState(200);
+  const [stageSize, setStageSize] = useState({ height: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   /* Starts false so autoplay can never run before the first visibility measure. */
@@ -245,8 +247,13 @@ export default function Carousel3D({
   const tier = usePerfTier();
   /* Lite tier keeps every transform, depth cue and transition, but drops the
      per-card blur: a blur filter that must be resampled for each moving card
-     every frame is the most expensive thing in this widget. */
-  const blurAllowed = tier === 'full';
+     every frame is the most expensive thing in this widget.
+
+     Windows gets the same haircut regardless of device power: under software
+     compositing (driver blocklists, hardware acceleration off, fractional
+     display scaling) the per-frame blur on a 3D-transformed card smears and
+     tears the image while animating instead of just costing frames. */
+  const blurAllowed = tier === 'full' && readOsTag() !== 'windows';
 
   const posRef = useRef(0);
   const targetRef = useRef(0);
@@ -341,7 +348,15 @@ export default function Carousel3D({
       el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
       el.style.opacity = String(opacity);
       el.style.zIndex = String(zIndex);
-      el.style.filter = blur > 0 ? `blur(${blur}px) brightness(${brightness})` : 'none';
+      /* Brightness is a cheap per-pixel multiply — safe even under Windows
+         software compositing — so the flank dimming survives when the blur
+         is dropped by `blurAllowed`. */
+      el.style.filter =
+        blur > 0
+          ? `blur(${blur}px) brightness(${brightness})`
+          : brightness < 0.999
+            ? `brightness(${brightness})`
+            : 'none';
       el.style.visibility = 'visible';
       /* Every visible card is clickable — side cards focus themselves, the
          centre card opens the lightbox. */
@@ -512,6 +527,8 @@ export default function Carousel3D({
     if (!stage) return;
     const update = () => {
       const w = stage.clientWidth;
+      const h = stage.clientHeight;
+      setStageSize({ height: h });
       setSpacing(
         Math.max(
           beat.spacingMin,
@@ -820,6 +837,9 @@ export default function Carousel3D({
   };
 
   const current = items[index];
+  const stageInlineStyle = (stageSize.height > 0
+    ? { '--c3d-stage-height': `${stageSize.height}px` }
+    : {}) as React.CSSProperties;
   const price = current ? formatPrice(current.price) : '';
   const inquiryHref = current ? paintingInquiryLink(current.title, current.price) : '';
 
@@ -921,7 +941,10 @@ export default function Carousel3D({
         className={`c3d-stage c3d-stage--${variant} relative w-full overflow-hidden outline-none touch-pan-y ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         } focus-visible:ring-2 focus-visible:ring-studio-gold/60`}
-        style={{ perspective: reducedMotion ? 'none' : undefined }}
+        style={{
+          ...stageInlineStyle,
+          perspective: reducedMotion ? 'none' : undefined,
+        }}
       >
         {isSpotlight && (
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(242,215,112,0.1),transparent_62%)]" />
@@ -1045,7 +1068,7 @@ export default function Carousel3D({
                          on phones. */
                       loading={i === 0 ? undefined : 'lazy'}
                       fetchPriority={i === 0 ? undefined : 'low'}
-                      className="c3d-card-img object-cover pointer-events-none select-none"
+                      className="c3d-card-img object-contain pointer-events-none select-none"
                     />
                   )}
                   {isSpotlight && <span className="c3d-gloss" aria-hidden />}

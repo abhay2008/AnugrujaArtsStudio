@@ -243,3 +243,75 @@ All streams are done and everything is committed — nothing is left uncommitted
 3. Three components exist with zero importers: `PaintingLightbox.tsx`, `InteractiveSlideshow.tsx`, `SpotlightPill.tsx`. Safe to delete; wiring `PaintingLightbox` back to `setPainting` would need `next/dynamic`, since its gsap import is what used to bloat the home bundle.
 4. `content-visibility: auto` on below-fold sections is still open (the journey section's sticky column and in-page anchors need real-device testing).
 5. The chatbot's rate limits are in-memory per serverless instance, so the advertised 8/min is really per-instance and resets on cold start.
+
+---
+
+#### [Buffy · Round 9 — Windows (Chromium) rendering fallbacks: About section + carousel zoom]
+
+User report: on **Windows** the "Master's Journey / About the artist" section on `/` renders wrong and the 3D-carousel images break when enlarged/zoomed in the lightbox; macOS + Android are fine. No UA-sniffing existed anywhere in app code, so this is client-side compositing, and Chromium-on-Windows is the one platform that still regularly composites in software (driver blocklists, hardware acceleration off, **fractional display scaling — the default 125%**). Three known Windows-Chromium failure modes map exactly onto this site's vocabulary:
+
+1. **`-webkit-background-clip: text` headlines rasterise blank** (gradient layer dropped, text keeps transparent fill) — aggravated by transforms/stacking contexts/fractional scaling. This site's journey/about headlines (`.display-heading`, `.profile-name`, `.atelier-brand-title`) are all gradient-clipped; the "About the artist" heading vanishing on Windows is this bug.
+2. **`backdrop-filter` panels fail to paint their backdrop** → page content shows *through* the sticky profile card / chapter cards, or flickers. Same for the lightbox scrim, which sits above a page of 3D-transformed layers and can streak/blank the enlarged image.
+3. **Per-frame `filter: blur()` on 3D-transformed carousel cards** is CPU-resampled under software rendering → smear/tearing while the carousel moves.
+
+**Fix — a pre-paint OS tier, mirroring the existing perf tier:**
+- `src/lib/osTier.ts` (NEW) + `src/components/OsTagScript.tsx` (NEW): inline head script stamps `html[data-os="windows|other"]` before first paint (after ThemeScript, before PerfTierScript) — zero flash of broken styling, no hydration mismatch, and it costs one regex on the UA string. A capable gaming PC on Windows keeps the full treatment; only the known-broken effects are swapped.
+- `globals.css` — new `html[data-os='windows']` block: gradient-clipped headlines fall back to `color: var(--gold-text)` solid ink (shimmer headlines keep their gradient, drop only the clip + animation); sticky/chapter glass panels paint `--atelier-panel-solid` (new var, both themes) with `backdrop-filter: none`; `c3d-accent-glow` (38px blur) off; light-theme flank blur off; in-card badge glass off; `lb-lqip` blur off; GSAP-lightbox glass off; `.windows-solid-scrim` underlay for LightboxModal; **vh→dvh cascade fallbacks** for `.atelier-hero-viewport`, `.painting-lb-frame` and the new `.buy-showcase-lock` (older Windows engines parse `100dvh` as invalid and drop the whole declaration — without the preceding `100vh` line the height-locked Buy section collapses).
+- `src/app/(site)/page.tsx` — Buy section swaps `sm:h-[100dvh] sm:max-h-[100dvh]` Tailwind arbitrary classes for `.buy-showcase-lock` (vh first, dvh second).
+- `Carousel3D.tsx` — `blurAllowed` now also off on Windows; **plus a refinement: when blur is dropped, the cheap `brightness()` dim is still written** (it was previously only ever written together with blur), so flank depth-cues survive on lite/Windows. Motion/geometry untouched.
+- `LightboxModal.tsx` — on Windows: fully opaque scrim (reads the same 95% black), image entrance keeps only the opacity fade (drops the `scale-[0.985]` transform transition that can smear the raster under software rendering), container `will-change` released.
+
+**Verified:** `npx tsc --noEmit` clean; `npm run build` clean, home route unchanged at **183 kB**; dev-server HTML confirms script order `data-theme` → `data-os` → `data-perf`; compiled CSS contains the full windows block + fallback cascade; macOS behaviour unchanged (the block is inert without `data-os='windows'`). Same QA trick as perf: paste `document.documentElement.setAttribute('data-os','windows')` in DevTools on any platform to preview every fallback without a Windows machine.
+
+---
+
+#### [Buffy · Round 10 — cross-browser rendering research, a compat guard, and three corrections to Round 9]
+
+Separate thread, same repo. Round 9 above is the Windows fix. This round is the research + tooling around it, covering **every engine**, not just Windows. **No app CSS, component or config was changed** — this is a research document, a guard script and a baseline. Full detail: **`CROSS_BROWSER_RENDERING.md`** (new, repo root).
+
+**What was added**
+- `CROSS_BROWSER_RENDERING.md` — measured / cited / unverified split, a per-engine risk matrix, a two-minute DevTools bisect for the real Windows machine, and a prioritised fix list (Tier A: surgical, invisible on a healthy compositor; Tier B: gated).
+- `scripts/audit-css-compat.mjs` + `npm run audit:css` — scans hand-written CSS for (1) missing `-webkit-` twins, (2) fragile combinations (sticky/fixed + `backdrop-filter` in one rule, `backdrop-filter` + `background-attachment: fixed`, clipped text in a compositing rule, `will-change: transform` on a scaling element, blend layers), (3) engine floors (`:has()`, `dvh`, `text-wrap: balance`, …).
+- `scripts/css-compat-baseline.json` — today's 48 findings keyed as `file|selector|rule`, **not by line**, so the audit is green now and fails only on regressions. That is why it could ship without touching application CSS.
+- Installed for testing into `~/Applications` (user-writable, no admin): **Firefox 156**, **Brave 153**. Chrome 153 and Safari 26.6.2 were already present.
+
+**Measured (local Chrome, real lightbox on `/`)**
+- At **5× zoom** the enlarged painting is drawn at **2 020 CSS px / 2 213 device px from a 403 px source** (`p36-480.webp`) — **0.18 source pixels per device pixel**. `sizes` stays `92vw`, so the browser selects for the *unzoomed* box and never re-selects; forcing `sizes="1600px"` immediately pulled `p36-960.webp`, proving the mechanism works and nothing triggers it. That painting has derivatives up to `p36-1417.webp` unused. Independently, the scaling wrapper still computes **`will-change: transform`** (`LightboxModal.tsx:481`) plus a permanent `transition: transform 0.075s`, which suppresses re-rasterisation in Chromium **and** WebKit.
+- The lightbox container carries **`backdrop-filter: blur(40px)` across the whole viewport** (`LightboxModal.tsx:357`), with the zoomed image as a descendant — a full-screen resample per frame, wrapped around the thing being magnified.
+- `.gallery-header` (`globals.css:2647`) and `.sticky-profile-card` (`3679`) are the only two sticky surfaces, and both put `background` **and** `backdrop-filter` **on the sticky element itself**.
+- The `?perf=lite` tier visibly changes Chrome's paint (`/` vs `/?perf=lite`: mean abs diff 13.35, 32.6 % of pixels differing) — it is not a no-op.
+
+**Three corrections to Round 9**
+1. **The shimmer fallback paints a slab.** With `data-os='windows'`, `.gold-sunset-shimmer` keeps `background-image: <gradient>` **and** switches `background-clip` to `border-box` (computed, verified in a real browser), so the gradient fills the element box behind gold text. Round 9's note says the shimmers "keep their gradient, drop only the clip" — the intent does not survive the clip change. Reachable on Home (`page.tsx:144`), `/sale`, `/classes`, `/about` and the footer (`Footer.tsx:31`). Fix: `background: none;` alongside the clip change, as the `.display-heading` rule in the same block already does. (`.gold-shimmer` itself is dead — no component renders it.)
+2. **`data-os` cannot reach WebKit, where the sticky-glass problem actually is.** Safari 26 tints browser chrome from `background-color`/`backdrop-filter` **on the sticky element itself**, ignoring absolute children, pseudo-elements and `theme-color`. That is `.gallery-header` and `.sticky-profile-card` as written, on iOS where it is visible. Gating the fix on `Windows NT` leaves the WebKit half unfixed. Moving the glass onto an absolute/`::after` child fixes both cases at once.
+3. **Round 9's `LightboxModal.tsx` edits landed while this round was being written — and they stop at Windows.** `windows-solid-scrim` on the dialog and `willChange: windowsCompositing ? 'auto' : undefined` on the zoom wrapper are real, but both are gated on `readOsTag() === 'windows'`, so the re-raster penalty remains on macOS, WebKit, Linux and any Chromium that does not match the UA pattern. I measured `will-change: transform` on that wrapper before the edits landed; the measurement still describes every engine except Windows. Two details in that diff worth a second look: the Windows branch drops `transition-all duration-500` from the enlarged image **entirely**, so the comment above it ("the entrance keeps only the opacity fade") does not match the code — that image now snaps in with no fade at all on Windows; and the wrapper keeps its `transition-[transform] duration-75` on every platform, which still promotes the layer while the transition runs even once `will-change` is dropped.
+
+**Also worth knowing (from the same inventory)**
+- **Tier detection is Chromium-only.** `navigator.deviceMemory` and `navigator.connection` do not exist in Firefox or Safari, so those engines reduce to `prefers-reduced-motion` and always read `data-perf="full"`. Same class of gap in `osTier.ts`: it gates on the OS, so Linux/ChromeOS Chromium, or macOS Chrome with acceleration off, gets no fallback at all. A runtime frame-time downgrade would cover every engine.
+- `transform-style: preserve-3d` appears unprefixed in five carousel stage rules (added this round by Round 9) and `user-select: none` on `.painting-lb-img`. Both are in the audit's list — **check `CSS.supports()` in a real Safari before adding prefixes**; the guard's list is deliberately conservative and those two may already be supported.
+- `background-attachment: fixed` is gone (only comments remain). That matters: Gecko's worst `backdrop-filter` artefact is precisely that combination (webcompat #207254), so the guard now flags any reintroduction.
+- Windows displays have no `forced-colors: active` handling; High Contrast strips translucent panels and gradient fills, leaving surfaces with no edge.
+
+**Blocked / not verified — please read before assuming coverage**
+- **All WebKit rendering is unverified.** Safari's *Develop → Allow Remote Automation* is per-user and `safaridriver --enable` (run with admin approval) did not stick while Safari was running, so no WebDriver session could be created. WebKit claims in the document are cited, not observed. `CROSS_BROWSER_RENDERING.md` §9.3 has the two-click path plus a manual check-list; with it enabled I can run the automated pass.
+- **Edge was not installed.** Microsoft's advertised macOS link serves an **Android APK**, and the real Edge for macOS is an admin-install `.pkg`. Edge is Blink + Skia + Chromium's compositor — identical to Chrome for everything above — so verify it on the Windows machine instead.
+- **Brave CLI screenshots produce no file** on this machine; **Firefox captures land during the intro sequence**, so the Gecko tier comparison (0.9 % of pixels differing) is not usable evidence either way.
+- **Capture artefacts worth not repeating:** a 900 px window plus a `#fragment` yields a uniform `#0a0610` frame in all three engines; a 10 500 px window makes `min-height: 100vh` on the hero fill the whole frame; and `.chapter-card` at `opacity: 0` was simply 1 097 px below the fold (the reveal works — verified `opacity: 1` after scrolling it into view). None of the three is a site bug.
+
+**Untouched:** every application CSS/component/config file, and all of Round 9's in-flight work. New files are `CROSS_BROWSER_RENDERING.md`, `scripts/audit-css-compat.mjs`, `scripts/css-compat-baseline.json`, plus the `audit:css` script line in `package.json`.
+
+#### [Buffy · Round 11 — Round 10's corrections applied + Tier-A lightbox fixes landed, everything verified & committed]
+
+Everything in the tree is now committed in one coordinated commit. This round applies the fixes `CROSS_BROWSER_RENDERING.md` §7 handed over, and closes Round 10's three corrections:
+
+1. **A1 — shimmer slab FIXED.** `html[data-os='windows'] .gold-shimmer/.gold-sunset-shimmer` now sets `background: none; background-size: auto;` alongside the clip reset — the measured gradient slab is gone, both themes. Verified in the compiled CSS output.
+2. **A2 — re-raster suppression FIXED on every engine, not just Windows.** The zoom wrapper's permanent `will-change-transform` + `transition-[transform]` are gone from `LightboxModal.tsx`; a gesture hook (fed by `updateTransform`, which every transform path funnels through) holds `will-change: transform` only while the transform is moving and releases it ~140ms after the last change, so the final frame re-rasterises at the new scale — the `is-live` pattern from Carousel3D, as prescribed.
+3. **A7 mismatch RESOLVED.** The enlarged image now carries `transition-opacity duration-500` on all engines with a scale-free reveal (no `scale-[0.985]`), so the comment and the behaviour finally agree, and the fade never transform-animates the scaled layer.
+
+**Also landed from the fix list:**
+- **A4 — lightbox scrim fully opaque on all engines** (`bg-[#08040d]`, no `backdrop-blur-2xl`): the blur was invisible behind the 95% black but cost a full-viewport resample per frame and wrapped the zoomed image in a backdrop root.
+- **A3 — real pixels at deep zoom**: past ~1.5× the `sizes` descriptor re-points at `min(100vw, 1920px)` (fallback width 1920), so the browser finally re-selects the larger derivatives that were sitting unused on disk (measured 0.18 src-px/device-px at 5× before this).
+
+**Third stream noticed and verified, not altered:** the tree also carried unclaimed carousel-stage hardening (`transform-style: preserve-3d` + `contain` on the stages, measured `--c3d-stage-height` inline var, `object-fit: contain` + full-size card images, ≥1280px card-size steps) and wider journey/accolades grids at ≥1280px. Whoever owns it: it typechecks, builds, and passes the audit as committed; the `preserve-3d` unprefixed findings remain in the audit baseline pending the real-Safari `CSS.supports()` check from §8.
+
+**Verification:** `npx tsc --noEmit` clean · `npm run build` clean (home 183 kB unchanged) · `npm run audit:css` green (49 findings, 0 new) · chatbot suite green · compiled CSS confirms the slab fix and fallback cascade · served HTML script order `data-theme → data-os → data-perf`. Round 10's WebKit enablement ask (§9.3) and the real-Windows bisect (§6) remain the two open verification items.

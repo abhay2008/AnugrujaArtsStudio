@@ -551,14 +551,18 @@ body::before {
 .c3d-card-shell {
   width: var(--c3d-card-w);
   height: var(--c3d-card-h);
+  contain: layout paint style;
+  transform-style: preserve-3d;
 }
 
 .c3d-card {
   position: relative;
   z-index: 1;
   display: flex;
+  min-width: 0;
   flex-direction: column;
   height: 100%;
+  transform: translateZ(0);
 }
 
 /* Per-painting accent halo (`accentGlow` from studioData) — blooms behind the
@@ -617,9 +621,12 @@ body::before {
 
 .c3d-card-media {
   position: relative;
+  display: block;
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
+  isolation: isolate;
   border-radius: var(--c3d-radius);
   border: var(--c3d-border);
   background: #0a0512;
@@ -633,8 +640,14 @@ body::before {
 }
 
 .c3d-card-img {
-  object-fit: cover;
+  display: block;
+  object-fit: contain;
   object-position: center;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  max-height: none;
+  background: #0a0512;
 }
 
 /* Fixed-height caption row: every card reserves the same space, so every
@@ -716,8 +729,11 @@ body::before {
 
 .c3d-stage--spotlight {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: clamp(360px, 48vh, 560px);
+  height: var(--c3d-stage-height, auto);
   perspective: 1500px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 .c3d-gloss {
@@ -750,8 +766,10 @@ body::before {
 }
 
 .c3d-stage--rail {
-  height: clamp(340px, 54vh, 680px);
+  height: var(--c3d-stage-height, clamp(340px, 54vh, 680px));
   perspective: 1500px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 /* Museum plate instead of a glossy caption */
@@ -788,8 +806,10 @@ body::before {
 }
 
 .c3d-stage--deck {
-  height: clamp(340px, 56vh, 700px);
+  height: var(--c3d-stage-height, clamp(340px, 56vh, 700px));
   perspective: 1500px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
 }
 
 /* Warm pool of light on the "table" the deck sits on */
@@ -861,8 +881,9 @@ body::before {
 }
 
 .c3d-stage--polaroid {
-  height: clamp(320px, 52vh, 640px);
+  height: var(--c3d-stage-height, clamp(320px, 52vh, 640px));
   perspective: none;
+  transform-style: preserve-3d;
 }
 
 /* The little brass pin holding each print to the wall */
@@ -967,6 +988,48 @@ body::before {
 
 [data-theme='light'] .c3d-dot--soft.is-active {
   background: #5a4e44;
+}
+
+/* Wide desktop layouts: use the available horizontal canvas instead of
+   letting fixed viewport heights make the cards feel undersized or clipped. */
+@media (min-width: 1280px) {
+  .c3d-root--spotlight {
+    --c3d-card-w: clamp(360px, 31vw, 520px);
+    --c3d-card-h: clamp(380px, 58vh, 620px);
+  }
+
+  .c3d-root--rail {
+    --c3d-card-w: clamp(320px, 34vw, 540px);
+    --c3d-card-h: clamp(390px, 58vh, 640px);
+  }
+
+  .c3d-root--deck {
+    --c3d-card-w: clamp(340px, 31vw, 500px);
+    --c3d-card-h: clamp(400px, 60vh, 660px);
+  }
+
+  .c3d-root--polaroid {
+    --c3d-card-w: clamp(320px, 29vw, 480px);
+    --c3d-card-h: clamp(360px, 56vh, 600px);
+  }
+}
+
+@media (min-width: 1536px) {
+  .c3d-root--spotlight {
+    --c3d-card-w: min(34vw, 560px);
+  }
+
+  .c3d-root--rail {
+    --c3d-card-w: min(36vw, 580px);
+  }
+
+  .c3d-root--deck {
+    --c3d-card-w: min(34vw, 540px);
+  }
+
+  .c3d-root--polaroid {
+    --c3d-card-w: min(32vw, 520px);
+  }
 }
 
 /* Short viewports — pair with the height-locked showcase section */
@@ -2956,6 +3019,11 @@ body::before {
   );
   --atelier-card-bg: rgba(15, 14, 19, 0.72);
   --atelier-panel-bg: rgba(18, 16, 26, 0.62);
+  /* Opaque stand-in used on Windows, where a backdrop-filter glass card over
+     the ambient background can fail to paint its backdrop at all (content
+     showing through the card) under software compositing. Matches the
+     darkest tone of the page mesh. */
+  --atelier-panel-solid: #12101a;
   --atelier-hairline: rgba(212, 175, 55, 0.22);
   --atelier-hairline-strong: rgba(212, 175, 55, 0.55);
   --atelier-gold-ink: #f2d770;
@@ -3010,6 +3078,9 @@ body::before {
   );
   --atelier-card-bg: rgba(255, 255, 255, 0.78);
   --atelier-panel-bg: rgba(255, 253, 249, 0.78);
+  /* Windows: same rationale as the dark block — the ivory panel is painted
+     opaquely instead of blurred so sticky cards cannot show content through. */
+  --atelier-panel-solid: #fffdf9;
   --atelier-hairline: rgba(184, 151, 72, 0.32);
   --atelier-hairline-strong: rgba(184, 151, 72, 0.65);
   --atelier-amethyst-hairline: rgba(107, 44, 145, 0.28);
@@ -3590,10 +3661,18 @@ body::before {
   padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
 }
 
+@media (min-width: 1280px) {
+  .atelier-journey-section,
+  .atelier-accolades-section {
+    max-width: 1400px;
+    padding-inline: clamp(2rem, 4vw, 4.5rem);
+  }
+}
+
 .journey-sticky-grid {
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: clamp(2rem, 4vw, 4rem);
+  grid-template-columns: minmax(20rem, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(2rem, 4vw, 5rem);
   align-items: start;
 }
 
@@ -3890,6 +3969,12 @@ body::before {
   margin-bottom: clamp(2.5rem, 6vw, 4rem);
 }
 
+@media (min-width: 1280px) {
+  .accolades-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .accolade-card {
   position: relative;
   display: flex;
@@ -4056,7 +4141,7 @@ body::before {
 /* Exhibitions + outreach panels */
 .exhibitions-outreach-grid {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
   gap: clamp(1.25rem, 3vw, 2rem);
   align-items: start;
 }
@@ -5920,6 +6005,11 @@ html.theme-transitioning .btn-atelier-solid {
   position: absolute;
   z-index: 10;
   display: flex;
+  width: min(92vw, 1080px);
+  height: min(86vh, 860px);
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  box-sizing: border-box;
   flex-direction: column;
   overflow: hidden;
   border-radius: 18px;
@@ -5939,9 +6029,10 @@ html.theme-transitioning .btn-atelier-solid {
 
 .painting-lb-zoom {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -5949,8 +6040,11 @@ html.theme-transitioning .btn-atelier-solid {
 }
 
 .painting-lb-img {
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
@@ -6199,6 +6293,16 @@ html.theme-transitioning .btn-atelier-solid {
   transform: translateY(-1px);
 }
 
+@media (max-width: 767px) {
+  .painting-lb-frame {
+    width: calc(100vw - 1.5rem);
+    height: calc(100dvh - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+    border-radius: 14px;
+  }
+}
+
 @media (max-width: 560px) {
   .registration-event-images.is-gallery {
     grid-template-columns: 1fr 1fr;
@@ -6254,7 +6358,7 @@ html.theme-transitioning .btn-atelier-solid {
    rooms. These rules intentionally override the first card treatment above so
    the event block stays compact and keeps one visual language site-wide. */
 .registration-events {
-  width: min(100%, 62rem);
+  width: min(100%, 78rem);
   margin-inline: auto;
 }
 
@@ -6901,4 +7005,165 @@ html.theme-transitioning .btn-atelier-solid {
 /* Blurring a 32px placeholder is pointless — upscaling it is already soft. */
 [data-perf='lite'] .lb-lqip {
   filter: none;
+}
+
+/* ================================================================
+   WINDOWS COMPOSITING FALLBACKS — html[data-os='windows']
+   ================================================================
+   Chromium on Windows still falls back to software compositing far more
+   often than macOS/Android (driver blocklists, hardware acceleration off,
+   fractional display scaling such as the default 125%). Under software
+   rendering three effects that are free on the other platforms break:
+
+     1. `-webkit-background-clip: text` headlines can rasterise blank — the
+        gradient layer is dropped while the text keeps its transparent fill
+        (long-standing Chromium compositing bug, aggravated by transforms,
+        stacking contexts and fractional scaling). macOS/Android keep the
+        gradient headline; Windows gets the same colour as a solid ink.
+     2. `backdrop-filter` glass panels can fail to paint their backdrop at
+        all, so page content shows through the card. Windows panels get the
+        same colours painted opaquely.
+     3. Per-frame `filter: blur()` on the moving carousel cards and the
+        lightbox scrim resamples the whole layer on the CPU — smear, tearing
+        and stutter. The blur is what gets dropped; geometry and motion are
+        untouched (Carousel3D also reads data-os for its per-card filter).
+
+   Everything here is keyed off the pre-paint OsTagScript in <head>, so the
+   correct paint happens on the very first frame — no flash of blank text.
+   Nothing outside these selectors is affected. */
+
+/* ── 1. Gradient-clipped headlines → the same colour as solid ink ── */
+html[data-os='windows'] .display-heading {
+  background: none;
+  color: var(--gold-text);
+  -webkit-text-fill-color: var(--gold-text);
+}
+
+html[data-os='windows'] .profile-name {
+  background: none;
+  color: var(--gold-text);
+  -webkit-text-fill-color: var(--gold-text);
+}
+
+html[data-os='windows'] .atelier-brand-title {
+  background: none;
+  color: var(--gold-text);
+  -webkit-text-fill-color: var(--gold-text);
+}
+
+/* Shimmer headlines get the same solid-ink treatment. The clip MUST go
+   together with the background: measured on the previous version (which kept
+   the gradient and switched only the clip to border-box), the gradient filled
+   the element box as a slab behind the gold glyphs. `background: none` also
+   clears `background-image` AND `background-size`, so nothing is left to
+   paint behind the text. The html-qualified selector outranks the light-theme
+   gradient blocks above it. */
+html[data-os='windows'] .gold-shimmer,
+html[data-os='windows'] .gold-sunset-shimmer,
+html[data-os='windows'] [data-theme='light'] .gold-shimmer,
+html[data-os='windows'] [data-theme='light'] .gold-sunset-shimmer {
+  background: none;
+  background-size: auto;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--gold-text);
+  -webkit-text-fill-color: var(--gold-text);
+  animation: none;
+}
+
+/* ── 2. Sticky glass panels → opaque panels (no failed backdrop paint) ── */
+html[data-os='windows'] .sticky-profile-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--atelier-panel-solid);
+}
+
+html[data-os='windows'] .chapter-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--atelier-panel-solid);
+}
+
+/* ── 3. dvh → vh cascade. Newer Windows engines ignore the second
+        declaration; engines without dvh units fall back to it. ── */
+html[data-os='windows'] .atelier-hero-viewport {
+  min-height: calc(100vh - 4.6em);
+  min-height: calc(100dvh - 4.6em);
+}
+
+@media (max-width: 560px) {
+  html[data-os='windows'] .atelier-hero-viewport {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+html[data-os='windows'] .painting-lb-frame {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+
+@media (max-width: 767px) {
+  html[data-os='windows'] .painting-lb-frame {
+    height: calc(100vh - 1.5rem);
+    height: calc(100dvh - 1.5rem);
+    max-height: calc(100vh - 1.5rem);
+    max-height: calc(100dvh - 1.5rem);
+  }
+}
+
+/* ── 4. Expensive/fragile filters on Windows → cheap equivalents ── */
+
+/* Spotlight accent bloom: a 38px blur on a transformed layer. */
+html[data-os='windows'] .c3d-accent-glow {
+  display: none;
+}
+
+/* Light-theme flank recession re-rasters a blur on every moving card. */
+html[data-os='windows'][data-theme='light'] .c3d-card-media:not(.is-centre) {
+  filter: none;
+}
+
+/* In-card status badge samples its backdrop inside a transformed card. */
+html[data-os='windows'] .c3d-status {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(10, 4, 18, 0.88);
+}
+
+html[data-os='windows'] [data-theme='light'] .c3d-status {
+  background: rgba(255, 252, 248, 0.94);
+}
+
+html[data-os='windows'] .c3d-view-badge {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Blur-up placeholder behind the enlarged painting. */
+html[data-os='windows'] .lb-lqip {
+  filter: none;
+}
+
+/* GSAP painting lightbox (PaintingLightbox): scrim + chrome glass off. */
+html[data-os='windows'] .painting-lb-scrim,
+html[data-os='windows'] .painting-lb-close,
+html[data-os='windows'] .painting-lb-meta {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ── 5. Viewport-unit locks: dvh with a vh fallback ──
+   The home Buy section height-locks itself to the dynamic viewport. Chromium
+   on Windows 10 (and older 11 builds) parses `100dvh` as invalid and drops
+   the whole declaration, so without a preceding vh declaration the section
+   loses its lock and the carousel + plaque overflow the fold. The cascade
+   keeps the dvh behaviour on every engine that understands it. */
+@media (min-width: 640px) {
+  .buy-showcase-lock {
+    height: 100vh;
+    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
