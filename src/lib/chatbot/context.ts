@@ -1,5 +1,5 @@
-import { getSiteContentSync } from '@/lib/serverContent';
-import { formatPrice } from '@/lib/price';
+import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
+import { formatPrice, isPriceConfirmed } from '@/lib/price';
 import { studioData } from '@/data/studioData';
 import { galleryCatalogEntry } from '@/lib/types';
 import type { SiteContent, StudioEvent, GalleryKey } from '@/lib/types';
@@ -68,7 +68,11 @@ function eventLines(events: StudioEvent[] | undefined, label: string): string[] 
  * Kept well under ~3k tokens so free-tier models stay fast.
  */
 export function buildStudioContext(): string {
-  const content = getSiteContentSync();
+  // Background-refresh from the GitHub CMS so admin publishes reach the bot
+  // within a minute; the sync getter returns the freshest already-fetched
+  // content (or the build-time snapshot before the first fetch completes).
+  refreshFreshContent();
+  const content = getFreshContentSync();
   const revision = contentRevision(content);
 
   if (cacheEntry && cacheEntry.revision === revision) {
@@ -104,7 +108,9 @@ export function buildStudioContext(): string {
     const sold = sale.filter((p) => (p.status ?? 'Available') === 'Sold');
     const lines = sale.map((p) => {
       const status = p.status ?? 'Available';
-      const price = p.price !== undefined && p.price !== '' ? formatPrice(p.price) : 'price on request';
+      // Price-confirmation rule: an admin-saved price is quoted exactly;
+      // anything else is masked — the bot must never leak a pending figure.
+      const price = isPriceConfirmed(p) ? formatPrice(p.price) : 'XXXX (cost on request)';
       const bits = [`- "${p.title}" — ${price} — ${status}`];
       if (p.medium) bits.push(`Medium: ${p.medium}`);
       if (p.dimensions) bits.push(`Dimensions: ${p.dimensions}`);

@@ -85,6 +85,7 @@
   --logo-chrome-glow: 0 4px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --text-primary: #f5ecd4;
   --text-muted: rgba(245, 236, 212, 0.78);
+  --text-soft: rgba(247, 240, 222, 0.92);
   --text-subtle: rgba(245, 236, 212, 0.55);
   --text-inverse: #1a0828;
   --surface-elevated: rgba(28, 12, 42, 0.78);
@@ -195,6 +196,7 @@
   /* Espresso bronze + obsidian charcoal — WCAG AAA on ivory, still warm */
   --text-primary: #1a1612;
   --text-muted: #5c5449;
+  --text-soft: #43392f;
   --text-subtle: #6b6255;
   --text-inverse: #fffdf8;
   --surface-elevated: rgba(255, 255, 255, 0.86);
@@ -341,9 +343,10 @@ body::before {
 }
 
 .text-section-lead {
-  font-size: clamp(0.95rem, 1.1vw + 0.35rem, 1.15rem);
-  line-height: 1.62;
-  color: var(--text-muted);
+  font-weight: 500;
+  font-size: clamp(1rem, 1.1vw + 0.4rem, 1.18rem);
+  line-height: 1.66;
+  color: var(--text-soft);
 }
 
 .text-section-kicker {
@@ -681,8 +684,9 @@ body::before {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: 0.64rem;
-  line-height: 1.28;
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1.32;
   color: var(--text-subtle);
 }
 
@@ -1072,6 +1076,20 @@ body::before {
 .c3d-deck-plate {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+/* Small "contact the studio" note under a masked (XXXX) price. */
+.c3d-price-note {
+  display: block;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.6rem;
+  font-weight: 500;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+  white-space: normal;
+  max-width: 16rem;
 }
 
 .c3d-price {
@@ -2860,12 +2878,66 @@ body.has-quicknav .site-footer {
   font-size: clamp(0.56rem, 2.5vw, 1rem);
   line-height: 1.1;
   white-space: nowrap;
+  /* Cinzel Decorative ships only a 700 face — Cinzel's variable file runs to
+     900, so the wordmark uses it for genuinely heavier strokes. */
+  font-family: 'Cinzel', 'Cinzel Decorative', serif;
+  font-weight: 800;
+}
+
+/* A touch more presence on phones/tablets: slightly larger type plus a subtle
+   vertical stretch for taller glyphs (header height itself is untouched — the
+   transform never affects layout). The 390px floor is width-checked against
+   the mobile action cluster and still fits with slack on a 390px phone. */
+@media (min-width: 390px) and (max-width: 1023.98px) {
+  .site-brand-title {
+    font-size: clamp(0.65625rem, 2.8vw, 1rem);
+    transform: scaleY(1.12);
+    transform-origin: center;
+  }
 }
 
 @media (min-width: 1024px) {
   .site-brand-title {
     font-size: clamp(0.95rem, 1.8vw, 1.25rem);
   }
+}
+
+/* Quiet ivory → light-gold sheen, deliberately kept subtle — a whisper of
+   warmth and lavender at the tail, not a full golden gradient. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .site-brand-title {
+    background-image: linear-gradient(
+      100deg,
+      #fffef8 0%,
+      #faf4e4 22%,
+      #f6e9c2 45%,
+      #f3ddb0 65%,
+      #f6efdd 82%,
+      #eee7f2 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  [data-theme='light'] .site-brand-title {
+    background-image: linear-gradient(100deg, #5d4410 0%, #7d5f18 40%, #96762c 65%, #6b4f12 100%);
+  }
+}
+
+/* The dark-theme glow on .text-gallery-gold would bleed through the
+   transparent gradient fill — keep the wordmark crisp. */
+[data-theme='dark'] .site-brand-title {
+  text-shadow: none;
+}
+
+/* Windows Chrome paints clipped text behind backdrop-filter poorly; fall back
+   to the solid gallery gold there (same treatment as .gold-sunset-shimmer). */
+html[data-os='windows'] .site-brand-title {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--gold-text);
 }
 
 .header-social-btn {
@@ -3685,10 +3757,11 @@ body.has-quicknav .site-footer {
 .subheading-dim {
   margin: 0 auto;
   max-width: 62ch;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(0.92rem, 2.1vw, 1.15rem);
-  line-height: 1.6;
-  color: var(--text-muted);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(0.96rem, 2.1vw, 1.18rem);
+  line-height: 1.64;
+  color: var(--text-soft);
 }
 
 .section-title-wrap,
@@ -4012,10 +4085,11 @@ body.has-quicknav .site-footer {
 
 .chapter-body {
   margin: 0;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(0.92rem, 1.7vw, 1.02rem);
-  line-height: 1.7;
-  color: var(--text-muted);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(0.94rem, 1.7vw, 1.06rem);
+  line-height: 1.72;
+  color: var(--text-soft);
 }
 
 /* ----------------------------------------------------------------
@@ -4232,9 +4306,10 @@ body.has-quicknav .site-footer {
 
 .accolade-desc {
   margin: 0;
-  font-size: clamp(0.8rem, 1.9vw, 0.9rem);
-  line-height: 1.6;
-  color: var(--text-muted);
+  font-weight: 500;
+  font-size: clamp(0.85rem, 1.9vw, 0.94rem);
+  line-height: 1.62;
+  color: var(--text-soft);
 }
 
 /* International exhibition ticker */
@@ -4468,9 +4543,10 @@ body.has-quicknav .site-footer {
 
 .outreach-detail {
   margin: 0;
-  font-size: clamp(0.78rem, 1.85vw, 0.88rem);
-  line-height: 1.6;
-  color: var(--text-muted);
+  font-weight: 500;
+  font-size: clamp(0.84rem, 1.85vw, 0.92rem);
+  line-height: 1.62;
+  color: var(--text-soft);
 }
 
 /* ----------------------------------------------------------------
@@ -6046,10 +6122,10 @@ html.theme-transitioning .btn-atelier-solid {
   margin: 0.22rem 0 0;
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
-  font-weight: 500;
-  font-size: clamp(0.82rem, 1.6vh, 0.98rem);
-  line-height: 1.45;
-  color: var(--text-muted);
+  font-weight: 600;
+  font-size: clamp(0.88rem, 1.6vh, 1.02rem);
+  line-height: 1.5;
+  color: var(--text-soft);
 }
 
 .c3d-spot-row {
@@ -6968,6 +7044,138 @@ html.theme-transitioning .btn-atelier-solid {
   animation: chatChipIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ── Contextual invite bubble ("Try asking our AI assistant…") ──
+   Pops out of the FAB with a spring, idle-floats, fades before unmount.
+   Transform/opacity only — GPU-cheap on phones. */
+.chat-nudge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  animation: chatNudgeFloat 3.2s ease-in-out 0.8s infinite;
+}
+.chat-nudge,
+.chat-nudge-tail {
+  animation:
+    chatNudgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    chatNudgeOut 0.4s ease 6.1s forwards;
+}
+.chat-nudge-tail {
+  display: block;
+  width: 12px;
+  height: 10px;
+  margin-right: 20px;
+  background: rgba(26, 6, 43, 0.94);
+  border-right: 1px solid rgb(242 215 112 / 0.35);
+  border-bottom: 1px solid rgb(242 215 112 / 0.35);
+  border-bottom-right-radius: 3px;
+  clip-path: polygon(0 0, 100% 0, 55% 100%);
+}
+/* Hovering the launcher fades its bubble away (:has bridges the siblings). */
+.chat-nudge-wrap:has(+ .chat-fab:hover) {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+@keyframes chatNudgePop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes chatNudgeFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes chatNudgeOut {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+}
+
+/* ── Docked suggested-prompt bar (quick replies live above the input) ── */
+.chat-chip-dock {
+  background: linear-gradient(to bottom, rgba(22, 5, 35, 0), rgba(29, 6, 46, 0.92));
+  animation: chatDockIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.chat-chip-row {
+  scrollbar-width: none;
+}
+.chat-chip-row::-webkit-scrollbar {
+  display: none;
+}
+@keyframes chatDockIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Panel chrome: gradient header, avatar and input bar ── */
+.chat-header {
+  background: linear-gradient(110deg, rgba(76, 29, 149, 0.55), rgba(29, 6, 46, 0.85) 45%, rgba(120, 53, 15, 0.45));
+}
+.chat-avatar {
+  background: linear-gradient(135deg, #f59e0b, #eab308 45%, #fb923c);
+}
+.chat-input-bar {
+  background: linear-gradient(to top, rgba(42, 10, 63, 0.95), rgba(29, 6, 46, 0.88));
+}
+.chat-bubble--gold {
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+}
+
+/* Streaming caret — a small gold block riding the text while it streams.
+   Opacity-only blink: no layout work, no repaint storm. */
+.chat-caret {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: rgb(242 215 112 / 0.85);
+  border-radius: 2px;
+  animation: chatCaretBlink 0.9s steps(1, end) infinite;
+}
+@keyframes chatCaretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ── Performance guards ──
+   Lite tier: one cheap opacity fade, zero continuous animation — no spring,
+   no idle float, no caret blink. Nudges never even mount there (hook). */
+html[data-perf='lite'] .chat-nudge,
+html[data-perf='lite'] .chat-nudge-tail,
+html[data-perf='lite'] .chat-nudge-wrap,
+html[data-perf='lite'] .chat-chip-dock {
+  animation: chatLiteFade 0.25s ease-out both;
+}
+@keyframes chatLiteFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+html[data-perf='lite'] .chat-caret {
+  display: none;
+}
+
 /* Chat bubble tails */
 .chat-bubble {
   position: relative;
@@ -7035,7 +7243,11 @@ html.theme-transitioning .btn-atelier-solid {
   .chat-panel,
   .chat-msg,
   .chat-chip,
-  .chat-unread {
+  .chat-unread,
+  .chat-nudge-wrap,
+  .chat-nudge,
+  .chat-nudge-tail,
+  .chat-chip-dock {
     animation: none;
   }
   .chat-dot {

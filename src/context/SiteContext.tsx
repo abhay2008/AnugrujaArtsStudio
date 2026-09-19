@@ -370,7 +370,20 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const updateArtwork = useCallback((gallery: GalleryKey, itemId: string, patch: Partial<ArtItem>) => {
     setContentState((prev) => {
       const list = prev.galleries[gallery] || [];
-      const nextList = list.map((i) => (i.id === itemId ? { ...i, ...patch } : i));
+      const nextList = list.map((i) => {
+        if (i.id !== itemId) return i;
+        const next = { ...i, ...patch };
+        // Price-confirmation rule: writing a non-empty price from any admin
+        // form stamps the painting as price-confirmed, so it renders publicly.
+        // A patch that already carries priceConfirmedAt (e.g. the upload
+        // wizard, which stamps at publish time) wins unchanged.
+        if (!('priceConfirmedAt' in patch)) {
+          const priceChanged = (i.price ?? '') !== (next.price ?? '');
+          const hasPrice = next.price !== undefined && next.price !== null && String(next.price).trim() !== '';
+          if (priceChanged && hasPrice) next.priceConfirmedAt = new Date().toISOString();
+        }
+        return next;
+      });
       const next = {
         ...prev,
         galleries: {

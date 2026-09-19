@@ -10,7 +10,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useLightbox } from './LightboxContext';
-import { formatPrice } from '@/lib/price';
+import { isPriceConfirmed, PRICE_PENDING_LABEL, PRICE_PENDING_NOTE, priceNote, publicPriceLabel } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { useScrollLock } from '@/lib/scrollLock';
 import { hasImageVariants, imageUrl, lightboxWidth, lqipUrl, responsiveImage } from '@/lib/imageSrc';
@@ -29,6 +29,7 @@ export default function LightboxModal() {
     activeTitle,
     activeDescription,
     activePrice,
+    activePriceConfirmed,
     activeCategory,
     activeMedium,
     activeIndex,
@@ -399,8 +400,14 @@ export default function LightboxModal() {
 
   if (!isOpen || !activeImage) return null;
 
-  const price = formatPrice(activePrice ?? undefined);
-  const buyHref = paintingInquiryLink(activeTitle || 'Artwork', activePrice || undefined);
+  // The lightbox is only opened with price+marker data from buy surfaces —
+  // an explicit `priceConfirmedAt: false` marks "for sale, price not yet
+  // published", which renders as the XXXX mask with the contact note.
+  const priceConfirmed = isPriceConfirmed({ price: activePrice ?? undefined, priceConfirmedAt: activePriceConfirmed ?? undefined });
+  const showPending = activePriceConfirmed === false && !priceConfirmed;
+  const price = showPending ? PRICE_PENDING_LABEL : publicPriceLabel(activePrice ?? undefined, priceConfirmed);
+  const priceNoteText = showPending ? PRICE_PENDING_NOTE : priceNote(priceConfirmed);
+  const buyHref = paintingInquiryLink(activeTitle || 'Artwork', activePrice || undefined, activePriceConfirmed ?? undefined);
   const isZoomed = scale > 1.01;
 
   return (
@@ -640,8 +647,14 @@ export default function LightboxModal() {
         {/* Price & Purchase Link */}
         <div className="flex items-center gap-3 shrink-0">
           {price && (
-            <span className="px-3.5 py-1.5 rounded-full border border-studio-gold/40 bg-studio-gold/10 font-mono text-sm sm:text-base font-bold text-studio-gold shadow-sm">
-              {price}
+            <span
+              className="px-3.5 py-1.5 rounded-full border border-studio-gold/40 bg-studio-gold/10 font-mono text-sm sm:text-base font-bold text-studio-gold shadow-sm text-center leading-tight"
+              aria-label={priceNoteText ? 'Price pending — contact the studio' : `Listed price ${price}`}
+            >
+              <span className="block">{price}</span>
+              {priceNoteText && (
+                <span className="block text-[10px] font-sans font-medium normal-case tracking-wide text-amber-200/80">{priceNoteText}</span>
+              )}
             </span>
           )}
 

@@ -7,6 +7,8 @@ export interface LightboxSlide {
   title?: string;
   description?: string;
   price?: number | string;
+  /** Admin-saved stamp; absent → the lightbox masks the price (XXXX). */
+  priceConfirmedAt?: string | boolean;
   category?: string;
   medium?: string;
   status?: string;
@@ -17,6 +19,7 @@ interface LightboxContextType {
   activeTitle: string | null;
   activeDescription: string | null;
   activePrice: number | string | null;
+  activePriceConfirmed: boolean | null;
   activeCategory: string | null;
   activeMedium: string | null;
   activeStatus: string | null;
@@ -31,7 +34,8 @@ interface LightboxContextType {
     description?: string,
     price?: number | string,
     category?: string,
-    medium?: string
+    medium?: string,
+    priceConfirmedAt?: string | boolean
   ) => void;
   /** Open a lightbox with full gallery navigation (prev/next, keyboard, swipe) */
   openGallery: (slides: LightboxSlide[], startIndex: number) => void;
@@ -46,6 +50,7 @@ const LightboxContext = createContext<LightboxContextType>({
   activeTitle: null,
   activeDescription: null,
   activePrice: null,
+  activePriceConfirmed: null,
   activeCategory: null,
   activeMedium: null,
   activeStatus: null,
@@ -72,9 +77,10 @@ export function LightboxProvider({ children }: { children: ReactNode }) {
       description?: string,
       price?: number | string,
       category?: string,
-      medium?: string
+      medium?: string,
+      priceConfirmedAt?: string | boolean
     ) => {
-      setSingle({ src, title, description, price, category, medium });
+      setSingle({ src, title, description, price, priceConfirmedAt, category, medium });
       setSlides([]);
       setIndex(-1);
     },
@@ -117,6 +123,7 @@ export function LightboxProvider({ children }: { children: ReactNode }) {
       activeTitle: active?.title ?? null,
       activeDescription: active?.description ?? null,
       activePrice: active?.price ?? null,
+      activePriceConfirmed: active?.priceConfirmedAt != null ? Boolean(active.priceConfirmedAt) : null,
       activeCategory: active?.category ?? null,
       activeMedium: active?.medium ?? null,
       activeStatus: active?.status ?? null,

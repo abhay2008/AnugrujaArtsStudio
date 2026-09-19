@@ -1,5 +1,5 @@
-import { getSiteContentSync } from '@/lib/serverContent';
-import { formatPrice } from '@/lib/price';
+import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
+import { formatPrice, isPriceConfirmed } from '@/lib/price';
 import { studioData } from '@/data/studioData';
 import { galleryCatalogEntry } from '@/lib/types';
 import type { SiteContent, StudioEvent, GalleryKey, ArtItem } from '@/lib/types';
@@ -51,7 +51,7 @@ function estTokens(text: string): number {
 }
 
 function priceLabel(p: ArtItem): string {
-  return p.price !== undefined && p.price !== '' ? formatPrice(p.price) : 'price on request';
+  return isPriceConfirmed(p) ? formatPrice(p.price) : 'XXXX (actual cost on request)';
 }
 
 // ── Core aggregates (always included) ──────────────────────────────────────
@@ -66,8 +66,10 @@ function buildCoreChunk(content: SiteContent): RagChunk {
   const sale = content.galleries?.sale ?? [];
   const upcoming = content.events?.upcoming ?? [];
 
+  // Price-confirmation rule: only admin-confirmed prices may be aggregated
+  // into a public range; pending prices count as "on request".
   const prices = sale
-    .map((p) => (typeof p.price === 'number' || typeof p.price === 'string' ? Number(p.price) : null))
+    .map((p) => (isPriceConfirmed(p) ? Number(p.price) : null))
     .filter((n): n is number => n !== null && !Number.isNaN(n))
     .sort((a, b) => a - b);
 
@@ -76,8 +78,8 @@ function buildCoreChunk(content: SiteContent): RagChunk {
 
   const priceRange =
     prices.length > 0
-      ? `Painting prices range from ₹${prices[0].toLocaleString('en-IN')} to ₹${prices[prices.length - 1].toLocaleString('en-IN')}.`
-      : 'Painting prices are on request.';
+      ? `Confirmed painting prices range from ₹${prices[0].toLocaleString('en-IN')} to ₹${prices[prices.length - 1].toLocaleString('en-IN')}.`
+      : 'Painting prices are not published yet — the studio shares the actual cost on request.';
 
   const nextEvent = upcoming[0]
     ? `Next event: ${upcoming[0].title} — ${upcoming[0].date}${upcoming[0].seatsRemaining !== undefined ? ` (${upcoming[0].seatsRemaining} seats remaining)` : ''}.`
@@ -352,7 +354,11 @@ export function contentRevisionHash(content: SiteContent): string {
 }
 
 function getIndex(): RagIndex {
-  const content = getSiteContentSync();
+  // Kick off a background GitHub refresh (no-op when TTL hasn't elapsed) so
+  // the index rebuilds from the latest admin-published content within a
+  // minute — even before a redeploy ships the new site.json.
+  refreshFreshContent();
+  const content = getFreshContentSync();
   const revision = contentRevisionHash(content);
   if (indexCache && indexCache.revision === revision) return indexCache.data;
 
@@ -484,7 +490,7 @@ export function retrieveContext(
     document,
     retrievedCount: rest.length,
     estimatedTokens: estTokens(document),
-    revision: contentRevisionHash(getSiteContentSync()),
+    revision: contentRevisionHash(getFreshContentSync()),
   };
 }
 

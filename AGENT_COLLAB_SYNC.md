@@ -365,3 +365,9 @@ Operational finding (worth knowing before debugging a blank preview)
 Verified live at 439px on a clean cache: real click on the dialog's Next arrow advances `1 / 14 → 2 / 14` ("Class Session" → "Art Workshop Group"); the in-page carousel arrow advances dot 4→5 and the new glide **settles** (centre rect identical 400 ms apart); computed styles confirm the vitrine glow, gold rim, `opacity 0.6` flanks, hairline rule and sheen overlay with `pointer-events: none`; checked in **both themes** (light theme keeps its own gold values and its pre-existing blur recession — my rule is dark-only by construction). tsc clean, `npm run audit:css` green (57 findings, 0 new), dev log clean.
 
 Note: `.freebuff/run.md` could not be updated from this thread — the file tools reject paths under `.freebuff/` (read returns `[BLOCKED]`, `str_replace` reports the file missing), so the dist-dir procedure is recorded here instead.
+
+#### [Buffy — Round 13] Body-copy readability pass (small text only)
+- New `--text-soft` token (dark: rgba(247,240,222,0.92) / light: #43392f) for paragraph-type copy; `.text-section-lead`, `.chapter-body`, `.accolade-desc`, `.outreach-detail`, `.c3d-spot-desc`, `.c3d-card-blurb` rebalanced (weight 500–600, +1–3px floors, slightly brighter ink).
+- `.chapter-body` & `.subheading-dim` → 'Playfair Display' 500 (sturdier than Cormorant 400; playfair-var.woff2 is the variable face).
+- Class-only JSX edits (page.tsx leads/testimony/buy lines, AboutArtistClient narrative + honors): `font-medium`/`font-semibold` bumps, sizes +1 step in two spots. **No headlines, kickers, labels, buttons, markup or copy changed.**
+- Verified: tsc clean, audit:css 0 new, build clean, served-output smoke (classes + compiled CSS + shimmer headline untouched). Not committed — leave for batch commit.

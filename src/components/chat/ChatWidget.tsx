@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { MessageCircle, X, Send, Sparkles, Square } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
+import { useChatNudge } from './useChatNudge';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -131,6 +132,9 @@ export default function ChatWidget() {
   const [unread, setUnread] = useState(false);
   const [showChips, setShowChips] = useState(true);
   const [greeted, setGreeted] = useState(false);
+
+  // Ambient invite bubble that occasionally pops out of the launcher.
+  const { nudge, clear: clearNudge } = useChatNudge();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -351,6 +355,16 @@ export default function ChatWidget() {
     [send, input]
   );
 
+  /** Clear the nudge the moment the chat opens; chips come back on reopen. */
+  const toggleChat = useCallback(() => {
+    setOpen((v) => {
+      if (!v) clearNudge();
+      return !v;
+    });
+    setShowChips(true);
+    setUnread(false);
+  }, [clearNudge]);
+
   if (!mounted || !config.enabled) return null;
 
   const chatPanel = (
@@ -362,9 +376,9 @@ export default function ChatWidget() {
                  sm:inset-x-auto sm:bottom-40 sm:right-6 sm:w-[min(calc(100vw-3rem),400px)] sm:h-[min(72dvh,580px)] sm:max-h-[calc(100dvh-11rem)]"
       style={{ boxShadow: '0 0 40px rgba(242,215,112,0.15), 0 20px 60px rgba(0,0,0,0.6)' }}
     >
-      {/* Header */}
-      <div className="relative flex items-center gap-3 border-b border-studio-gold/20 bg-gradient-to-r from-purple-900/80 via-[#1d062e] to-amber-900/40 px-4 py-3.5">
-        <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-400 shadow-md">
+      {/* Header — deep-plum → sunset gradient sheen */}
+      <div className="chat-header relative flex items-center gap-3 border-b border-studio-gold/20 px-4 py-3.5">
+        <span className="chat-avatar relative flex h-10 w-10 items-center justify-center rounded-full shadow-md">
           <Sparkles className="h-5 w-5 text-purple-950" />
           <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#1d062e]" aria-hidden />
         </span>
@@ -400,8 +414,8 @@ export default function ChatWidget() {
             <div
               className={`chat-bubble max-w-[86%] px-4 py-3 text-[14px] leading-relaxed sm:text-[14.5px] ${
                 m.role === 'user'
-                  ? 'chat-bubble--user bg-gradient-to-br from-amber-500 to-yellow-500 font-medium text-purple-950'
-                  : 'chat-bubble--bot border border-studio-gold/20 bg-purple-950/70 text-yellow-50'
+                  ? 'chat-bubble--user chat-bubble--gold font-medium text-purple-950'
+                  : 'chat-bubble--bot border border-studio-gold/20 text-yellow-50'
               }`}
             >
               {m.image && !m.pending && (
@@ -414,7 +428,12 @@ export default function ChatWidget() {
                   <img src={m.image} alt="Painting thumbnail" className="h-36 w-full object-cover" loading="lazy" />
                 </a>
               )}
-              {m.content ? renderRich(m.content) : m.pending ? (
+              {m.content ? (
+                <>
+                  {renderRich(m.content)}
+                  {m.pending && <span className="chat-caret" aria-hidden />}
+                </>
+              ) : m.pending ? (
                 <span className="chat-typing flex items-center gap-1 py-0.5" aria-label="Chitra is typing">
                   <span className="chat-dot" />
                   <span className="chat-dot" style={{ animationDelay: '0.15s' }} />
@@ -448,25 +467,33 @@ export default function ChatWidget() {
             </div>
           </div>
         ))}
+      </div>
 
-        {showChips && (config.suggestedPrompts.length > 0 ? config.suggestedPrompts : DEFAULT_CHIPS).length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1.5">
+      {/* Suggested prompts — docked above the input like a quick-reply bar.
+          Always in the same place, never interleaved with the transcript. */}
+      {showChips && (
+        <div className="chat-chip-dock border-t border-studio-gold/15 px-3 pb-2 pt-2.5">
+          <p className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] font-bold tracking-[0.14em] text-studio-gold/70 uppercase">
+            <Sparkles className="h-3 w-3" aria-hidden />
+            Try asking
+          </p>
+          <div className="chat-chip-row flex gap-2 overflow-x-auto pb-1">
             {(config.suggestedPrompts.length > 0 ? config.suggestedPrompts : DEFAULT_CHIPS).slice(0, 6).map((p, i) => (
               <button
                 key={p}
                 onClick={() => void send(p)}
-                style={{ animationDelay: `${0.35 + i * 0.07}s` }}
-                className="chat-chip rounded-full border border-studio-gold/30 bg-purple-950/60 px-3.5 py-2 text-[12px] font-medium text-yellow-100/90 transition-all hover:-translate-y-0.5 hover:border-studio-gold/70 hover:bg-purple-900 hover:text-white hover:shadow-[0_4px_14px_rgba(242,215,112,0.18)] active:scale-95"
+                style={{ animationDelay: `${0.15 + i * 0.06}s` }}
+                className="chat-chip shrink-0 whitespace-nowrap rounded-full border border-studio-gold/30 px-3.5 py-2 text-[12px] font-medium text-yellow-100/90 transition-all hover:-translate-y-0.5 hover:border-studio-gold/70 hover:bg-purple-900 hover:text-white hover:shadow-[0_4px_14px_rgba(242,215,112,0.18)] active:scale-95"
               >
                 {p}
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Input */}
-      <form onSubmit={submit} className="flex items-center gap-2 border-t border-studio-gold/20 bg-[#1d062e]/90 px-3 py-3">
+      <form onSubmit={submit} className="chat-input-bar flex items-center gap-2 border-t border-studio-gold/20 px-3 py-3">
         <input
           ref={inputRef}
           value={input}
@@ -502,13 +529,28 @@ export default function ChatWidget() {
   return (
     <>
       {open && createPortal(chatPanel, document.body)}
+      {/* Contextual invite bubble — pops out of the launcher, never blocks it.
+          The wrapper is pointer-events-none so it can never eat a tap meant
+          for the FAB; only the bubble itself is clickable (opens the chat). */}
+      {!open && nudge && (
+        <div className="chat-nudge-wrap pointer-events-none fixed bottom-20 right-4 z-[59] sm:bottom-[10.5rem] sm:right-6">
+          <button
+            type="button"
+            onClick={toggleChat}
+            className="chat-nudge pointer-events-auto flex max-w-[240px] items-start gap-2 rounded-2xl rounded-br-sm border border-studio-gold/35 px-3.5 py-2.5 text-left text-[12.5px] font-medium leading-snug text-yellow-50 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, rgba(45,12,70,0.92), rgba(26,6,43,0.94))',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.45), 0 0 18px rgba(242,215,112,0.14)',
+            }}
+          >
+            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-studio-gold" aria-hidden />
+            <span>{nudge}</span>
+          </button>
+          <span className="chat-nudge-tail" aria-hidden />
+        </div>
+      )}
       <button
-        onClick={() => {
-          setOpen((v) => {
-            if (!v) setUnread(false);
-            return !v;
-          });
-        }}
+        onClick={toggleChat}
         aria-label={open ? 'Close chat' : 'Chat with the studio assistant'}
         aria-expanded={open}
         className="chat-fab fixed bottom-5 right-4 z-[59] flex h-14 w-14 items-center justify-center rounded-full border border-studio-gold/50 bg-gradient-to-br from-purple-800 via-purple-900 to-[#2a0a3f] shadow-2xl transition-all hover:scale-110 hover:border-studio-gold active:scale-95 sm:bottom-24 sm:right-6 motion-reduce:hover:scale-100"

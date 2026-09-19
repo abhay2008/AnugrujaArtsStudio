@@ -5,7 +5,8 @@ export interface StudioPainting {
   title: string;
   medium: string;
   dimensions: string;
-  price: string;
+  /** Optional: prices live in content/site.json once an admin confirms them. */
+  price?: string;
   status: PaintingStatus;
   image: string;
   fallbackImage: string;
@@ -273,7 +274,9 @@ export const studioData = {
       title: 'Gilded Solitude',
       medium: 'Oil & 24k Gold Leaf on Belgian Linen',
       dimensions: '36 × 48 in',
-      price: '₹45,000',
+      // No price: the live catalog is content/site.json, and prices may only
+      // appear there once an admin confirms them. Seeded figures would leak
+      // through any future consumer of this file.
       status: 'Available',
       image:
         'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=85',
@@ -285,7 +288,6 @@ export const studioData = {
       title: 'Nocturne in Amethyst',
       medium: 'Layered Acrylic & Raw Mineral Pigments',
       dimensions: '40 × 40 in',
-      price: '₹38,000',
       status: 'Available',
       // The previous remote placeholder for this work was pulled by Unsplash
       // (hard 404), so it now points straight at the studio's own asset.
@@ -298,7 +300,6 @@ export const studioData = {
       title: 'Whispers of the Atelier',
       medium: 'Classical Portrait Oil on Linen',
       dimensions: '30 × 42 in',
-      price: '₹52,000',
       status: 'Sold',
       image:
         'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=1000&q=85',
@@ -310,7 +311,6 @@ export const studioData = {
       title: 'Vesper Veil',
       medium: 'Mixed Media, Resin & Bronze Dust',
       dimensions: '24 × 36 in',
-      price: '₹28,500',
       status: 'Available',
       image:
         'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1000&q=85',

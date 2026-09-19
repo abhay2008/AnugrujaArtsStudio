@@ -1,6 +1,6 @@
 import type { SiteContent } from '@/lib/types';
-import { getSiteContentSync } from '@/lib/serverContent';
-import { formatPrice } from '@/lib/price';
+import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
+import { formatPrice, isPriceConfirmed, PRICE_PENDING_LABEL } from '@/lib/price';
 
 export type PreprogrammedReply =
   | { matched: true; text: string; action?: { type: 'whatsapp'; message: string } }
@@ -87,7 +87,8 @@ export function lookupAndReply(raw: string): PreprogrammedReply {
   const q = (raw ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
   if (!q) return { matched: false };
 
-  const content = getSiteContentSync();
+  refreshFreshContent();
+  const content = getFreshContentSync();
   const sale = content.galleries?.sale ?? [];
   const events = content.events?.upcoming ?? [];
   const chatbot = content.chatbot;
@@ -505,7 +506,9 @@ function paintingLookupReply(
   brand: { phoneDisplay: string },
 ): string {
   const title = painting.title;
-  const price = painting.price !== undefined && painting.price !== '' ? formatPrice(painting.price) : 'price on request';
+  const price = isPriceConfirmed(painting)
+    ? formatPrice(painting.price)
+    : `${PRICE_PENDING_LABEL} — not published yet; the studio shares the actual cost on request`;
   const status = painting.status ?? 'Available';
   const desc = painting.description ? ` ${painting.description}` : '';
   // The widget renders this tag as a thumbnail card; the image is always the
@@ -520,13 +523,13 @@ function saleCatalogReply(sale: { id: string; title: string; price?: number | st
   }
 
   const prices = sale
-    .map((p) => (typeof p.price === 'number' || typeof p.price === 'string' ? Number(p.price) : null))
+    .map((p) => (isPriceConfirmed(p) ? Number(p.price) : null))
     .filter((p): p is number => p !== null && !Number.isNaN(p))
     .sort((a, b) => a - b);
 
   const range = prices.length > 0
-    ? `Prices range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**.`
-    : "Prices are available on request.";
+    ? `Confirmed prices range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**.`
+    : "Prices are not published yet — the studio shares the actual cost personally.";
 
   const available = sale.filter((p) => (p.status ?? 'Available') === 'Available').length;
   const sold = sale.filter((p) => (p.status ?? 'Available') === 'Sold').length;
@@ -541,7 +544,7 @@ function saleCatalogReply(sale: { id: string; title: string; price?: number | st
   const highlights = sale
     .filter((p) => (p.status ?? 'Available') === 'Available')
     .slice(0, 4)
-    .map((p) => `**${p.title}** — ${typeof p.price === 'number' || typeof p.price === 'string' ? formatPrice(p.price) : 'price on request'}`)
+    .map((p) => `**${p.title}** — ${isPriceConfirmed(p) ? formatPrice(p.price) : PRICE_PENDING_LABEL + ' (cost on request)'}`)
     .join('\n');
 
   return [
@@ -558,13 +561,13 @@ function salePriceRangeReply(sale: { id: string; title: string; price?: number |
   }
 
   const prices = sale
-    .map((p) => (typeof p.price === 'number' || typeof p.price === 'string' ? Number(p.price) : null))
+    .map((p) => (isPriceConfirmed(p) ? Number(p.price) : null))
     .filter((p): p is number => p !== null && !Number.isNaN(p))
     .sort((a, b) => a - b);
 
   const range = prices.length > 0
-    ? `Our originals range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**, depending on size, medium and complexity.`
-    : "Prices depend on the piece — the studio will confirm personally.";
+    ? `Confirmed prices range from **${formatPrice(prices[0])}** to **${formatPrice(prices[prices.length - 1])}**.`
+    : "Prices are not published yet — the studio shares the actual cost personally.";
 
   return [
     range,

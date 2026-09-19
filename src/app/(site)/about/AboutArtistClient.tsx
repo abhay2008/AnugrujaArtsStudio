@@ -46,7 +46,7 @@ export default function AboutArtistClient() {
             />
           </div>
 
-          <div className="flex-1 space-y-4 font-editorial text-base sm:text-lg text-yellow-50/95 leading-relaxed">
+          <div className="flex-1 space-y-4 font-serif-display font-medium text-base sm:text-lg text-yellow-50/95 leading-relaxed">
             <p className="text-justify sm:text-left">
               Anuradha Govarthanan was born and brought up in Chennai, Tamil Nadu. After completing
               her Bachelor&apos;s of Engineering degree from Vellore Institute of Technology (VIT)
@@ -141,7 +141,7 @@ export default function AboutArtistClient() {
               className="glass-card p-5 rounded-2xl border border-theme flex items-start gap-3.5 hover:border-studio-sunset/50 transition-all"
             >
               <span className="text-studio-sunset text-xl font-bold mt-0.5">•</span>
-              <p className="font-serif-display text-sm sm:text-base text-yellow-50/95 leading-relaxed">
+              <p className="font-serif-display font-medium text-base sm:text-lg text-yellow-50/95 leading-relaxed">
                 <strong className="text-studio-gold">{honor.title}</strong> &mdash; {honor.desc}
               </p>
             </div>

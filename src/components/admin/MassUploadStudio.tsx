@@ -333,8 +333,10 @@ export default function MassUploadStudio() {
       title: draft.title.trim() || 'Original Artwork',
       category: draft.category.trim() || def.defaultCategory,
       // Price and the availability badge belong to paintings that are actually
-      // for sale. A showcase piece publishes neither.
+      // for sale. A showcase piece publishes neither. A sale piece published
+      // with a price is price-confirmed the moment it goes live.
       price: draft.forSale && draft.price.trim() ? draft.price.trim() : undefined,
+      priceConfirmedAt: draft.forSale && draft.price.trim() ? new Date().toISOString() : undefined,
       medium: draft.medium.trim() || undefined,
       dimensions: draft.dimensions.trim() || undefined,
       description: draft.description.trim() || undefined,

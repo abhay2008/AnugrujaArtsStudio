@@ -6,7 +6,7 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2, Pause, Play } from 'lucide-react';
 import { useLightbox } from '@/components/LightboxContext';
 import { ArtItem } from '@/data/artData';
-import { formatPrice } from '@/lib/price';
+import { isPriceConfirmed, priceNote, publicPriceLabel } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
 import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
@@ -675,6 +675,10 @@ export default function Carousel3D({
           title: item.title,
           description: cardBlurb(item) || undefined,
           price: item.price,
+          // The spotlight is a buy surface (sale page / home buy section):
+          // items without an admin-confirmed price are marked pending so the
+          // lightbox masks the price to XXXX with the contact-the-studio note.
+          priceConfirmedAt: item.priceConfirmedAt ?? (variant === 'spotlight' ? false : undefined),
           category: item.category,
           medium: item.medium,
           status: item.status,
@@ -682,7 +686,7 @@ export default function Carousel3D({
         i
       );
     },
-    [items, openGallery]
+    [items, openGallery, variant]
   );
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -851,8 +855,9 @@ export default function Carousel3D({
   const stageInlineStyle = (stageSize.height > 0
     ? { '--c3d-stage-height': `${stageSize.height}px` }
     : {}) as React.CSSProperties;
-  const price = current ? formatPrice(current.price) : '';
-  const inquiryHref = current ? paintingInquiryLink(current.title, current.price) : '';
+  const price = current ? publicPriceLabel(current.price, isPriceConfirmed(current), true) : '';
+  const priceNoteText = current ? priceNote(isPriceConfirmed(current)) : '';
+  const inquiryHref = current ? paintingInquiryLink(current.title, current.price, current.priceConfirmedAt) : '';
 
   const dotWindow = 7;
   let dotStart = 0;
@@ -1136,8 +1141,12 @@ export default function Carousel3D({
             {cardBlurb(current) && <p className="c3d-spot-desc">{cardBlurb(current)}</p>}
             <div className="c3d-spot-row">
               {price && (
-                <span className="c3d-spot-price" aria-label={`Listed price ${price}`}>
-                  {price}
+                <span
+                  className="c3d-spot-price"
+                  aria-label={priceNoteText ? 'Price pending — contact the studio' : `Listed price ${price}`}
+                >
+                  <span>{price}</span>
+                  {priceNoteText && <span className="c3d-price-note">{priceNoteText}</span>}
                 </span>
               )}
               <a
@@ -1181,7 +1190,10 @@ export default function Carousel3D({
             </p>
           </div>
           {price && (
-            <span className="c3d-price shrink-0 whitespace-nowrap">{price}</span>
+            <span className="c3d-price shrink-0 whitespace-nowrap">
+              <span>{price}</span>
+              {priceNoteText && <span className="c3d-price-note">{priceNoteText}</span>}
+            </span>
           )}
           {whatsappButton('h-8 w-8')}
         </div>

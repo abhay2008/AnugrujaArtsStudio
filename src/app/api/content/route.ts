@@ -4,11 +4,53 @@ import { getSiteContentSync, writeSiteContentSync } from '@/lib/serverContent';
 import { commitTextFile, getRemoteTextFile, githubConfigured } from '@/lib/github';
 import { cookieIsValid, COOKIE_NAME } from '@/lib/adminAuth';
 import { CHATBOT_CONTEXT_TAG, resetStudioContextCache } from '@/lib/chatbot/context';
-import { resetRagIndex } from '@/lib/chatbot/rag';
+import { resetRagIndex, contentRevisionHash } from '@/lib/chatbot/rag';
 import { invalidateResponseCache } from '@/lib/chatbot/responseCache';
+import { adoptFreshContent, resetFreshContent } from '@/lib/freshContent';
 import type { SiteContent } from '@/lib/types';
 
+/**
+ * Prices the admin has not explicitly confirmed (no `priceConfirmedAt` stamp)
+ * must never leave the server through this public endpoint — the site masks
+ * them with XXXX, but a raw JSON dump would undo that. Signed-in console
+ * sessions still get the raw content so the editors can do their job.
+ */
+function stripUnconfirmedPrices(content: SiteContent): SiteContent {
+  try {
+    const galleries = content.galleries as unknown as Record<string, unknown>;
+    const cleaned = Object.fromEntries(
+      Object.entries(galleries).map(([key, items]) => [
+        key,
+        Array.isArray(items)
+          ? items.map((item) => {
+              const art = item as { price?: unknown; priceConfirmedAt?: unknown };
+              if (
+                art &&
+                typeof art === 'object' &&
+                'price' in art &&
+                art.price !== undefined &&
+                art.price !== null &&
+                String(art.price).trim() !== '' &&
+                !art.priceConfirmedAt
+              ) {
+                return { ...art, price: '' };
+              }
+              return item;
+            })
+          : items,
+      ])
+    );
+    return { ...content, galleries: cleaned } as unknown as SiteContent;
+  } catch {
+    return content;
+  }
+}
+
 export async function GET(req: NextRequest) {
+  // Signed-in console sessions may see raw (unconfirmed) prices; everyone
+  // else gets the sanitized copy the public site is allowed to know.
+  const authed = await cookieIsValid(req.cookies.get(COOKIE_NAME)?.value);
+
   // If GitHub is configured, try to pull latest committed content
   if (githubConfigured()) {
     try {
@@ -16,7 +58,7 @@ export async function GET(req: NextRequest) {
       if (remoteText) {
         const parsed = JSON.parse(remoteText) as SiteContent;
         if (parsed && parsed.galleries) {
-          return NextResponse.json(parsed, {
+          return NextResponse.json(authed ? parsed : stripUnconfirmedPrices(parsed), {
             headers: {
               'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             },
@@ -29,7 +71,7 @@ export async function GET(req: NextRequest) {
   }
 
   const local = getSiteContentSync();
-  return NextResponse.json(local, {
+  return NextResponse.json(authed ? local : stripUnconfirmedPrices(local), {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     },
@@ -91,12 +133,20 @@ export async function POST(req: NextRequest) {
       // message — never answers from the previous catalog revision.
       resetRagIndex();
       invalidateResponseCache();
+      // Adopt the just-published content immediately (no TTL wait), and let
+      // the background GitHub probe adopt the committed version within a
+      // minute — deploy or no deploy.
+      adoptFreshContent(body);
+      if (githubResult) resetFreshContent();
     } catch {}
 
     return NextResponse.json({
       ok: true,
       github: githubResult,
       localSaved: localOk,
+      // Chatbot context revision after this publish — surfaced in the admin
+      // portal so a human can see the AI assistant's knowledge move forward.
+      revision: contentRevisionHash(getSiteContentSync()),
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to update content';

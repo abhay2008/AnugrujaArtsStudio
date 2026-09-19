@@ -16,6 +16,7 @@ import { logLlmQuery } from '@/lib/chatbot/queryLog';
 import { whatsappLink } from '@/lib/chatbot/lookup';
 import { routeMessage } from '@/lib/chatbot/router';
 import { getSiteContentSync } from '@/lib/serverContent';
+import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,7 +91,8 @@ function sseEncode(event: string, data: unknown): Uint8Array {
 function extractWaTag(text: string): { text: string; wa?: string } {
   const m = text.match(/\n?\[WA:([^\]]+)\]\s*$/);
   if (!m) return { text };
-  const wa = whatsappLink(getSiteContentSync().brand, m[1]);
+  refreshFreshContent();
+  const wa = whatsappLink(getFreshContentSync().brand, m[1]);
   if (!wa) return { text };
   const at = m.index ?? 0;
   return { text: text.slice(0, at).trimEnd(), wa };
@@ -122,7 +124,7 @@ function sseTextResponse(rawText: string, layer?: string): Response {
   const { text: noWa, wa } = extractWaTag(rawText);
   const { text: noImg, image } = extractImgTag(noWa);
   const { text, maps } = extractMapsTag(noImg);
-  const meta: Record<string, unknown> = { layer };
+  const meta: Record<string, unknown> = { layer, revision: contentRevisionHash(getFreshContentSync()) };
   if (wa) meta.wa = wa;
   if (image) meta.image = image;
   if (maps) meta.maps = maps;
@@ -149,7 +151,8 @@ function sseTextResponse(rawText: string, layer?: string): Response {
 export async function POST(req: NextRequest) {
   // ── 0. Config gate ─────────────────────────────────────────────────────
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const content = getSiteContentSync();
+  refreshFreshContent();
+  const content = getFreshContentSync();
   if (content.chatbot?.enabled === false) {
     return Response.json({ error: 'Chat is temporarily unavailable.' }, { status: 503 });
   }
@@ -236,7 +239,11 @@ export async function POST(req: NextRequest) {
   // Fresh sessions only: a repeat question deep in a conversation may depend
   // on earlier turns, so a cached answer could contradict what was just said.
   const isFreshSession = trimmedHistory.length <= 2;
-  const revision = contentRevisionHash(content);
+  // Kick a background refresh of the latest admin-published content (GitHub)
+  // and key the revision to it, so a price/status change made in the admin
+  // portal reaches the chatbot within a minute — even before a redeploy.
+  refreshFreshContent();
+  const revision = contentRevisionHash(getFreshContentSync());
   const langHint = languageHint(verdict.text);
   const models = [primaryModel(), ...fallbackModels()];
   const primary = models[0];
@@ -325,7 +332,7 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      controller.enqueue(sseEncode('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink }));
+      controller.enqueue(sseEncode('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink, revision: contentRevisionHash(getFreshContentSync()) }));
 
       const reader = upstream!.body!.getReader();
       try {

@@ -5,6 +5,12 @@ export interface ArtItem {
   category?: string;
   aspect?: string;
   price?: number | string;
+  /**
+   * ISO timestamp proving an admin explicitly saved this price. Until it is
+   * set, the public site masks the price (XXXX + contact-the-studio note) —
+   * stamped automatically by every admin price-edit path.
+   */
+  priceConfirmedAt?: string;
   description?: string;
   medium?: string;
   dateAdded?: string;

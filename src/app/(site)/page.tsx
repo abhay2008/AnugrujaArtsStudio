@@ -42,10 +42,10 @@ export default function HomePage() {
           <h2 className="showcase-title font-decorative font-bold tracking-wide text-studio-gold">
             Buy Paintings
           </h2>
-          <p className="mx-auto max-w-xl font-editorial text-[clamp(0.82rem,1.6vh,1.05rem)] italic text-theme-muted">
+          <p className="mx-auto max-w-xl font-editorial font-medium text-[clamp(0.82rem,1.6vh,1.05rem)] italic text-theme-muted">
             Handcrafted watercolours &amp; realistic art, straight from the studio
           </p>
-          <p className="mx-auto hidden max-w-2xl font-sans-ui text-[clamp(0.72rem,1.4vh,0.9rem)] text-theme-muted sm:block">
+          <p className="mx-auto hidden max-w-2xl font-sans-ui font-medium text-[clamp(0.78rem,1.4vh,0.95rem)] text-theme-muted sm:block">
             Three works in view — the centre piece takes the spotlight. Swipe or use the arrows,
             tap to inspect, then inquire on WhatsApp.
           </p>
@@ -125,7 +125,7 @@ export default function HomePage() {
             <span className="absolute -top-4 left-6 text-7xl sm:text-8xl text-studio-sunset/20 font-serif-display leading-none select-none pointer-events-none">
               &ldquo;
             </span>
-            <p className="relative z-10 font-editorial text-base sm:text-xl text-theme-muted leading-relaxed text-justify sm:text-left italic">
+            <p className="relative z-10 font-editorial font-semibold text-base sm:text-xl text-theme-muted leading-relaxed text-justify sm:text-left italic">
               Under Teacher Anuradha&apos;s tutelage for three years, I&apos;ve grown through group
               sessions, diverse workshops, and private classes. Her unparalleled expertise fosters a
               supportive learning environment, offering constructive criticism and encouragement.
@@ -144,7 +144,7 @@ export default function HomePage() {
           <h3 className="font-decorative text-2xl sm:text-3xl gold-sunset-shimmer mb-2">
             Get in Touch with Master Artist Anuradha
           </h3>
-          <p className="font-serif-display text-theme-muted text-sm sm:text-base mb-6">
+          <p className="font-serif-display font-medium text-theme-muted text-sm sm:text-base mb-6">
             Direct inquiries for painting sales, workshops, or custom commissions
           </p>
           {/* ContactActionButtons inlined (Gmail + WhatsApp) */}

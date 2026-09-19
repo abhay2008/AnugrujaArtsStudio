@@ -1,5 +1,5 @@
 import { lookupAndReply } from '@/lib/chatbot/lookup';
-import { getSiteContentSync } from '@/lib/serverContent';
+import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
 import { tokenize } from '@/lib/chatbot/rag/bm25';
 
 /**
@@ -104,7 +104,10 @@ function lookupAndReplyStrict(q: string): string | undefined {
  * covered, so the LLM still gets genuinely open questions.
  */
 function faqReply(q: string): string | undefined {
-  const content = getSiteContentSync();
+  // Kick the background GitHub refresh so admin-published FAQ edits reach
+  // the deterministic FAQ layer within a minute, same as the RAG index.
+  refreshFreshContent();
+  const content = getFreshContentSync();
   const faqs = content.chatbot?.faqs ?? [];
   if (faqs.length === 0) return undefined;
 

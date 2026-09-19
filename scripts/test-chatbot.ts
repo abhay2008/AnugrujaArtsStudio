@@ -41,7 +41,10 @@ const ctx = buildStudioContext();
 
 assert(ctx.includes('PAINTINGS FOR SALE'), 'includes sale catalog section');
 assert(ctx.includes('Original Fine Art Painting #1'), 'includes a sale painting title');
-assert(ctx.includes('₹4,500'), 'includes a formatted price from the catalog');
+// Price-confirmation rule: the catalog ships with no admin-confirmed prices,
+// so the bot context must mask them — never leak a seeded/pending figure.
+assert(ctx.includes('XXXX'), 'masks unconfirmed prices (XXXX) in the catalog context');
+assert(!/₹\s?4,500/.test(ctx), 'does not leak unconfirmed price figures');
 assert(/Available|Sold|Reserved/.test(ctx), 'includes acquisition statuses');
 assert(ctx.includes('UPCOMING EVENTS'), 'includes upcoming events');
 assert(ctx.includes('Realistic Watercolor Mastery'), 'includes the seeded workshop');
@@ -241,7 +244,12 @@ function matched(text: string): boolean {
 }
 
 assert(reply('What paintings do you have for sale?')?.includes('sale catalog'), 'answers sale catalog question');
-assert(reply('How much is a painting?')?.includes('₹'), 'answers general price question with price range');
+const generalPriceReply = reply('How much is a painting?');
+assert(
+  generalPriceReply?.includes('not published') || generalPriceReply?.includes('XXXX'),
+  'general price question masks figures until the admin confirms prices',
+);
+assert(!/₹\s?[\d,]+/.test(generalPriceReply ?? ''), 'general price reply contains no rupee figures');
 assert(reply('Do you offer classes for beginners?')?.includes(' diploma') || reply('Do you offer classes for beginners?')?.includes('Classes & Courses'), 'answers classes for beginners question');
 assert(reply('When is your next workshop?')?.includes('next') || reply('When is your next workshop?')?.includes('next event'), 'answers upcoming event question');
 assert(reply('How do I buy a painting?')?.includes('WhatsApp'), 'answers purchasing question with WhatsApp');
@@ -470,9 +478,11 @@ assert(p7.document.includes('Original Fine Art Painting #7'), 'painting query re
 assert(p7.document.includes('CORE STUDIO FACTS'), 'core aggregates always included');
 assert(!p7.document.includes('Original Fine Art Painting #30'), 'irrelevant paintings are NOT included (token savings)');
 
-// Price-range query should be answerable from core alone.
+// Price-range query should be answerable from core alone. The shipped
+// catalog has no admin-confirmed prices yet, so the core block must say so
+// instead of quoting a range from masked figures.
 const range = retrieveContext('What is the price range of your paintings?');
-assert(range.document.includes('prices range from'), 'price-range answer exists in core block');
+assert(range.document.includes('not published yet'), 'core block reports prices are pending (no confirmed prices yet)');
 
 // Event query retrieves the event chunk.
 const ev = retrieveContext('When is your next watercolor workshop?');
@@ -590,6 +600,52 @@ const faqShip = routeMessage('Do you ship internationally?');
 assert(faqShip.action === 'faq' || faqShip.action === 'preprogrammed', 'FAQ-covered shipping question avoids the LLM');
 const faqMiss = routeMessage('What medium did you use in your 2019 exhibition piece?');
 assert(faqMiss.action === 'llm', 'specific question not in FAQ → llm');
+
+// ── 12. Fresh-content layer (admin publish → chatbot sees it fast) ─────
+section('Fresh-content layer (RAG follows admin publishes)');
+
+import { adoptFreshContent, resetFreshContent, getFreshContentSync, refreshFreshContent, freshContentDiffers } from '../src/lib/freshContent';
+import type { SiteContent } from '../src/lib/types';
+
+// Reset to the build-time snapshot, then verify adoption propagates through
+// the RAG index (revision flip) and the assembled context.
+resetFreshContent();
+resetRagIndex();
+resetStudioContextCache();
+const base = getFreshContentSync();
+const baseRev = retrieveContext('How much is painting 1?').revision;
+
+const mutated: SiteContent = JSON.parse(JSON.stringify(base));
+const target = mutated.galleries?.sale?.[0];
+if (target) {
+  // An admin publish stamps the price as confirmed — simulate exactly that.
+  target.price = 123456;
+  target.priceConfirmedAt = new Date().toISOString();
+  target.status = 'Reserved';
+  adoptFreshContent(mutated);
+  resetRagIndex();
+  resetStudioContextCache();
+
+  const after = retrieveContext('How much painting 1?');
+  assert(after.revision !== baseRev, 'admin publish flips the RAG revision immediately');
+  assert(after.document.includes('₹1,23,456'), 'RAG chunk reflects the new price right after adoption');
+  assert(after.document.includes('Confirmed painting prices range from'), 'core block now aggregates the confirmed price into a range');
+  assert(after.document.includes('Reserved'), 'RAG chunk reflects the new status right after adoption');
+  assert(buildStudioContext().includes('₹1,23,456'), 'full-context fallback reflects the new price too');
+  assert(freshContentDiffers() === true, 'adopted content differs from the build-time file (expected in prod)');
+
+  // Background GitHub refresh must never regress the adopted content while
+  // the remote is behind (pendingRemoteSync latch from the publish route).
+  refreshFreshContent();
+  assert(getFreshContentSync().galleries?.sale?.[0]?.price === 123456, 'adopted content holds across background refresh attempts');
+
+  // Restore for subsequent sections.
+  resetFreshContent();
+  resetRagIndex();
+  resetStudioContextCache();
+} else {
+  console.error('  ⚠️ no sale paintings in fixture — freshness tests skipped');
+}
 
 console.log('\n============================================');
 if (failures === 0) {

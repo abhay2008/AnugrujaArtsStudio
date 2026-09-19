@@ -6,7 +6,7 @@ import AutoScroller from '@/components/AutoScroller';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { saleGallery, commissionGallery, studioMeta } from '@/data/artData';
 import { useLightbox } from '@/components/LightboxContext';
-import { formatPrice } from '@/lib/price';
+import { isPriceConfirmed, PRICE_PENDING_NOTE, publicPriceLabel } from '@/lib/price';
 import { ShoppingBag, Sparkles, ExternalLink } from 'lucide-react';
 
 export default function SaleClient() {
@@ -50,7 +50,9 @@ export default function SaleClient() {
           {saleGallery.map((art) => (
             <div
               key={art.id}
-              onClick={() => openLightbox(art.src, art.title)}
+              onClick={() =>
+                openLightbox(art.src, art.title, art.description, art.price, art.category, art.medium, art.priceConfirmedAt ?? false)
+              }
               className="group relative h-48 sm:h-56 rounded-2xl overflow-hidden glass-card border border-theme hover:border-studio-sunset/60 shadow-md hover:shadow-[0_12px_30px_rgba(249,115,22,0.25)] transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-studio-dark/90"
             >
               <Image
@@ -68,11 +70,14 @@ export default function SaleClient() {
                 <span className="text-xs font-decorative font-bold text-studio-gold truncate">
                   {art.title}
                 </span>
-                {art.price && (
-                  <span className="text-[11px] font-mono font-bold text-emerald-300">
-                    {formatPrice(art.price)}
-                  </span>
-                )}
+                {/* Every sale tile is a buy surface: an unconfirmed (or absent)
+                    price renders as XXXX with the contact-the-studio note. */}
+                <span className="text-[11px] font-mono font-bold text-emerald-300 flex flex-col leading-tight">
+                  <span>{publicPriceLabel(art.price, isPriceConfirmed(art), true)}</span>
+                  {!isPriceConfirmed(art) && (
+                    <span className="font-sans font-medium normal-case text-amber-200/80">{PRICE_PENDING_NOTE}</span>
+                  )}
+                </span>
               </div>
             </div>
           ))}

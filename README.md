@@ -65,6 +65,8 @@ Whether a painting is *for sale* is therefore an explicit per-artwork decision, 
 
 Filenames still auto-suggest a collection (`krishna-sale-2.jpg` → Art for Sale, `student-boat.jpg` → Classes & Courses) and a photo with no hint lands in a showcase gallery — never in the sale catalogue by accident. Flipping the switch is non-destructive: it remembers the showcase gallery you had chosen and restores it.
 
+**Price privacy: nothing public until an admin saves it.** Every artwork carries a `priceConfirmedAt` stamp that every admin price-edit path (gallery manager, section editor, upload wizard — both this console and the standalone admin portal) sets the moment a price is saved. Visitor-facing surfaces — the Art for Sale grid, the home carousel, the lightbox, the chatbot and the WhatsApp inquiry prefill — render an unconfirmed price as **XXXX** plus a *"Contact the studio for the actual cost"* note, while admin screens keep showing the raw figures. The shared rule lives in `src/lib/price.ts`; the seeded placeholder prices were stripped from `content/site.json`, and `GET /api/content` strips unconfirmed prices for anonymous callers, so the raw JSON can never leak what the pages don't show.
+
 ### Uploading artwork, and framing it
 
 The wizard is photo-first, exactly like a phone album:

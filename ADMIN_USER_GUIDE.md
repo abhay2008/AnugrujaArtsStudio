@@ -46,12 +46,16 @@ Welcome to the **Anugruja Arts Studio Admin Console & CMS**. This portal is patt
   * Achievements & Awards
 * …or the **commerce collection**, *Art for Sale* — the only gallery that shows prices, so it is the only one that asks for one. A painting that is already published can be moved between showcase and sale later in *Gallery Manager* ("Showcase piece — no price needed. Move it to Art for Sale below to sell it").
 
+**Prices stay private until you set them.** No real price has been published yet, so every price on the public site appears as **XXXX** followed by a small *"Contact the studio for the actual cost"* note — on the Art for Sale grid, the home-page carousel, the zoom view, in what the AI assistant says, and in the WhatsApp message a buyer sends. The number only becomes real for visitors when you type a price and publish it (in the upload wizard or *Gallery Manager*) — then the XXXX disappears everywhere at once. While *you* are editing, the portal always shows true figures; the mask is for visitors only, and a price you change later updates everywhere on the next commit.
+
 **Nothing to tick to commit.** Every edit anywhere in the console is staged automatically — a price in *Gallery Manager*, an event in *Events & Chatbot*, a listing in *Pages & Listings*, the studio details in *Brand & SEO* (press *Apply Settings* to send that form up) — and they all publish together in one commit from the *Review & Commit* button. The bar reads **All synced** only when there is genuinely nothing left to publish, and the review screen lists every pending change, so you can always see exactly what one commit will push.
+
+**How prices appear to visitors (XXXX mask).** The public website never shows a price until *you* have saved one: every painting without an admin-set price displays **XXXX** with a small *“Contact the studio for the actual cost”* note — on the sale page tiles, the buy-paintings carousel, the enlarged artwork view, and the WhatsApp/Chitra assistant. The moment you save a price in the upload wizard or *Gallery Manager* and commit it, the real price (₹ with Indian formatting) replaces the mask everywhere automatically. Nothing else to toggle — saving a price *is* the switch.
 
 ### 2. Gallery Manager (`/admin` -> Manage Galleries & Artworks)
 * Switch between 8 galleries with live artwork counts and badges.
 * **Filter & Search Bar**: Search artworks across the selected collection by title, medium, or price in real-time.
-* **Card Editor**: In-place inline title, category, price, medium, and description editing. Every painting's name and description are displayed on the public carousel — edit them here to update the live site.
+* **Card Editor**: In-place inline title, category, price, medium, and description editing. Every painting's name and description are displayed on the public carousel — edit them here to update the live site. **Saving a price here confirms it**: that painting's XXXX mask on the public site is replaced by the real price after the next commit.
 * **Jump to Position**: Direct numeric slot input to move an artwork to any position (e.g. move #24 to #1).
 * **Steppers**: Move artwork to First, Left, Right, or Last positions with single clicks.
 * **Quick Arrange (Table / List Mode)**: Lightweight compact view for rapidly reordering large collections.
