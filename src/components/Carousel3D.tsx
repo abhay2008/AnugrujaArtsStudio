@@ -1205,7 +1205,7 @@ export default function Carousel3D({
         <div className="c3d-deck-plate c3d-deck-plate--story mt-3 px-4 py-3 sm:px-5 sm:py-3.5">
           <div className="flex items-center gap-3">
             <span className="c3d-deck-no">{pad2(index + 1)}</span>
-            <p className="c3d-story-title min-w-0 flex-1 truncate">{current.title}</p>
+            <p className="c3d-story-title min-w-0 flex-1">{current.title}</p>
             {current.category && (
               <span className="c3d-story-cat shrink-0">{current.category}</span>
             )}
@@ -1226,10 +1226,10 @@ export default function Carousel3D({
               animate="animate"
               exit="exit"
             >
-              <p className="font-editorial text-sm text-studio-gold italic sm:text-base">
+              <p className="font-editorial text-studio-gold italic text-[clamp(1.05rem,2.6vh,1.55rem)]">
                 {current.title}
               </p>
-              <p className="mt-0.5 text-[11px] tracking-[0.12em] text-theme-subtle uppercase">
+              <p className="c3d-card-meta mt-1 text-[clamp(0.68rem,1.5vh,0.8rem)] tracking-[0.12em] text-theme-subtle uppercase">
                 {cardBlurb(current) || 'Student work'}
               </p>
             </motion.div>

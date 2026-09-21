@@ -271,8 +271,37 @@ turns into a surprise bill.
 - **Server cost controls:** response cache (30-min TTL, revision-keyed), RAG
   token budget (~1,400 tokens of context per AI call vs ~2,500+ naive),
   per-content-revision index memoisation.
-- **Measured restraint:** the production Home route ships ≈ **183 kB** of
+- **Measured restraint:** the production Home route ships ≈ **186 kB** of
   first-load JS for this feature set.
+- **Low-end tier (`html[data-perf='lite']`):** a pre-paint script demotes a
+  weak device, a slow or data-saving connection, or a reduced-motion visitor.
+  The tier is not a smaller site — it is the same site with **blur, endless
+  decoration and glass removed**, and it is now the *motion* that goes too:
+  the ~58 elements that used to animate forever on the home page (gold dust,
+  foil petals, the four ambient orbs, a bead of light on every botanical
+  branch, two sheens, the exhibition ticker) are stopped on their static frame,
+  `will-change` promotion is dropped, the 64 blended leaf highlights go, and the
+  botanical sway (≈70 SVG attribute writes per frame) is not started at all.
+  The cinematic intro is skipped outright and the hero is the first paint, and
+  its crest image is preloaded only for visitors who will actually see it.
+- **Below-fold render containment:** the six off-screen home-page sections use
+  `content-visibility: auto` with measured `contain-intrinsic-size` estimates,
+  so a ~10,800px page only styles, lays out and paints what is near the
+  viewport.
+- **Tier detection beyond Chromium:** `navigator.deviceMemory` and
+  `navigator.connection` do not exist in Safari or Firefox, which is where a
+  lot of older phones live, so a runtime frame-time probe (`armTierProbe`)
+  demotes a page that measurably struggles — CSS-only, one way, once per
+  session.
+- **How it is measured:** `npm run audit:perf` drives headless Chrome over CDP
+  at a 4× CPU throttle on a 4 Mbps link, and records LCP, main-thread
+  durations, live animation/blur/backdrop/blend/promotion counts, DOM size,
+  bytes by type and frame-time percentiles through a full scripted scroll. It
+  compares against `scripts/perf-baseline.json`, fails on regressions, and
+  refuses to pass unless the lite tier is measurably lighter than the full one
+  (currently **54%** fewer paint carriers: 262 → 120). It also gates on
+  `reveals still hidden after the walk: 0`, which is what a skipped-subtree
+  mistake looks like.
 
 ---
 

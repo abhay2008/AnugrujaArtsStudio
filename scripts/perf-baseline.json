@@ -1,0 +1,169 @@
+{
+  "capturedAt": "2026-09-21T19:15:00.183Z",
+  "profile": {
+    "cpu": 4,
+    "downloadKbps": 4000,
+    "uploadKbps": 3000,
+    "latencyMs": 40,
+    "width": 412,
+    "height": 915,
+    "dpr": 2
+  },
+  "note": "Median of runs, cache disabled, headless Chrome. Counts are exact; durations are throttled wall-clock.",
+  "targets": {
+    "/?perf=full": {
+      "target": "/?perf=full",
+      "where": {
+        "href": "http://127.0.0.1:3311/?perf=full",
+        "title": "Anugruja Arts Studio — Anuradha Govarthanan",
+        "ready": "complete"
+      },
+      "tier": "full",
+      "ready": true,
+      "nodes": 1615,
+      "animated": 60,
+      "animatedInfinite": 58,
+      "blurred": 36,
+      "backdrop": 50,
+      "blended": 65,
+      "willChange": 48,
+      "fixedFullWidth": 5,
+      "images": 33,
+      "postScrollNodes": 1624,
+      "unrevealed": 0,
+      "unrevealedOnWalk": 0,
+      "pageHeight": 10775,
+      "bytesKb": {
+        "total": 1033,
+        "script": 217,
+        "css": 256,
+        "img": 189,
+        "font": 330,
+        "other": 41
+      },
+      "scriptMs": 366,
+      "layoutMs": 198,
+      "styleMs": 1019,
+      "taskMs": 5127,
+      "layouts": 308,
+      "styleRecalcs": 898,
+      "heapMb": 5.8,
+      "lcpMs": 2104,
+      "cls": 0.053,
+      "longTasks": 3,
+      "longTaskTotalMs": 159,
+      "frames": {
+        "frames": 399,
+        "p50": 17,
+        "p95": 17,
+        "p99": 33,
+        "worst": 33,
+        "over33": 15
+      }
+    },
+    "/?perf=lite": {
+      "target": "/?perf=lite",
+      "where": {
+        "href": "http://127.0.0.1:3311/?perf=lite",
+        "title": "Anugruja Arts Studio — Anuradha Govarthanan",
+        "ready": "complete"
+      },
+      "tier": "lite",
+      "ready": true,
+      "nodes": 1598,
+      "animated": 32,
+      "animatedInfinite": 30,
+      "blurred": 2,
+      "backdrop": 11,
+      "blended": 65,
+      "willChange": 8,
+      "fixedFullWidth": 4,
+      "images": 33,
+      "postScrollNodes": 1598,
+      "unrevealed": 0,
+      "unrevealedOnWalk": 0,
+      "pageHeight": 10775,
+      "bytesKb": {
+        "total": 1033,
+        "script": 217,
+        "css": 256,
+        "img": 189,
+        "font": 330,
+        "other": 41
+      },
+      "scriptMs": 312,
+      "layoutMs": 144,
+      "styleMs": 581,
+      "taskMs": 3137,
+      "layouts": 128,
+      "styleRecalcs": 951,
+      "heapMb": 8.4,
+      "lcpMs": 2072,
+      "cls": 0.0569,
+      "longTasks": 0,
+      "longTaskTotalMs": 0,
+      "frames": {
+        "frames": 816,
+        "p50": 17,
+        "p95": 17,
+        "p99": 17,
+        "worst": 17,
+        "over33": 0
+      }
+    }
+  },
+  "budget": {
+    "/?perf=full": {
+      "nodes": 1615,
+      "animatedInfinite": 58,
+      "animated": 60,
+      "blurred": 36,
+      "backdrop": 50,
+      "blended": 65,
+      "willChange": 48,
+      "fixedFullWidth": 5,
+      "scriptMs": 366,
+      "styleMs": 1019,
+      "layoutMs": 198,
+      "taskMs": 5127,
+      "styleRecalcs": 898,
+      "layouts": 308,
+      "unrevealed": 0,
+      "pageHeight": 10775,
+      "bytesKb": {
+        "total": 1033,
+        "script": 217,
+        "css": 256,
+        "img": 189,
+        "font": 330,
+        "other": 41
+      }
+    },
+    "/?perf=lite": {
+      "nodes": 1598,
+      "animatedInfinite": 30,
+      "animated": 32,
+      "blurred": 2,
+      "backdrop": 11,
+      "blended": 65,
+      "willChange": 8,
+      "fixedFullWidth": 4,
+      "scriptMs": 312,
+      "styleMs": 581,
+      "layoutMs": 144,
+      "taskMs": 3137,
+      "styleRecalcs": 951,
+      "layouts": 128,
+      "unrevealed": 0,
+      "pageHeight": 10775,
+      "bytesKb": {
+        "total": 1033,
+        "script": 217,
+        "css": 256,
+        "img": 189,
+        "font": 330,
+        "other": 41
+      }
+    }
+  }
+}

@@ -113,7 +113,7 @@ export default function SaleClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 text-sm sm:text-base text-yellow-100/90">
           <ul className="space-y-2.5">
             <li>• <strong className="text-studio-gold">Portraits:</strong> Single portrait, couple portraits, family portrait commissions available.</li>
             <li>• <strong className="text-studio-gold">Mediums:</strong> Acrylic, pencil, charcoal, oil, and transparent watercolors.</li>

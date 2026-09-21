@@ -93,7 +93,7 @@ export default function QuickNav({ items }: { items: PageListing[] }) {
               </>
             );
             const cls =
-              'quicknav-chip inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl border text-[12px] sm:text-[13px] font-blippo font-semibold';
+              'quicknav-chip inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl border text-[13px] font-blippo font-semibold';
             return isHashTarget(item.href) ? (
               <a
                 key={item.id}

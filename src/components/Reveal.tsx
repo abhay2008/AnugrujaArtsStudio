@@ -1,5 +1,3 @@
-'use client';
-
 import React, { CSSProperties, ReactNode, ElementType } from 'react';
 
 interface RevealProps {
@@ -20,7 +18,14 @@ const variantClass: Record<string, string> = {
   fade: 'reveal-fade',
 };
 
-/** Declarative scroll-reveal wrapper (uses the ScrollReveal engine). */
+/**
+ * Declarative scroll-reveal wrapper (uses the ScrollReveal engine).
+ *
+ * Deliberately NOT a client component: it renders an element and a class, and
+ * every bit of behaviour lives in the single global `ScrollReveal` observer.
+ * Marking it 'use client' bought nothing and cost a separate hydration
+ * boundary for each of the ten sections on the home page.
+ */
 export default function Reveal({
   children,
   className = '',

@@ -42,10 +42,10 @@ export default function HomePage() {
           <h2 className="showcase-title font-decorative font-bold tracking-wide text-studio-gold">
             Buy Paintings
           </h2>
-          <p className="mx-auto max-w-xl font-editorial font-medium text-[clamp(0.82rem,1.6vh,1.05rem)] italic text-theme-muted">
+          <p className="mx-auto max-w-xl font-editorial font-medium text-[clamp(0.9rem,1.6vh,1.05rem)] italic text-theme-muted">
             Handcrafted watercolours &amp; realistic art, straight from the studio
           </p>
-          <p className="mx-auto hidden max-w-2xl font-sans-ui font-medium text-[clamp(0.78rem,1.4vh,0.95rem)] text-theme-muted sm:block">
+          <p className="mx-auto hidden max-w-2xl font-sans-ui font-medium text-[clamp(0.86rem,1.4vh,0.95rem)] text-theme-muted sm:block">
             Three works in view — the centre piece takes the spotlight. Swipe or use the arrows,
             tap to inspect, then inquire on WhatsApp.
           </p>
@@ -139,12 +139,14 @@ export default function HomePage() {
       </section>
 
       {/* 7. Direct Contact Action Bridge */}
-      <section className="py-12 px-4 text-center">
+      {/* `landing-contact-bridge` is the hook for below-fold render
+          containment (see globals.css) — it needs a name to be targeted. */}
+      <section className="landing-contact-bridge py-12 px-4 text-center">
         <Reveal>
           <h3 className="font-decorative text-2xl sm:text-3xl gold-sunset-shimmer mb-2">
             Get in Touch with Master Artist Anuradha
           </h3>
-          <p className="font-serif-display font-medium text-theme-muted text-sm sm:text-base mb-6">
+          <p className="text-theme-muted text-sm sm:text-base mb-6">
             Direct inquiries for painting sales, workshops, or custom commissions
           </p>
           {/* ContactActionButtons inlined (Gmail + WhatsApp) */}

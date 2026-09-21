@@ -33,13 +33,14 @@
     "**/*.tsx",
     ".next-fresh/types/**/*.ts",
     ".next-gate2/types/**/*.ts",
+    ".next-perf/types/**/*.ts",
     ".next-plgate/types/**/*.ts",
     ".next-plv/types/**/*.ts",
     ".next-preview/types/**/*.ts",
     ".next-wizard/types/**/*.ts",
+    ".next-wizard3/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-wizard3/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules"

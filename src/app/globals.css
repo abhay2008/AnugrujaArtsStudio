@@ -93,6 +93,23 @@
   --surface-inset: rgba(20, 8, 32, 0.65);
   --surface-card: rgba(30, 14, 44, 0.58);
   --surface-pill: rgba(38, 18, 56, 0.52);
+  /* Announcement pill — the hero's one deliberately "lit" surface. Four stops
+     rather than three: amethyst → sunset → violet → deep, so the warm band sits
+     between two purples and the sweep reads as a lit object instead of a tidy
+     colour ramp. Two corner lights ride on top (gold glint left, ember rim
+     right), which is what makes it legible as *designed* at chip size rather
+     than as a slightly-tinted header. `--spotlight-base-docked` is opaque on
+     purpose: once the pill lands on the header it has to mask the crest. */
+  --spotlight-base: rgba(56, 18, 90, 0.82);
+  --spotlight-base-docked: #27113e;
+  --spotlight-a: rgba(124, 45, 175, 0.58);
+  --spotlight-b: rgba(249, 115, 22, 0.34);
+  --spotlight-c: rgba(147, 51, 234, 0.32);
+  --spotlight-d: rgba(20, 5, 34, 0.66);
+  --spotlight-glint: rgba(242, 215, 112, 0.32);
+  --spotlight-rim: rgba(249, 115, 22, 0.3);
+  --spotlight-inner: rgba(249, 115, 22, 0.22);
+  --spotlight-edge: rgba(242, 215, 112, 0.52);
   --surface-mobile-drawer: rgba(18, 4, 29, 0.96);
   --border-soft: rgba(242, 215, 112, 0.28);
   --border-strong: rgba(242, 215, 112, 0.45);
@@ -115,7 +132,9 @@
   --quicknav-underlay: #1c0f2c;
   --vitrine-bg: linear-gradient(180deg, rgba(42, 18, 62, 0.5) 0%, rgba(22, 8, 36, 0.55) 100%);
   --panel-sunset-bg: linear-gradient(135deg, rgba(40, 16, 58, 0.55) 0%, rgba(24, 10, 38, 0.58) 100%);
-  --carousel-fade: #120318;
+  /* Translucent on purpose: the edge fades sit over the page's ambient orbs,
+     so an opaque band shows a hard step where the stage clips it. */
+  --carousel-fade-peak: rgba(16, 4, 22, 0.62);
   --gold-text: #e8c96a;
   --color-gold: #f2d770;
   --color-gold-bright: #f0df2a;
@@ -204,6 +223,18 @@
   --surface-inset: rgba(249, 244, 236, 0.9);
   --surface-card: rgba(255, 255, 255, 0.78);
   --surface-pill: rgba(255, 255, 255, 0.8);
+  /* Announcement pill, ivory edition: the same four-stop sweep warmed into
+     saffron → amber → lilac → porcelain, with a gold rim light. */
+  --spotlight-base: rgba(255, 250, 241, 0.94);
+  --spotlight-base-docked: #fffaf0;
+  --spotlight-a: rgba(250, 223, 175, 0.95);
+  --spotlight-b: rgba(238, 196, 132, 0.6);
+  --spotlight-c: rgba(240, 225, 247, 0.85);
+  --spotlight-d: rgba(255, 252, 247, 0.95);
+  --spotlight-glint: rgba(255, 255, 255, 0.98);
+  --spotlight-rim: rgba(184, 134, 11, 0.22);
+  --spotlight-inner: rgba(212, 175, 55, 0.2);
+  --spotlight-edge: rgba(158, 120, 47, 0.55);
   --surface-mobile-drawer: rgba(253, 251, 247, 0.98);
   --border-soft: rgba(140, 106, 30, 0.18);
   --border-strong: rgba(140, 106, 30, 0.45);
@@ -225,7 +256,7 @@
   --quicknav-underlay: #fdfaf4;
   --vitrine-bg: linear-gradient(180deg, rgba(253, 250, 246, 0.8) 0%, rgba(246, 240, 230, 0.78) 100%);
   --panel-sunset-bg: linear-gradient(135deg, rgba(252, 246, 238, 0.82) 0%, rgba(246, 238, 228, 0.8) 100%);
-  --carousel-fade: #f7f3eb;
+  --carousel-fade-peak: rgba(247, 243, 235, 0.85);
   --gold-text: #6b4f12;
   --color-gold: #7a5c1e;
   --color-gold-bright: #8f6f1a;
@@ -650,7 +681,17 @@ body::before {
   height: 100% !important;
   max-width: none;
   max-height: none;
-  background: #0a0512;
+  /* Letterbox tone, not flat black: with the caption rows hidden, wide photos
+     float in a tall frame, and the vignette makes the empty area read as
+     gallery matting. It lives on the img's own background so it can never
+     tint actual artwork — the photo paints over it wherever pixels exist.
+     Background (not filter): filters on these images re-rasterise every
+     animation frame. */
+  background: #0a0512 radial-gradient(115% 90% at 50% 42%, transparent 52%, rgba(5, 2, 10, 0.6) 100%) no-repeat;
+}
+
+[data-theme='light'] .c3d-card-img {
+  background: #ffffff radial-gradient(115% 90% at 50% 42%, transparent 52%, rgba(120, 100, 70, 0.16) 100%) no-repeat;
 }
 
 /* Fixed-height caption row: every card reserves the same space, so every
@@ -927,6 +968,15 @@ body::before {
   -webkit-line-clamp: 2;
 }
 
+/* The centre plaque below the carousel carries the title — writing it on every
+   card's chin too just duplicated the same words on screen twice. The blank
+   cream matte stays (that IS the polaroid look) and stays clickable to bring
+   a flank card to the front. */
+.c3d-root--polaroid .c3d-card-name,
+.c3d-root--polaroid .c3d-card-blurb {
+  display: none;
+}
+
 /* ---------- light theme ---------- */
 [data-theme='light'] .c3d-card-media {
   background: #ffffff;
@@ -1057,12 +1107,32 @@ body::before {
   }
 }
 
+/* Edge vignettes that fade out at BOTH ends of their run: opaque at the stage
+   boundary they'd end in a hard vertical step against the section backdrop
+   (the buy section is transparent, so the ambient orbs show straight through).
+   A vertical mask also feathers the top/bottom so the band never reads as a
+   rectangle. The mask lives on these plain overlay divs — never on the stage
+   itself, where it would flatten the preserve-3d coverflow. */
 .carousel-edge-fade-l {
-  background: linear-gradient(to right, var(--carousel-fade), transparent);
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--carousel-fade-peak) 38%,
+    transparent 92%
+  );
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
 }
 
 .carousel-edge-fade-r {
-  background: linear-gradient(to left, var(--carousel-fade), transparent);
+  background: linear-gradient(
+    to left,
+    transparent 0%,
+    var(--carousel-fade-peak) 38%,
+    transparent 92%
+  );
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
 }
 
 /* ----------------------------------------------------------------
@@ -1373,6 +1443,7 @@ body::before {
   font-weight: 600;
   font-size: clamp(0.95rem, 2vw, 1.12rem);
   letter-spacing: 0.005em;
+  line-height: 1.25;
   color: var(--text-primary);
 }
 
@@ -1849,22 +1920,9 @@ body.has-quicknav .site-footer {
 /* ------------------------------- */
 /* Gold & Sunset Shimmer Headlines */
 /* ------------------------------- */
-.gold-shimmer {
-  background: linear-gradient(
-    110deg,
-    #f0df2a 25%,
-    #fff7c2 42%,
-    #f2d770 50%,
-    #fff7c2 58%,
-    #f0df2a 75%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer 5.5s linear infinite;
-}
-
+/* `.gold-shimmer` used to sit above this rule: a duplicate of the sunset
+   shimmer tinted gold, with no component rendering it. Its two Windows
+   fallback selectors went with it. */
 .gold-sunset-shimmer {
   background: linear-gradient(
     110deg,
@@ -2306,7 +2364,6 @@ body.has-quicknav .site-footer {
   .hero-emblem-ring-mid {
     animation: none !important;
   }
-  .gold-shimmer,
   .gold-sunset-shimmer {
     animation: none;
     -webkit-text-fill-color: #f0df2a;
@@ -2393,83 +2450,10 @@ body.has-quicknav .site-footer {
   text-transform: uppercase;
 }
 
-/* ------------------------------- */
-/* Premium gallery viewport frame   */
-/* ------------------------------- */
-.viewport-fern {
-  position: fixed;
-  pointer-events: none;
-  z-index: 0;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
-}
-
-.viewport-fern-tl {
-  top: 0;
-  left: 0;
-  width: clamp(120px, 21vw, 400px);
-  transform-origin: top left;
-}
-
-.viewport-fern-tr {
-  top: 0;
-  right: 0;
-  width: clamp(120px, 21vw, 400px);
-  transform-origin: top right;
-}
-
-.viewport-fern-bl {
-  bottom: 0;
-  left: 0;
-  width: clamp(120px, 21vw, 400px);
-  transform-origin: bottom left;
-}
-
-.viewport-fern-br {
-  bottom: 0;
-  right: 0;
-  width: clamp(120px, 21vw, 400px);
-  transform-origin: bottom right;
-}
-
-.viewport-glitter {
-  position: fixed;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0;
-  width: clamp(72px, 14vw, 160px);
-  height: auto;
-}
-
-@media (max-width: 767px) {
-  .viewport-glitter {
-    opacity: 0.85;
-  }
-  .viewport-glitter-tr {
-    top: 0;
-    right: 0;
-  }
-  .viewport-glitter-bl {
-    bottom: 0;
-    left: 0;
-  }
-  .viewport-fern-tl,
-  .viewport-fern-tr,
-  .viewport-fern-bl,
-  .viewport-fern-br {
-    width: clamp(100px, 28vw, 220px);
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .viewport-fern-tl,
-  .viewport-fern-tr,
-  .viewport-fern-bl,
-  .viewport-fern-br {
-    width: clamp(140px, 24vw, 320px);
-  }
-}
+/* The old "premium gallery viewport frame" (`.viewport-fern-*`,
+   `.viewport-glitter-*`) lived here: 13 rules across three breakpoints for
+   decorative fixed corner art that no component has rendered for a while.
+   Removed rather than left for a future reader to trust. */
 
 @keyframes lightPoolDrift {
   0%, 100% { opacity: 0.35; transform: translate(0, 0) scale(1); }
@@ -2749,6 +2733,46 @@ body.has-quicknav .site-footer {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  transition: min-height 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Intro expansion ──
+   On load the header opens tall (gallery-header--expanded) with the studio
+   tagline revealed under the brand name; after ~4.5s or the visitor's first
+   scroll it eases back to the normal compact bar. The tagline collapses via
+   max-height/opacity/transform — a brief one-time layout animation, not a
+   continuous one. */
+.gallery-header--expanded .gallery-header-bar {
+  min-height: 6.4em;
+}
+.header-tagline {
+  overflow: hidden;
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(3px);
+  font-size: 10.5px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  color: var(--text-subtle);
+  transition:
+    max-height 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    transform 0.45s ease,
+    margin-top 0.45s ease;
+}
+.gallery-header--expanded .header-tagline {
+  max-height: 1.6em;
+  margin-top: 3px;
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-header-bar,
+  .header-tagline {
+    transition: none;
+  }
 }
 
 .header-social-strip {
@@ -2826,21 +2850,6 @@ body.has-quicknav .site-footer {
   color: transparent;
 }
 
-[data-theme='light'] .gold-shimmer {
-  background: linear-gradient(
-    110deg,
-    var(--shimmer-a) 25%,
-    var(--shimmer-b) 42%,
-    var(--shimmer-c) 50%,
-    var(--shimmer-b) 58%,
-    var(--shimmer-a) 75%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 [data-theme='light'] .hero-emblem-core {
   background: var(--emblem-core-bg);
 }
@@ -2884,15 +2893,37 @@ body.has-quicknav .site-footer {
   font-weight: 800;
 }
 
-/* A touch more presence on phones/tablets: slightly larger type plus a subtle
-   vertical stretch for taller glyphs (header height itself is untouched — the
-   transform never affects layout). The 390px floor is width-checked against
-   the mobile action cluster and still fits with slack on a 390px phone. */
-@media (min-width: 390px) and (max-width: 1023.98px) {
+/* Phones/tablets: the one-line wordmark squeezes the founder's name down to
+   ~9px there — unreadable. Below desktop the two .site-brand-line spans stack
+   ("Anuradha" / "Govarthanan") at roughly twice the size. From 1024px up the
+   spans collapse back to the classic single-line wordmark. */
+.site-brand-line {
+  display: inline-block;
+}
+
+@media (max-width: 1023.98px) {
   .site-brand-title {
-    font-size: clamp(0.65625rem, 2.8vw, 1rem);
-    transform: scaleY(1.12);
-    transform-origin: center;
+    white-space: normal;
+    line-height: 1.12;
+  }
+
+  /* display:block children — no transforms here: a transformed child of a
+     background-clip:text parent makes Chrome drop the text paint entirely. */
+  .site-brand-line {
+    display: block;
+  }
+
+  .site-brand-line:first-child {
+    margin-bottom: 0.06em;
+  }
+}
+
+@media (max-width: 1023.98px) {
+  .site-brand-title {
+    /* 4.4vw keeps "Govarthanan" inside the space left by the mobile action
+       cluster even on a 320px phone, while ~19px on a 430px phone is roughly
+       twice the old size. Caps at the desktop wordmark size on tablets. */
+    font-size: clamp(0.65rem, 4.4vw, 1.3rem);
   }
 }
 
@@ -2906,7 +2937,8 @@ body.has-quicknav .site-footer {
    warmth and lavender at the tail, not a full golden gradient. */
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
   .site-brand-title {
-    background-image: linear-gradient(
+    /* Kept in a custom property so the stacked mobile lines can reuse it. */
+    --brand-sheen: linear-gradient(
       100deg,
       #fffef8 0%,
       #faf4e4 22%,
@@ -2915,13 +2947,34 @@ body.has-quicknav .site-footer {
       #f6efdd 82%,
       #eee7f2 100%
     );
+    background-image: var(--brand-sheen);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
   [data-theme='light'] .site-brand-title {
-    background-image: linear-gradient(100deg, #5d4410 0%, #7d5f18 40%, #96762c 65%, #6b4f12 100%);
+    --brand-sheen: linear-gradient(100deg, #5d4410 0%, #7d5f18 40%, #96762c 65%, #6b4f12 100%);
+    background-image: var(--brand-sheen);
+  }
+
+  /* Stacked mobile mode paints each line independently: Chrome fails to paint
+     a parent-level background-clip:text gradient when the inline run is
+     replaced by block children — the wordmark goes invisible. Per-line
+     gradients sidestep the bug entirely. */
+  @media (max-width: 1023.98px) {
+    .site-brand-title {
+      background-image: none;
+      -webkit-background-clip: border-box;
+      background-clip: border-box;
+    }
+
+    .site-brand-line {
+      background-image: var(--brand-sheen);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
   }
 }
 
@@ -2938,6 +2991,111 @@ html[data-os='windows'] .site-brand-title {
   -webkit-background-clip: border-box;
   background-clip: border-box;
   color: var(--gold-text);
+}
+
+/* Same Windows fallback for the stacked mobile lines. */
+html[data-os='windows'] .site-brand-line {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--gold-text);
+}
+
+/* ── Brand ticker: the wordmark is one face of a two-face roll ──
+   Occasionally the trending announcement rolls up into the wordmark's exact
+   footprint for a few seconds (timers live in Header.tsx). The brand face
+   stays in flow and keeps sizing the row, so the header's height and width
+   NEVER change — the teaser face merely overlays it, absolutely positioned.
+   Only transform + opacity animate, ~0.55s per swap, nothing continuous.
+   Transforms sit on the faces (ancestors of the gradient-clipped spans),
+   never inside them — transformed children of a background-clip:text parent
+   make Chrome drop the text paint (see the mobile stacked-lines note above). */
+.brand-swap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.brand-face {
+  min-width: 0;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease;
+  will-change: transform;
+}
+
+.brand-face--brand {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.brand-face--teaser {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(115%);
+  pointer-events: none;
+}
+
+.brand-swap[data-swap='on'] .brand-face--brand {
+  transform: translateY(-115%);
+  opacity: 0;
+}
+
+.brand-swap[data-swap='on'] .brand-face--teaser {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.brand-swap-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.brand-swap-cat {
+  font: 600 8.5px/1.3 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-sunset);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-swap-headline {
+  font: 600 11.5px/1.25 'Montserrat', system-ui, sans-serif;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme='light'] .brand-swap-headline {
+  color: #3d3226;
+}
+
+[data-theme='light'] .brand-swap-cat {
+  color: var(--color-sunset-deep);
+}
+
+@media (min-width: 1024px) {
+  .brand-swap-headline {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-face {
+    transition: none;
+  }
 }
 
 .header-social-btn {
@@ -3258,21 +3416,9 @@ html[data-os='windows'] .site-brand-title {
   contain: paint;
 }
 
-.atelier-grain {
-  position: absolute;
-  inset: 0;
-  background-color: #fff;
-  filter: url(#atelierNoise);
-  opacity: 0.06;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-}
-
-[data-theme='light'] .atelier-grain {
-  opacity: 0.11;
-  mix-blend-mode: multiply;
-  background-color: #f6efe3;
-}
+/* (`.atelier-grain` — a second feTurbulence grain layer over `.atelier-canvas`
+   — used to sit here. Nothing renders it; the hero uses
+   `.procedural-grain-layer`, which the lite tier replaces with a dot pattern. */
 
 .gold-frame-inset,
 .amethyst-frame-inset {
@@ -3455,24 +3601,44 @@ html[data-os='windows'] .site-brand-title {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
+  position: relative;
   max-width: 100%;
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
-  border: 1px solid var(--atelier-hairline);
-  background: var(--surface-pill);
+  border: 1px solid var(--spotlight-edge);
+  /* Layered rather than flat: a gold catch-light in the top-left corner and an
+     ember rim-light in the bottom-right, over the four-stop brand sweep. The
+     colour underneath is its own declaration so the docked state can deepen it
+     in a single transition while the gradient itself never changes. */
+  background-color: var(--spotlight-base);
+  background-image:
+    radial-gradient(120% 190% at 0% -38%, var(--spotlight-glint) 0%, transparent 52%),
+    radial-gradient(85% 170% at 100% 125%, var(--spotlight-rim) 0%, transparent 58%),
+    linear-gradient(
+      118deg,
+      var(--spotlight-a) 0%,
+      var(--spotlight-b) 42%,
+      var(--spotlight-c) 68%,
+      var(--spotlight-d) 100%
+    );
   backdrop-filter: blur(14px) saturate(1.08);
   -webkit-backdrop-filter: blur(14px) saturate(1.08);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 34px -12px rgba(249, 115, 22, 0.72),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -18px 30px -22px var(--spotlight-inner);
   color: var(--text-primary);
   text-decoration: none;
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .spotlight-pill:hover {
-  border-color: var(--atelier-hairline-strong);
   box-shadow:
-    0 14px 38px -14px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(212, 175, 55, 0.18) inset;
+    0 16px 40px -16px rgba(0, 0, 0, 0.6),
+    0 0 32px -12px rgba(249, 115, 22, 0.5),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -18px 30px -22px var(--spotlight-inner);
 }
 
 .spotlight-pill-dot {
@@ -3757,8 +3923,8 @@ html[data-os='windows'] .site-brand-title {
 .subheading-dim {
   margin: 0 auto;
   max-width: 62ch;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 500;
+  /* Inherits Montserrat 400 from the TYPOGRAPHY PASS — this legacy rule was
+     forcing Playfair back onto a full-sentence element. */
   font-size: clamp(0.96rem, 2.1vw, 1.18rem);
   line-height: 1.64;
   color: var(--text-soft);
@@ -4085,9 +4251,10 @@ html[data-os='windows'] .site-brand-title {
 
 .chapter-body {
   margin: 0;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 500;
-  font-size: clamp(0.94rem, 1.7vw, 1.06rem);
+  /* Font + weight inherit from the TYPOGRAPHY PASS above: Montserrat 400 —
+     Playfair's thin strokes at 15px were unreadable. Floor nudged up for
+     phones; line box grows ~1px per line, the section absorbs it. */
+  font-size: clamp(0.95rem, 1.7vw, 1.08rem);
   line-height: 1.72;
   color: var(--text-soft);
 }
@@ -4212,6 +4379,14 @@ html[data-os='windows'] .site-brand-title {
   opacity: 1;
 }
 
+/* Touch: the chip can never appear on hover, so it is always on — the only
+   cue that the award photo is tappable and opens larger. */
+@media (hover: none) {
+  .accolade-artifact-zoom {
+    opacity: 1;
+  }
+}
+
 /* Card without a photo: a quiet gilded emblem plate keeps the ribbon
    rhythm and kills the big empty void above the year badge. */
 .accolade-emblem-slot {
@@ -4307,7 +4482,7 @@ html[data-os='windows'] .site-brand-title {
 .accolade-desc {
   margin: 0;
   font-weight: 500;
-  font-size: clamp(0.85rem, 1.9vw, 0.94rem);
+  font-size: clamp(0.88rem, 1.9vw, 0.96rem);
   line-height: 1.62;
   color: var(--text-soft);
 }
@@ -4544,7 +4719,7 @@ html[data-os='windows'] .site-brand-title {
 .outreach-detail {
   margin: 0;
   font-weight: 500;
-  font-size: clamp(0.84rem, 1.85vw, 0.92rem);
+  font-size: clamp(0.87rem, 1.85vw, 0.94rem);
   line-height: 1.62;
   color: var(--text-soft);
 }
@@ -4637,13 +4812,88 @@ html[data-os='windows'] .site-brand-title {
     padding: 1.35rem 1.15rem;
   }
 
+  /* Phone: the ribbon reads as a citation list instead of four stacked
+     gallery panels. Each card becomes a two-column row — a narrow artifact
+     beside the award copy — which drops a card from ~550px to ~190px and
+     the whole grid from ~2.2k to under 900px. The artifact keeps the same
+     centre crop (portrait submissions are still never beheaded); it just
+     stretches to the height of the copy instead of forcing a 1:1 square. */
+  .accolades-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
   .accolade-card {
-    padding: 1.4rem;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.95rem;
+    padding: 1.1rem;
+  }
+
+  /* The citation is one flowing column, so the badge, title and copy sit
+     tight together and centre themselves when the artifact is the taller
+     of the two — no gaps spreading between the lines. */
+  .accolade-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .accolade-artifact,
   .accolade-emblem-slot {
-    margin-bottom: 1.05rem;
+    flex: 0 0 clamp(5.5rem, 27vw, 9rem);
+    width: auto;
+    height: auto;
+    aspect-ratio: auto;
+    min-height: 6.5rem;
+    margin-bottom: 0;
+  }
+
+  /* Touch has no :hover, so the zoom chip stays visible and shrinks to
+     suit the compact thumbnail. */
+  .accolade-artifact-zoom {
+    right: 0.4rem;
+    bottom: 0.4rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    opacity: 1;
+  }
+
+  .accolade-artifact-zoom svg {
+    width: 0.72rem;
+    height: 0.72rem;
+  }
+
+  .accolade-emblem {
+    width: 2.7rem;
+    height: 2.7rem;
+  }
+
+  .accolade-emblem svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .accolade-head {
+    margin-bottom: 0.45rem;
+  }
+
+  .accolade-title {
+    margin-bottom: 0.3rem;
+    font-size: 1.06rem;
+  }
+
+  .accolade-inst {
+    margin-bottom: 0.5rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .accolade-desc {
+    font-size: 0.82rem;
+    line-height: 1.52;
   }
 
   .exhibition-item {
@@ -5136,16 +5386,181 @@ html {
 }
 
 /* ------------------------------- */
-/* Spotlight bar                    */
+/* Spotlight bar                     */
 /* ------------------------------- */
-.spotlight-bar-container {
+/* One announcement, two homes. The in-flow slot sits directly below the hero's
+   Buy Paintings / Explore Classes pair: it is the pill on arrival, it reserves
+   its own room, and it is what renders without JavaScript, under reduced motion
+   and on the lite tier. `.spotlight-dock` is the second, fixed copy that takes
+   over on the first scroll and rides up onto the header's crest — both are laid
+   out by the rules below, so the hand-over is pixel-identical either way. */
+.spotlight-slot {
   display: flex;
+  width: 100%;
   justify-content: center;
 }
 
 @media (min-width: 1024px) {
-  .spotlight-bar-container {
+  .spotlight-slot {
     justify-content: flex-start;
+    /* The hero column is a little narrower than the announcement wants to be,
+       and a clipped headline reads worse than a pill that runs slightly past
+       the column's edge. Desktop only: the row is centred on smaller screens
+       and wraps there instead. */
+    width: max-content;
+    max-width: calc(100% + 9rem);
+  }
+}
+
+/* While the dock owns the pill the in-flow copy keeps its box (the hero still
+   reserves the room) but leaves the paint and the accessibility tree, so there
+   is never a doubled link or a doubled announcement. */
+.spotlight-slot[data-enhanced='true'] .spotlight-pill {
+  visibility: hidden;
+}
+
+.spotlight-dock {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 44;
+  visibility: hidden;
+  pointer-events: none;
+  transform-origin: left top;
+  /* Deliberately transparent, and deliberately not blurred: Safari 26 samples
+     fixed/sticky boxes at the viewport edge when it tints browser chrome, and
+     it ignores glass painted on an inner element instead. */
+}
+
+.spotlight-dock[data-visible='true'] {
+  visibility: visible;
+}
+
+.spotlight-dock-track {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .spotlight-dock-track {
+    justify-content: flex-start;
+  }
+}
+
+.spotlight-dock .spotlight-pill {
+  pointer-events: auto;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease,
+    background-color 0.4s ease;
+}
+
+/* Docked: the chip anchors to the crest and stops short of the header's own
+   controls, which is why it left-aligns on phones too. */
+.spotlight-dock[data-docked='true'] .spotlight-dock-track {
+  justify-content: flex-start;
+}
+
+.spotlight-dock[data-docked='true'] .spotlight-pill {
+  max-width: var(--dock-max-w, none);
+  /* Opaque and a shade brighter than the header it lands on: a frosted chip
+     let the crest it is supposed to cover read straight through it. The
+     gradient above stays, so the chip keeps the pill's identity. */
+  background-color: var(--spotlight-base-docked);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* Docked: the chip keeps the pill's own light source but turns the heat up a
+     notch — a warmer halo, so it still reads as the lit object on the header
+     rather than as another piece of header chrome. */
+  border-color: rgba(242, 215, 112, 0.62);
+  box-shadow:
+    0 18px 44px -18px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(212, 175, 55, 0.3),
+    0 0 32px -14px rgba(249, 115, 22, 0.6),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -20px 34px -24px var(--spotlight-inner);
+}
+
+[data-theme='light'] .spotlight-dock[data-docked='true'] .spotlight-pill {
+  border-color: rgba(140, 106, 30, 0.62);
+  box-shadow:
+    0 16px 36px -16px rgba(90, 70, 50, 0.35),
+    0 0 0 1px rgba(184, 151, 72, 0.3),
+    0 0 30px -14px rgba(212, 175, 55, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -20px 34px -24px var(--spotlight-inner);
+}
+
+/* The headline is what the header has no room for: it tightens away as the pill
+   arrives, leaving category · date · seats as the docked chip. */
+.spotlight-dock .spotlight-title {
+  transition: max-width 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+.spotlight-dock[data-docked='true'] .spotlight-title {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* Landing-page arrival — the pop the visitor is meant to notice. Held back
+   while the intro veil is up (PreloaderScript drops the attribute as the iris
+   opens), so a first visit sees it land instead of playing behind the veil. */
+@keyframes spotlightPop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0) scale(0.92);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.spotlight-slot .spotlight-pill {
+  animation: spotlightPop 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+html[data-preloader='on'] .spotlight-slot .spotlight-pill {
+  opacity: 0;
+  animation: none;
+}
+
+/* A warm aura so the announcement reads as live. Opacity only, so the blur
+   underneath is never re-sampled to animate it. */
+@keyframes spotlightAura {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.spotlight-pill::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 26px 1px rgba(249, 115, 22, 0.2), 0 0 58px 10px rgba(249, 115, 22, 0.09);
+  /* Also the resting value: reduced motion keeps this, the animation only
+     breathes around it. */
+  opacity: 0.55;
+  animation: spotlightAura 4.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-slot .spotlight-pill,
+  .spotlight-pill::after {
+    animation: none;
+  }
+  .spotlight-dock .spotlight-pill,
+  .spotlight-dock .spotlight-title {
+    transition: none;
   }
 }
 
@@ -5169,6 +5584,13 @@ html {
   font-weight: 600;
   font-size: clamp(0.88rem, 2.3vw, 1.06rem);
   color: var(--text-primary);
+  /* Never wraps: the dock collapses it to nothing on the way in, and a
+     mid-collapse rewrap would be the one visible seam in the hand-over. */
+  min-width: 0;
+  max-width: 60rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spotlight-date,
@@ -5377,15 +5799,11 @@ html {
     margin-bottom: 0.3rem;
   }
 
-  /* Spotlight banner on mobile: placed cleanly below header */
-  .spotlight-bar-container {
+  /* The announcement lives inside the hero text column now, so it borrows the
+     hero's own inset instead of adding a second one. */
+  .spotlight-slot {
     width: 100%;
-    display: flex;
     justify-content: center;
-    padding: 0.5rem 0.85rem 0.2rem;
-    margin-bottom: 0;
-    position: relative;
-    z-index: 20;
   }
 
   .spotlight-pill {
@@ -5644,12 +6062,14 @@ html {
   }
 
   .c3d-story-title {
-    font-size: 0.85rem;
+    /* Sole title source now the in-card captions are hidden — keep it
+       readable and viewport-aware on phones. */
+    font-size: clamp(0.92rem, 2.4vh, 1.08rem);
   }
 
   .c3d-story-desc {
-    font-size: 0.72rem;
-    line-height: 1.4;
+    font-size: clamp(0.74rem, 1.7vh, 0.86rem);
+    line-height: 1.45;
     -webkit-line-clamp: 3;
     margin-top: 0.25rem;
   }
@@ -5781,21 +6201,27 @@ html {
 }
 
 /* ——— 2. Spotlight bar: frosted porcelain pill, dark-goldenrod pulse ——— */
+/* The gradient stack itself is shared — the light tokens above re-point every
+   stop of it — so this override only has to soften the glass and re-cast the
+   shadows for ivory. */
 [data-theme='light'] .spotlight-pill {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(184, 151, 72, 0.4);
+  background-color: var(--spotlight-base);
+  border-color: var(--spotlight-edge);
   backdrop-filter: blur(12px) saturate(1.05);
   -webkit-backdrop-filter: blur(12px) saturate(1.05);
   box-shadow:
     0 10px 30px -14px rgba(90, 70, 50, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 0 32px -12px rgba(212, 175, 55, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -18px 30px -22px var(--spotlight-inner);
 }
 
 [data-theme='light'] .spotlight-pill:hover {
-  border-color: rgba(140, 106, 30, 0.65);
   box-shadow:
     0 14px 34px -14px rgba(140, 106, 30, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 0 36px -12px rgba(212, 175, 55, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -18px 30px -22px var(--spotlight-inner);
 }
 
 [data-theme='light'] .spotlight-cat {
@@ -6102,9 +6528,13 @@ html.theme-transitioning .btn-atelier-solid {
   text-align: center;
 }
 
-/* The plaque below carries name/description/price — the in-card caption row
-   would only duplicate it on the Buy spotlight. */
-.c3d-root--spotlight .c3d-card-caption {
+/* The plaque/plate below each carousel carries name/description/price — an
+   in-card caption row would only duplicate it (spotlight plaque, deck story
+   plate, rail museum plaque). The polaroid keeps its blank cream chin because
+   the matte strip IS the polaroid look; its text is hidden separately. */
+.c3d-root--spotlight .c3d-card-caption,
+.c3d-root--deck .c3d-card-caption,
+.c3d-root--rail .c3d-card-caption {
   display: none;
 }
 
@@ -7101,6 +7531,23 @@ html.theme-transitioning .btn-atelier-solid {
   }
 }
 
+/* ── Occasional FAB heartbeat ──
+   A single gold ring ripples out at random intervals (scheduler lives in
+   ChatWidget). Box-shadow spread only — one composited pass, ~1.6s, then
+   the layer is gone. Nothing runs continuously. */
+.chat-fab-pulse {
+  pointer-events: none;
+  animation: chatFabPulse 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes chatFabPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(242 215 112 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgb(242 215 112 / 0);
+  }
+}
+
 /* ── Docked suggested-prompt bar (quick replies live above the input) ── */
 .chat-chip-dock {
   background: linear-gradient(to bottom, rgba(22, 5, 35, 0), rgba(29, 6, 46, 0.92));
@@ -7163,6 +7610,9 @@ html[data-perf='lite'] .chat-nudge-tail,
 html[data-perf='lite'] .chat-nudge-wrap,
 html[data-perf='lite'] .chat-chip-dock {
   animation: chatLiteFade 0.25s ease-out both;
+}
+html[data-perf='lite'] .chat-fab-pulse {
+  display: none;
 }
 @keyframes chatLiteFade {
   from {
@@ -7247,7 +7697,8 @@ html[data-perf='lite'] .chat-caret {
   .chat-nudge-wrap,
   .chat-nudge,
   .chat-nudge-tail,
-  .chat-chip-dock {
+  .chat-chip-dock,
+  .chat-fab-pulse {
     animation: none;
   }
   .chat-dot {
@@ -7324,16 +7775,83 @@ html[data-perf='lite'] .chat-caret {
 }
 
 /* ================================================================
+   BELOW-FOLD RENDER CONTAINMENT
+   ================================================================
+   The home page is around 10,000px tall, and every section of it used to be
+   styled, laid out and painted on load whether or not anyone ever scrolled
+   there. `content-visibility: auto` lets the browser skip all three for the
+   sections that are off screen and pay for them on approach — on a weak CPU
+   that takes most of the page out of the style/layout/paint path entirely.
+
+   `contain-intrinsic-size: auto <estimate>` keeps the scrollbar honest before
+   the first render (the estimates below are measured section heights at a
+   phone width); the `auto` keyword then remembers the real height, so the
+   first render is the only one that uses a guess.
+
+   Deliberately NOT applied to:
+     • `#banner` / `.landing-hero` — above the fold, and the intro hands over
+       to it, so it must be laid out from the start;
+     • `.atelier-journey-section` — its `.sticky-profile-card` is positioned
+       against the page scroller and containment would trap it in its own box.
+   Carousels inside these sections are safe: each stage measures itself with a
+   ResizeObserver, which fires when containment releases the real size.
+
+   The risk to watch is the reveal engine: a skipped subtree has no boxes, so
+   an IntersectionObserver on its descendants can miss them and leave content
+   at `opacity: 0`. That is why `npm run audit:perf` measures exactly that —
+   the walk reports how many `.reveal` elements are still hidden, then parks
+   the page on each one and re-checks, and the budget is zero for both. It was
+   this metric that caught the harness's own short scroll, and it is what makes
+   this block safe to keep.
+   ================================================================ */
+@supports (content-visibility: auto) {
+  #buy-paintings,
+  #workshops,
+  #achievements,
+  #three,
+  .landing-contact-bridge,
+  .site-footer {
+    content-visibility: auto;
+  }
+
+  #buy-paintings {
+    contain-intrinsic-size: auto 900px;
+  }
+
+  #workshops {
+    contain-intrinsic-size: auto 1400px;
+  }
+
+  #achievements {
+    contain-intrinsic-size: auto 1900px;
+  }
+
+  #three {
+    contain-intrinsic-size: auto 1500px;
+  }
+
+  .landing-contact-bridge {
+    contain-intrinsic-size: auto 420px;
+  }
+
+  .site-footer {
+    contain-intrinsic-size: auto 640px;
+  }
+}
+
+/* ================================================================
    Performance tier — `[data-perf='lite']`
    ================================================================
    Stamped on <html> before the first paint (src/lib/perfTier.ts) when the
    visitor is on a weak device, a slow or data-saving connection, or has asked
    for reduced motion.
 
-   Nothing here removes motion or content. It removes *paint cost*: live blurs
-   that must be resampled every frame, backdrop sampling behind scrolling
-   chrome, and a whole-hero SVG turbulence filter. Each replacement keeps the
-   same colours and the same drift, produced with gradients instead of filters.
+   Nothing here removes content. It removes *paint cost*: live blurs that must
+   be resampled every frame, backdrop sampling behind scrolling chrome, a
+   whole-hero SVG turbulence filter, and — see the motion policy at the end of
+   this block — decorative animation that would otherwise never stop. Each
+   replacement keeps the same colours and the same composition; what a weak
+   device loses is movement and blur, never contrast, layout or copy.
    ================================================================ */
 
 /* Ambient washes — solid discs softened by blur(88px). A radial gradient of the
@@ -7432,6 +7950,104 @@ html[data-perf='lite'] .chat-caret {
   filter: none;
 }
 
+/* ----------------------------------------------------------------
+   Motion policy — the other half of a weak device's bill.
+
+   The rules above strip *blur*. These strip the per-frame cost that no
+   amount of blur removal touches: animation that never ends. On the full
+   tier around 58 elements animate forever (gold dust, foil petals, the four
+   ambient orbs, a bead of light on every branch, two sheens, the exhibition
+   ticker), so the compositor never goes idle for as long as the page is
+   open — including while the visitor scrolls.
+
+   Everything below is decorative, so lite stops the loop and keeps the
+   element's *static* frame: same colours, same composition, no motion. The
+   two that would otherwise park somewhere they were never meant to be seen
+   are pinched off explicitly (petals, branch highlights).
+   ---------------------------------------------------------------- */
+[data-perf='lite'] .page-ambient-orb,
+[data-perf='lite'] .light-pool,
+[data-perf='lite'] .banner-cloud-1,
+[data-perf='lite'] .banner-cloud-2,
+[data-perf='lite'] .banner-cloud-3,
+[data-perf='lite'] .lux-sheen,
+[data-perf='lite'] .leaf-comet,
+[data-perf='lite'] .exhibition-ticker-track,
+[data-perf='lite'] .atelier-dust-flake,
+[data-perf='lite'] .pulsing-status,
+[data-perf='lite'] .gold-sunset-shimmer {
+  animation: none;
+}
+
+/* A petal is only ever visible *because* it animates — its base opacity is 0
+   and the keyframes fade it in. Stopping the loop parks it off-stage rather
+   than leaving a static blob hanging in the hero. */
+[data-perf='lite'] .foil-petal {
+  opacity: 0;
+}
+
+/* The foil highlight on each leaf is a `mix-blend-mode: overlay` layer, and
+   there are 64 of them on the home page. Blending forces the branch SVG to
+   re-composite as a group; the leaf fills already carry their own gradients,
+   so lite drops the highlight instead of paying for it on every frame. */
+[data-perf='lite'] .leaf-highlight {
+  display: none;
+}
+
+/* (The paper-grain overlay keeps its blend mode on lite: once it is a flat
+   radial-gradient pattern rather than an feTurbulence surface, the blend is one
+   layer over a static background. Removing it measured as no measurable win
+   and tripped the cross-engine audit's blend heuristic, so it stays.) */
+
+/* No permanent layer promotion: on a weak GPU every promoted layer is video
+   memory. The carousels keep their own `is-live` promotion, which exists
+   only while a card is actually moving. */
+[data-perf='lite'] .page-ambient-orb,
+[data-perf='lite'] .foil-petal,
+[data-perf='lite'] .atelier-dust-flake,
+[data-perf='lite'] .botanical-branch,
+[data-perf='lite'] .brand-face,
+[data-perf='lite'] .lux-sheen,
+[data-perf='lite'] .exhibition-ticker-track,
+[data-perf='lite'] .reveal,
+[data-perf='lite'] .header-drawer,
+[data-perf='lite'] .glass-btn-gold {
+  will-change: auto;
+}
+
+/* The rest of the glass. The sticky header and the in-card badge were already
+   handled above; these are the panels, pills and cards, which read the same
+   over a flat surface as they do over a sample of it. */
+[data-perf='lite'] .accolade-card,
+[data-perf='lite'] .chapter-card,
+[data-perf='lite'] .studio-pillar-card,
+[data-perf='lite'] .c3d-ribbon,
+[data-perf='lite'] .c3d-view-badge,
+[data-perf='lite'] .glass-pill,
+[data-perf='lite'] .spotlight-pill,
+[data-perf='lite'] .theme-toggle,
+[data-perf='lite'] .header-social-strip,
+[data-perf='lite'] .header-mobile-cluster {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Opaque backing wherever the blur was carrying legibility — the same panel
+   colours the Windows fallback below uses, so both degraded paths agree. */
+[data-perf='lite'] .accolade-card,
+[data-perf='lite'] .chapter-card,
+[data-perf='lite'] .glass-pill,
+[data-perf='lite'] .theme-toggle,
+[data-perf='lite'] .header-social-strip,
+[data-perf='lite'] .header-mobile-cluster {
+  background: var(--atelier-panel-solid);
+}
+
+/* Chrome that sits directly on a painting keeps its dark backing instead. */
+[data-perf='lite'] .c3d-view-badge {
+  background: rgba(10, 4, 18, 0.86);
+}
+
 /* ================================================================
    WINDOWS COMPOSITING FALLBACKS — html[data-os='windows']
    ================================================================
@@ -7483,9 +8099,7 @@ html[data-os='windows'] .atelier-brand-title {
    clears `background-image` AND `background-size`, so nothing is left to
    paint behind the text. The html-qualified selector outranks the light-theme
    gradient blocks above it. */
-html[data-os='windows'] .gold-shimmer,
 html[data-os='windows'] .gold-sunset-shimmer,
-html[data-os='windows'] [data-theme='light'] .gold-shimmer,
 html[data-os='windows'] [data-theme='light'] .gold-sunset-shimmer {
   background: none;
   background-size: auto;
@@ -7773,5 +8387,189 @@ html:not([data-theme='light']) .c3d-root--spotlight .c3d-card-media:not(.is-cent
   .buy-painting-btn:focus-visible::after {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* ================================================================
+   MOBILE READABILITY FLOOR — ≤767px
+   ================================================================
+   The editorial mobile pass earlier in this file (the
+   `@media (max-width: 767px)` block that opens near `.accolade-title`)
+   scales type DOWN to fit phone columns, and it overshot: letterspaced
+   labels were landing at 8.3–10.6px, card blurbs at 10.9px and whole
+   sentences at 12.2px. On a phone that does not read as "refined", it
+   reads as "too small" — and small text costs more than it saves,
+   because the visitor has to zoom to read it.
+
+   This block is the mobile legibility contract, and it is deliberately
+   the LAST typography block in the file so it supersedes those earlier
+   mobile sizes. Only `font-size`, `letter-spacing` and the few paddings
+   that those sizes need are touched here; layout, colour, borders and
+   motion in the blocks above stay exactly as they are.
+
+   The three rules it applies:
+     1. Letterspaced ALL-CAPS needs MORE size than lowercase to stay
+        legible, not less — and it needs its tracking pulled back in,
+        because wide tracking on a small cap height detaches the letters
+        from one another. Labels therefore go UP in size and DOWN in
+        tracking.
+     2. Nothing that reads as a sentence goes below 15px, and it keeps a
+        ~1.65 line-height so the eye can hold the line it is on.
+     3. Compact metadata (locations, seat counts, counters) floors at
+        12.8px — never smaller than three quarters of the body size, so
+        the hierarchy stays intact instead of collapsing into one
+        uniform smallness.
+   ------------------------------------------------------------------ */
+@media (max-width: 767px) {
+  :root {
+    --m-label: 0.76rem; /* 12.2px — letterspaced caps: eyebrows, tags, badges */
+    --m-meta: 0.82rem; /* 13.1px — compact metadata: locations, seats, hints */
+    --m-ui: 0.86rem; /* 13.8px — controls, plaque titles, CTA labels */
+    --m-body: 0.94rem; /* 15px   — anything that reads as a sentence */
+  }
+
+  /* ── 1. Editorial labels: bigger caps, calmer tracking ───────────── */
+  .atelier-overline,
+  .profile-eyebrow,
+  .metric-label,
+  .chapter-rail-label,
+  .chapter-tag,
+  .chapter-sub,
+  .credentials-title,
+  .accolade-year-badge,
+  .accolade-inst,
+  .eyebrow-gold,
+  .profile-role,
+  .outreach-label,
+  .ex-badge,
+  .ex-yr,
+  .section-kicker,
+  .text-section-kicker,
+  .studio-pillar-tag,
+  .registration-event-type,
+  .c3d-ribbon,
+  .c3d-story-cat,
+  .brand-swap-cat,
+  .ticker-stop,
+  .ticker-stop em,
+  .registration-event-detail b,
+  .c3d-card-meta,
+  .header-tagline,
+  .spotlight-pill-eyebrow {
+    font-size: var(--m-label);
+    letter-spacing: 0.12em;
+  }
+
+  /* The header's brand lockup is width-bound on a phone: the wordmark and
+     the icon cluster either side of it are both `shrink-0`, so the italic
+     tagline underneath is what decides how wide the whole bar wants to be.
+     At its old 10.5px it already pushed the document 14px past a 390px
+     viewport; at a legible size it would add ~58px more. Capping it and
+     eliding keeps the tagline readable and the page free of sideways
+     scroll, which is the better half of that trade. */
+  .header-tagline {
+    max-width: 46vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Sub-labels that sit inside an already-tracked line: a second wide
+     track would push them onto their own row for no gain. */
+  .chapter-sub,
+  .accolade-inst {
+    letter-spacing: 0.07em;
+  }
+
+  /* The announcement pill is one nowrap row sharing a phone's width with
+     two chip paddings, so its padding comes in as its labels grow.
+     Tracking stays tight here: three of these share one line. */
+  .spotlight-pill {
+    padding: 0.4rem 0.7rem;
+    column-gap: 0.4rem;
+  }
+
+  .spotlight-cat,
+  .spotlight-date,
+  .spotlight-seats {
+    font-size: var(--m-label);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── 2. Metadata: compact, but never unreadable ──────────────────── */
+  .ex-loc,
+  .c3d-price-note,
+  .c3d-hint,
+  .c3d-counter,
+  .c3d-deck-counter,
+  .c3d-plaque span,
+  .c3d-pill span,
+  .registration-event-seats,
+  .registration-event-detail {
+    font-size: var(--m-meta);
+  }
+
+  .registration-event-seats {
+    line-height: 1.25;
+  }
+
+  /* ── 3. Controls and plaque titles ───────────────────────────────── */
+  .metric-val,
+  .c3d-card-name,
+  .c3d-text-btn,
+  .c3d-deck-no,
+  .credentials-list strong,
+  .credentials-list em,
+  .dev-credit-btn,
+  .brand-swap-headline,
+  .spotlight-title,
+  .spotlight-pill-headline {
+    font-size: var(--m-ui);
+  }
+
+  /* The catalogue's primary action, and the one label on the page a
+     visitor is most likely to be squinting at. */
+  .buy-painting-btn {
+    font-size: var(--m-ui);
+    letter-spacing: 0.05em;
+  }
+
+  /* Italic Cormorant sits optically smaller than its point size and the
+     pill headline is the longest string on the row: give it a touch more. */
+  .spotlight-title,
+  .spotlight-pill-headline {
+    font-size: 0.9rem;
+  }
+
+  /* Hero CTAs: two 1fr columns with `white-space: nowrap`, so the label
+     gains size from the tracking, not from lengthening the word. */
+  .btn-atelier-outline,
+  .btn-atelier-solid {
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+  }
+
+  .registration-event-cta {
+    font-size: var(--m-ui);
+    line-height: 1.2;
+    letter-spacing: 0.07em;
+    padding: 0.72rem 1.2rem;
+  }
+
+  /* ── 4. Sentences ────────────────────────────────────────────────── */
+  .accolade-desc,
+  .outreach-detail,
+  .section-lead,
+  .c3d-story-desc {
+    font-size: var(--m-body);
+    line-height: 1.65;
+  }
+
+  /* Card copy sits in a narrower measure than page copy, so it takes a
+     half-step less size — still comfortably above the floor. */
+  .studio-pillar-card p,
+  .c3d-card-blurb {
+    font-size: 0.9rem;
+    line-height: 1.5;
   }
 }

@@ -100,13 +100,18 @@ export default function AccoladesSection() {
               </div>
             )}
 
-            <div className="accolade-head">
-              <span className="accolade-year-badge">{item.year}</span>
-              {item.image && <BadgeCheck className="accolade-seal h-5 w-5" aria-hidden />}
+            {/* One flowing column, so the citation stays a tight block on the
+                phone layout (where it sits beside the artifact) and centres
+                itself against a taller image. */}
+            <div className="accolade-copy">
+              <div className="accolade-head">
+                <span className="accolade-year-badge">{item.year}</span>
+                {item.image && <BadgeCheck className="accolade-seal h-5 w-5" aria-hidden />}
+              </div>
+              <h3 className="accolade-title font-editorial">{item.title}</h3>
+              <p className="accolade-inst">{item.institution}</p>
+              <p className="accolade-desc">{item.significance}</p>
             </div>
-            <h3 className="accolade-title font-editorial">{item.title}</h3>
-            <p className="accolade-inst">{item.institution}</p>
-            <p className="accolade-desc">{item.significance}</p>
           </motion.article>
         ))}
       </div>

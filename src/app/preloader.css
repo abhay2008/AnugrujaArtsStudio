@@ -583,8 +583,12 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-crest {
     padding: 0 10px;
   }
 
+  /* The hint is ALL-CAPS with wide tracking at the smallest size in the
+     file — on a phone that reads as a smudge. Bigger caps, calmer track. */
   .pl-hint {
     margin-top: 24px;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
   }
 
   /* Phone layout: a slightly smaller crest, same anchored composition —

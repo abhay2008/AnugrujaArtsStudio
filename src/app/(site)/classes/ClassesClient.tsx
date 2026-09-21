@@ -46,7 +46,7 @@ export default function ClassesClient() {
               <CheckCircle className="w-5 h-5 text-studio-sunset" />
               <span>Global Accessibility</span>
             </div>
-            <p className="font-serif-display text-yellow-100/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
               Classes are conducted online, accommodating students worldwide at their preferred timings.
             </p>
           </div>
@@ -56,7 +56,7 @@ export default function ClassesClient() {
               <Clock className="w-5 h-5 text-studio-sunset" />
               <span>Age-specific Schedule</span>
             </div>
-            <p className="font-serif-display text-yellow-100/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
               Weekly classes: twice a week for kids under 15, and once a week for adults.
             </p>
           </div>
@@ -66,7 +66,7 @@ export default function ClassesClient() {
               <Users className="w-5 h-5 text-studio-sunset" />
               <span>All Age Groups (7 to 70+)</span>
             </div>
-            <p className="font-serif-display text-yellow-100/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
               Open to ages 7 and above, extending warmly to teenagers, adults, and senior citizens.
             </p>
           </div>
@@ -76,7 +76,7 @@ export default function ClassesClient() {
               <Brush className="w-5 h-5 text-studio-sunset" />
               <span>Mediums by Age Group</span>
             </div>
-            <p className="font-serif-display text-yellow-100/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
               <strong>Kids (under 15):</strong> Pencil, colored pencils, watercolor, soft pastel.<br />
               <strong>Above 15:</strong> Charcoal, watercolor, acrylic, oil paintings.
             </p>
@@ -108,7 +108,7 @@ export default function ClassesClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 text-sm sm:text-base text-yellow-100/90">
           <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Unzipping Watercolor Course</p>
           <ul className="space-y-2">
             <li>• <strong className="text-studio-gold">Course Options:</strong> Choose between 3 months foundational or 6 months comprehensive mastery.</li>
@@ -155,7 +155,7 @@ export default function ClassesClient() {
           </div>
         </div>
 
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 font-serif-display text-sm sm:text-base text-yellow-100/90">
+        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 text-sm sm:text-base text-yellow-100/90">
           <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Art Fundamental and Sketching Program</p>
           <ul className="space-y-2">
             <li>• <strong className="text-studio-gold">Course Duration:</strong> 2 months intensive curriculum.</li>

@@ -3,45 +3,11 @@ import { ChevronDown, Ribbon, ShoppingBag } from 'lucide-react';
 import HeroEmblem from '@/components/HeroEmblem';
 import BotanicalCorner from '@/components/BotanicalCorner';
 import AtelierMotion from '@/components/AtelierMotion';
+import TrendingSpotlight from '@/components/TrendingSpotlight';
+import { resolveSpotlight } from '@/lib/spotlightFeed';
 import { studioData } from '@/data/studioData';
-import initialContent from '../../content/site.json';
-import type { SiteContent } from '@/lib/types';
 
-/**
- * The banner spotlight mirrors the next CMS event when one exists, so the
- * home page and the chat assistant can never disagree about what's coming.
- * Falls back to the editorial spotlight in studioData otherwise.
- */
-function SpotlightBar() {
-  const { spotlight } = studioData;
-  const events = (initialContent as unknown as SiteContent).events?.upcoming ?? [];
-  const next = events[0];
-
-  const category = next ? 'Upcoming Workshop' : spotlight.category;
-  const headline = next?.title ?? spotlight.headline;
-  const dateBadge = next?.date ?? spotlight.dateBadge;
-  // The landing-page announcement should guide visitors to the full event
-  // details and registration cards, not skip straight to the external form.
-  const href = next ? '#workshops' : spotlight.actionUrl;
-  const seats = next?.seatsRemaining ?? spotlight.seatsRemaining;
-  const seatsNote = seats ? `${seats} seats left` : null;
-
-  if (!next && !spotlight.isActive) return null;
-
-  return (
-    <div className="spotlight-bar-container hero-rise" style={{ animationDelay: '0.06s' }}>
-      <Link href={href} className="spotlight-pill">
-        <span className="pulsing-status-dot" aria-hidden />
-        <span className="spotlight-cat">{category}</span>
-        <span className="spotlight-title">{headline}</span>
-        <span className="spotlight-date">{dateBadge}</span>
-        {seatsNote && <span className="spotlight-seats">{seatsNote}</span>}
-        <span className="spotlight-arrow" aria-hidden>↗</span>
-      </Link>
-    </div>
-  );
-}
-
+/** Resolved once, on the server, so the client island only gets plain strings. */
 function AtelierDefs() {
   return (
     <svg width="0" height="0" className="atelier-svg-defs" aria-hidden="true" focusable="false">
@@ -111,11 +77,10 @@ function FoilPetals() {
 /** Atmospheric editorial hero: CMS-ready spotlight, crest, and studio pillars. */
 export default function LandingHero() {
   const { hero } = studioData;
+  const spotlight = resolveSpotlight();
 
   return (
     <div className="relative w-full flex flex-col">
-      <SpotlightBar />
-
       <section id="banner" className="atelier-hero-viewport landing-hero">
         <AtelierDefs />
         <div className="procedural-grain-layer" aria-hidden />
@@ -154,6 +119,10 @@ export default function LandingHero() {
                 <span>Explore Classes</span>
               </Link>
             </div>
+
+            {/* Directly under the pair above, and the anchor the floating
+                announcement docks to the header from. */}
+            <TrendingSpotlight data={spotlight} />
           </div>
 
           <div className="hero-crest-col">

@@ -8,6 +8,15 @@ import { ChevronDown, X } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useScrollLock } from '@/lib/scrollLock';
+import { readPerfTier } from '@/lib/perfTier';
+
+/** What the header ticker shows when it borrows the wordmark's place. */
+export interface TrendingTeaser {
+  category: string;
+  headline: string;
+  dateBadge: string;
+  href: string;
+}
 
 type SocialNetwork = 'whatsapp' | 'facebook' | 'instagram' | 'youtube' | 'maps';
 
@@ -92,9 +101,12 @@ function BurgerGlyph({ open }: { open: boolean }) {
   );
 }
 
-export default function Header() {
+export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  /** True while the trending teaser occupies the wordmark's place. */
+  const [swap, setSwap] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -116,23 +128,162 @@ export default function Header() {
     };
   }, [drawerOpen]);
 
+  // ── Intro expansion → gentle collapse ──
+  // The header opens tall with the tagline visible, then after a short pause
+  // (or the visitor's first scroll) it eases down to the normal compact bar.
+  // One-way per page load; listeners detach once collapsed so the rest of the
+  // session costs nothing.
+  //
+  // While the first-visit preloader is still up, the clock holds — the
+  // visitor hasn't actually seen the header yet — and the scroll arming
+  // waits too, so wheel gestures meant for the intro can't collapse it early.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let timer: number | undefined;
+    let fallback: number | undefined;
+    let alive = true;
+    let armed = false;
+
+    const detach = () => {
+      window.removeEventListener('scroll', onScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener('wheel', onScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener('touchmove', onScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener('studio-preloader-complete', onHandover);
+    };
+    const collapse = () => {
+      if (!alive) return;
+      alive = false;
+      setExpanded(false);
+      window.clearTimeout(timer);
+      window.clearTimeout(fallback);
+      detach();
+    };
+    const onScroll = () => collapse();
+    const arm = () => {
+      if (!alive || armed) return;
+      armed = true;
+      timer = window.setTimeout(collapse, 4500);
+      window.addEventListener('scroll', onScroll, { capture: true, passive: true } as AddEventListenerOptions);
+      window.addEventListener('wheel', onScroll, { capture: true, passive: true } as AddEventListenerOptions);
+      window.addEventListener('touchmove', onScroll, { capture: true, passive: true } as AddEventListenerOptions);
+    };
+    const onHandover = () => arm();
+
+    if (document.documentElement.hasAttribute('data-preloader')) {
+      window.addEventListener('studio-preloader-complete', onHandover);
+      // Safety net: never hold the header hostage if the event never comes.
+      fallback = window.setTimeout(arm, 7000);
+    } else {
+      arm();
+    }
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      window.clearTimeout(fallback);
+      detach();
+    };
+  }, []);
+
+  // ── Random wordmark ↔ trending teaser swap ──
+  // Every ~30–55s the brand name rolls up and the trending announcement rolls
+  // into its exact place for ~4.5s, then rolls back out. One transform pair,
+  // ~1s of motion per swap, nothing continuous — and skipped entirely on lite
+  // devices and for reduced-motion visitors. Hidden tabs postpone instead of
+  // swapping into a screen nobody is watching.
+  useEffect(() => {
+    if (!teaser) return;
+    if (readPerfTier() === 'lite') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let alive = true;
+    let showTimer: number | undefined;
+    let hideTimer: number | undefined;
+
+    const schedule = (delay: number) => {
+      showTimer = window.setTimeout(() => {
+        if (!alive) return;
+        if (document.hidden) {
+          schedule(15000); // check again later — never swap invisibly
+          return;
+        }
+        setSwap(true);
+        hideTimer = window.setTimeout(() => {
+          if (!alive) return;
+          setSwap(false);
+          schedule(26000 + Math.random() * 24000);
+        }, 4500);
+      }, delay);
+    };
+    schedule(18000 + Math.random() * 12000);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [teaser]);
+
   return (
     <>
-      <header className="gallery-header sticky top-0 left-0 z-40 w-full">
+      <header
+        className={`gallery-header sticky top-0 left-0 z-40 w-full ${
+          expanded ? 'gallery-header--expanded' : ''
+        }`}
+      >
         <div className="gallery-header-bar flex min-h-[4.5em] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-4 lg:px-8 xl:gap-6">
-          {/* ── Zone 1 · crest + brand name ── */}
-          <Link
-            href="/"
-            aria-label={`${studioMeta.founder} — home`}
-            className="flex shrink-0 items-center gap-1.5 sm:gap-3"
-          >
-            <span className="logo-chrome relative h-8 w-8 shrink-0 overflow-hidden rounded-full border sm:h-10 sm:w-10">
-              <Image src="/images/logo.png" alt="" fill sizes="40px" className="object-contain p-1" />
+          {/* ── Zone 1 · crest + brand name ──
+              The wordmark is one face of a two-face ticker: occasionally the
+              trending teaser rolls into this exact footprint (no layout
+              change — the brand face keeps sizing the row). The founder/home
+              link stays on the crest itself and on the brand face. */}
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <Link
+              href="/"
+              aria-label={`${studioMeta.founder} — home`}
+              className="shrink-0"
+            >
+              <span className="logo-chrome relative block h-8 w-8 overflow-hidden rounded-full border sm:h-10 sm:w-10">
+                <Image src="/images/logo.png" alt="" fill sizes="40px" className="object-contain p-1" />
+              </span>
+            </Link>
+            <span className="brand-swap" data-swap={swap ? 'on' : 'off'}>
+              <Link
+                href="/"
+                aria-hidden={swap || undefined}
+                tabIndex={swap ? -1 : 0}
+                className="brand-face brand-face--brand"
+              >
+                <span className="site-brand-title font-decorative font-bold text-gallery-gold">
+                  {/* Two lines on phones/tablets so the name is actually legible
+                      there; the spans collapse to one inline line on ≥lg screens. */}
+                  <span className="site-brand-line">{studioMeta.founder.split(' ')[0]}</span>{' '}
+                  <span className="site-brand-line">
+                    {studioMeta.founder.split(' ').slice(1).join(' ') || studioMeta.founder}
+                  </span>
+                </span>
+                <span className="header-tagline">{studioMeta.tagline}</span>
+              </Link>
+              {teaser && (
+                <Link
+                  href={teaser.href}
+                  aria-hidden={!swap || undefined}
+                  tabIndex={swap ? 0 : -1}
+                  className="brand-face brand-face--teaser"
+                >
+                  <span className="pulsing-status-dot" aria-hidden />
+                  <span className="brand-swap-text">
+                    <span className="brand-swap-cat">
+                      {teaser.category} · {teaser.dateBadge}
+                    </span>
+                    <span className="brand-swap-headline" title={teaser.headline}>
+                      {teaser.headline}
+                    </span>
+                  </span>
+                </Link>
+              )}
             </span>
-            <span className="site-brand-title font-decorative font-bold text-gallery-gold">
-              {studioMeta.founder}
-            </span>
-          </Link>
+          </div>
 
           {/* ── Zone 2 · desktop navigation ── */}
           <nav aria-label="Primary" className="hidden items-center justify-center gap-4 lg:flex xl:gap-7">

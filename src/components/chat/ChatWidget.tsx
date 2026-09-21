@@ -6,6 +6,7 @@ import { MessageCircle, X, Send, Sparkles, Square } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
 import { useChatNudge } from './useChatNudge';
+import { readPerfTier } from '@/lib/perfTier';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -132,6 +133,9 @@ export default function ChatWidget() {
   const [unread, setUnread] = useState(false);
   const [showChips, setShowChips] = useState(true);
   const [greeted, setGreeted] = useState(false);
+  // Occasional FAB heartbeat: a single gold ring ripple at random intervals.
+  const [pulseOn, setPulseOn] = useState(false);
+  const [pulseKey, setPulseKey] = useState(0);
 
   // Ambient invite bubble that occasionally pops out of the launcher.
   const { nudge, clear: clearNudge } = useChatNudge();
@@ -199,6 +203,33 @@ export default function ChatWidget() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  // Random FAB heartbeat — one subtle gold ring ripple every ~22–50s.
+  // Cost: a single composited layer for ~1.6s, nothing continuous. Skipped on
+  // lite devices, while the chat is open, while the tab is hidden, and while
+  // a nudge bubble is already on screen (never two cues at once).
+  useEffect(() => {
+    if (readPerfTier() === 'lite') return;
+    let timer: number | undefined;
+    let stop: number | undefined;
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      if (!openRef.current && !document.hidden) {
+        setPulseKey((k) => k + 1);
+        setPulseOn(true);
+        window.clearTimeout(stop);
+        stop = window.setTimeout(() => alive && setPulseOn(false), 1700);
+      }
+      timer = window.setTimeout(tick, 22000 + Math.random() * 28000);
+    };
+    timer = window.setTimeout(tick, 14000 + Math.random() * 16000);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      window.clearTimeout(stop);
+    };
+  }, []);
 
   const stoppedRef = useRef(false);
 
@@ -445,7 +476,7 @@ export default function ChatWidget() {
                   href={m.wa}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2.5 flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-emerald-500"
+                  className="mt-2.5 flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[13.5px] font-bold text-white transition-colors hover:bg-emerald-500"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Continue on WhatsApp
@@ -456,7 +487,7 @@ export default function ChatWidget() {
                   href={m.maps}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-studio-gold/40 bg-purple-900/60 px-3 py-2 text-[12.5px] font-bold text-yellow-100 transition-colors hover:bg-purple-800"
+                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-studio-gold/40 bg-purple-900/60 px-3 py-2 text-[13.5px] font-bold text-yellow-100 transition-colors hover:bg-purple-800"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
@@ -537,7 +568,7 @@ export default function ChatWidget() {
           <button
             type="button"
             onClick={toggleChat}
-            className="chat-nudge pointer-events-auto flex max-w-[240px] items-start gap-2 rounded-2xl rounded-br-sm border border-studio-gold/35 px-3.5 py-2.5 text-left text-[12.5px] font-medium leading-snug text-yellow-50 active:scale-95"
+            className="chat-nudge pointer-events-auto flex max-w-[240px] items-start gap-2 rounded-2xl rounded-br-sm border border-studio-gold/35 px-3.5 py-2.5 text-left text-[13.5px] font-medium leading-snug text-yellow-50 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, rgba(45,12,70,0.92), rgba(26,6,43,0.94))',
               boxShadow: '0 10px 30px rgba(0,0,0,0.45), 0 0 18px rgba(242,215,112,0.14)',
@@ -564,6 +595,9 @@ export default function ChatWidget() {
         )}
         {!open && (
           <span className="absolute inset-0 -z-10 animate-pulse-slow rounded-full bg-studio-gold/20 blur-md" aria-hidden />
+        )}
+        {!open && pulseOn && (
+          <span key={pulseKey} className="chat-fab-pulse absolute inset-0 rounded-full" aria-hidden />
         )}
       </button>
     </>

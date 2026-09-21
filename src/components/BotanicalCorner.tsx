@@ -184,15 +184,21 @@ export default function BotanicalCorner({ tone, branch, className }: BotanicalCo
    *
    * Three things keep this free on a phone: (1) the corner unsubscribes the
    * moment it scrolls out of view, so the four hero corners cost nothing once
-   * the visitor has moved on; (2) the loop is capped at 20-30 fps (the gust is
+   * the visitor has moved on; (2) the loop is capped at 30 fps (the gust is
    * an ~8s cycle — nobody can see the difference, the CPU can); (3) only
    * attributes whose value actually changed are written back.
+   *
+   * A `lite` device gets the resting frond and nothing else: the sway rewrites
+   * ~70 SVG path and transform attributes per frame, which is the most
+   * expensive thing left in the hero once blur and the endless CSS loops are
+   * gone (see the motion policy in globals.css).
    */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (tier === 'lite') return;
 
-    const fps = tier === 'lite' ? 20 : 30;
+    const fps = 30;
     const last = lastWriteRef.current;
     last.stem = '';
     last.leaves = [];

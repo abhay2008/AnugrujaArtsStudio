@@ -85,7 +85,7 @@ export default function Footer() {
             visitors. Deliberately separate from the studio's own contact block:
             this phone number and these links belong to the developer. */}
         <div className="dev-credit w-full max-w-xl rounded-2xl px-5 py-5 sm:px-7 sm:py-6 flex flex-col items-center gap-3.5">
-          <p className="font-blippo text-[10px] sm:text-[11px] uppercase tracking-[0.24em] text-studio-gold/85">
+          <p className="font-blippo text-xs sm:text-[11px] uppercase tracking-[0.18em] sm:tracking-[0.24em] text-studio-gold/85">
             Website design &amp; development
           </p>
 
@@ -104,7 +104,7 @@ export default function Footer() {
             </span>
           </p>
 
-          <p className="font-editorial italic text-xs sm:text-sm text-theme-subtle max-w-sm">
+          <p className="font-editorial italic text-[0.84rem] sm:text-sm text-theme-subtle max-w-sm">
             Want a website like this for your own studio or business? Get in touch.
           </p>
 
@@ -140,7 +140,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <p className="font-serif-display text-theme-subtle text-xs sm:text-sm">
+        <p className="font-serif-display text-theme-subtle text-[0.84rem] sm:text-sm">
           &copy; {new Date().getFullYear()} {studioMeta.name}. All rights reserved.
         </p>
       </Reveal>

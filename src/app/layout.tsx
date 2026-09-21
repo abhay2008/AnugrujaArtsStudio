@@ -63,8 +63,12 @@ export const metadata: Metadata = {
     'Art commissions',
   ],
   authors: [{ name: 'Anuradha Govarthanan' }],
+  /* Small derivatives of the crest (npm run images:icons). The full-size
+     logo.png is 213 KB and is meant for next/image, which re-encodes it per
+     request — as a favicon it was fetched whole on every page load. */
   icons: {
-    icon: '/images/logo.png',
+    icon: [{ url: '/images/logo-64.png', sizes: '64x64', type: 'image/png' }],
+    apple: [{ url: '/images/logo-180.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 
@@ -91,9 +95,10 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#100318" />
-        {/* The preloader crest and name are the first paint — the logo and
-            the two intro fonts must not arrive after it. */}
-        <link rel="preload" as="image" href="/images/logo-intro.png" fetchPriority="high" />
+        {/* The preloader crest and name are the first paint — the two intro
+            fonts must not arrive after it. The crest image itself is
+            preloaded by PreloaderScript instead, because a `lite` device
+            never sees the intro and must not pay for its image. */}
         <link
           rel="preload"
           as="font"

@@ -14,7 +14,11 @@
     "vite:dev": "vite",
     "vite:build": "vite build",
     "images:optimize": "node scripts/optimize-images.mjs",
+    "images:icons": "node scripts/make-icons.mjs",
     "audit:css": "node scripts/audit-css-compat.mjs",
+    "audit:perf": "node scripts/audit-perf.mjs",
+    "perf:build": "NEXT_DIST_DIR=.next-perf next build",
+    "perf:serve": "NEXT_DIST_DIR=.next-perf next start -p 3311",
     "test:framing": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-photo-framing.ts",
     "test:chat": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chatbot.ts",
     "test:e2e": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/e2e-chat.ts"
