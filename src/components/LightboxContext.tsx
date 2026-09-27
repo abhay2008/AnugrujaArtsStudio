@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 
 export interface LightboxSlide {
   src: string;
@@ -65,10 +65,66 @@ const LightboxContext = createContext<LightboxContextType>({
   goToIndex: () => {},
 });
 
+/** Marker on the history entry that represents "the lightbox is open". */
+const HISTORY_KEY = '__lightbox';
+
+function isLightboxEntry(state: unknown): boolean {
+  return Boolean(state && typeof state === 'object' && (state as Record<string, unknown>)[HISTORY_KEY]);
+}
+
+/**
+ * History contract — the system back button / edge swipe closes the lightbox
+ * instead of leaving the site:
+ *  1. Opening pushes ONE same-URL entry carrying `__lightbox`. The current
+ *     state is spread into it so the Next.js App Router keys (`__NA`, tree)
+ *     survive and its popstate handler treats the entry as its own.
+ *     Switching slides or opening another painting while open pushes nothing.
+ *  2. Back (`popstate` to a non-lightbox entry) closes the modal. The URL never
+ *     changes and the scroll lock kept the page where it was.
+ *  3. Closing from the UI (X, Esc, backdrop) consumes the entry with
+ *     `history.back()` so no dangling entry is left for Back to land on.
+ *     `ownsEntryRef` is cleared first, so that popstate is ignored.
+ *  4. Arriving on a stale `__lightbox` entry (Forward after Back) re-uses it
+ *     via `replaceState` on the next open rather than stacking another.
+ * The push happens inside the click handler, i.e. with user activation, so
+ * Chrome's back-button intervention does not skip the entry.
+ */
 export function LightboxProvider({ children }: { children: ReactNode }) {
   const [slides, setSlides] = useState<LightboxSlide[]>([]);
   const [single, setSingle] = useState<LightboxSlide | null>(null);
   const [index, setIndex] = useState(-1);
+  const ownsEntryRef = useRef(false);
+
+  const claimHistoryEntry = useCallback(() => {
+    if (typeof window === 'undefined' || ownsEntryRef.current) return;
+    const state = { ...(window.history.state ?? {}), [HISTORY_KEY]: true };
+    try {
+      if (isLightboxEntry(window.history.state)) {
+        window.history.replaceState(state, '');
+      } else {
+        window.history.pushState(state, '');
+      }
+      ownsEntryRef.current = true;
+    } catch {
+      /* History unavailable (sandboxed iframe) — the modal still works. */
+    }
+  }, []);
+
+  const resetState = useCallback(() => {
+    setSlides([]);
+    setSingle(null);
+    setIndex(-1);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      if (!ownsEntryRef.current || isLightboxEntry(event.state)) return;
+      ownsEntryRef.current = false;
+      resetState();
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [resetState]);
 
   const openLightbox = useCallback(
     (
@@ -83,21 +139,27 @@ export function LightboxProvider({ children }: { children: ReactNode }) {
       setSingle({ src, title, description, price, priceConfirmedAt, category, medium });
       setSlides([]);
       setIndex(-1);
+      claimHistoryEntry();
     },
-    []
+    [claimHistoryEntry]
   );
 
-  const openGallery = useCallback((newSlides: LightboxSlide[], startIndex: number) => {
-    setSlides(newSlides);
-    setSingle(null);
-    setIndex(startIndex);
-  }, []);
+  const openGallery = useCallback(
+    (newSlides: LightboxSlide[], startIndex: number) => {
+      setSlides(newSlides);
+      setSingle(null);
+      setIndex(startIndex);
+      claimHistoryEntry();
+    },
+    [claimHistoryEntry]
+  );
 
   const closeLightbox = useCallback(() => {
-    setSlides([]);
-    setSingle(null);
-    setIndex(-1);
-  }, []);
+    resetState();
+    if (!ownsEntryRef.current) return;
+    ownsEntryRef.current = false;
+    if (isLightboxEntry(window.history.state)) window.history.back();
+  }, [resetState]);
 
   const nextImage = useCallback(() => {
     setIndex((i) => (slides.length > 1 ? (i + 1) % slides.length : i));

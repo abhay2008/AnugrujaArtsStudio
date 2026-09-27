@@ -2358,6 +2358,16 @@ body.has-quicknav .site-footer {
     opacity: 1 !important;
     transform: none !important;
   }
+  /* Framer-revealed blocks: never leave a server-rendered `opacity: 0` inline
+     style in charge of whether the content is readable. */
+  .journey-heading-wrap,
+  .chapter-card,
+  .atelier-accolades-section .section-title-wrap,
+  .accolade-card,
+  .outreach-item {
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .light-pool,
   .page-ambient-orb,
   .hero-emblem-ring-outer,
@@ -8571,5 +8581,32 @@ html:not([data-theme='light']) .c3d-root--spotlight .c3d-card-media:not(.is-cent
   .c3d-card-blurb {
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+}
+
+/* ================================================================
+   WINDOWS HIGH CONTRAST — forced-colors: active
+   ================================================================
+   Gradient-clipped headlines paint their glyphs with a transparent fill; the
+   forced palette replaces `color` but not always the clip, so they can vanish.
+   Give them real system ink, and keep the floating/overlay chrome outlined. */
+@media (forced-colors: active) {
+  .display-heading,
+  .profile-name,
+  .atelier-brand-title,
+  .gold-sunset-shimmer,
+  .showcase-title {
+    background: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    color: CanvasText !important;
+    -webkit-text-fill-color: CanvasText !important;
+  }
+
+  .chat-fab,
+  .chapter-card,
+  [role='dialog'][aria-modal='true'] button {
+    border: 1px solid ButtonText;
+    forced-color-adjust: auto;
   }
 }
