@@ -10,7 +10,7 @@ import { isPriceConfirmed, priceNote, publicPriceLabel } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
 import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
-import { hasImageVariants, imageUrl, lightboxWidth } from '@/lib/imageSrc';
+import { hasImageVariants, imageSize, imageUrl, lightboxWidth } from '@/lib/imageSrc';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { readOsTag } from '@/lib/osTier';
 
@@ -30,6 +30,7 @@ interface Carousel3DProps {
   /** Autoplay cadence in ms. Pass 0 to disable autoplay entirely. */
   autoAdvanceIntervalMs?: number;
   showInfo?: boolean;
+  label?: string;
   /** Legacy aliases `showcase` → spotlight and `default` → rail are still accepted. */
   variant?: CarouselVariant | 'showcase' | 'default';
 }
@@ -221,6 +222,7 @@ export default function Carousel3D({
   /** Autoplay is opt-in: pass a cadence to enable it. Default: off. */
   autoAdvanceIntervalMs = 0,
   showInfo = true,
+  label = 'Artwork carousel',
   variant: variantProp = 'rail',
 }: Carousel3DProps) {
   const variant = VARIANT_LOOKUP[variantProp] ?? 'rail';
@@ -234,7 +236,8 @@ export default function Carousel3D({
 
   const [index, setIndex] = useState(0);
   const [spacing, setSpacing] = useState(200);
-  const [stageSize, setStageSize] = useState({ height: 0 });
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const [loadedRatios, setLoadedRatios] = useState<Record<string, number>>({});
   const [isDragging, setIsDragging] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   /* Starts false so autoplay can never run before the first visibility measure. */
@@ -533,7 +536,8 @@ export default function Carousel3D({
     const update = () => {
       const w = stage.clientWidth;
       const h = stage.clientHeight;
-      setStageSize({ height: h });
+      setStageSize((previous) => previous.width === w && previous.height === h
+        ? previous : { width: w, height: h });
       setSpacing(
         Math.max(
           beat.spacingMin,
@@ -609,7 +613,7 @@ export default function Carousel3D({
   }, [commitStep, engage]);
 
   /* Only the Buy spotlight opts into autoplay; every other rail is user-driven. */
-  const autoplayEnabled = autoAdvanceIntervalMs > 0;
+  const autoplayEnabled = autoAdvanceIntervalMs > 0 && !reducedMotion && tier !== 'lite';
 
   /*
    * Autoplay runs only while the carousel is on screen and the tab is visible.
@@ -853,7 +857,7 @@ export default function Carousel3D({
 
   const current = items[index];
   const stageInlineStyle = (stageSize.height > 0
-    ? { '--c3d-stage-height': `${stageSize.height}px` }
+    ? { '--c3d-stage-measured-height': `${stageSize.height}px`, '--c3d-stage-width': `${stageSize.width}px` }
     : {}) as React.CSSProperties;
   const price = current ? publicPriceLabel(current.price, isPriceConfirmed(current), true) : '';
   const priceNoteText = current ? priceNote(isPriceConfirmed(current)) : '';
@@ -892,7 +896,7 @@ export default function Carousel3D({
     ) : null;
 
   const playToggle = (extra = '') =>
-    count > 1 && !hasEngaged ? (
+    autoplayEnabled && count > 1 && !hasEngaged ? (
       <button
         type="button"
         onClick={() => setIsPlaying((p) => !p)}
@@ -947,7 +951,7 @@ export default function Carousel3D({
         ref={stageRef}
         role="region"
         aria-roledescription="carousel"
-        aria-label="Artwork carousel"
+        aria-label={label}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
@@ -1010,6 +1014,10 @@ export default function Carousel3D({
            */
           const nearCentre = adjacency <= 3;
           const blurb = cardBlurb(item);
+          const dimensions = imageSize(item.src);
+          const ratio = dimensions && dimensions.width > 0 && dimensions.height > 0
+            ? dimensions.width / dimensions.height
+            : loadedRatios[item.src];
           return (
             <div
               key={item.id}
@@ -1033,6 +1041,10 @@ export default function Carousel3D({
                 isCentre ? 'cursor-default' : 'cursor-pointer'
               }`}
               style={{
+                ...(ratio ? {
+                  width: `min(var(--c3d-fit-w), calc(var(--c3d-fit-h) * ${ratio}))`,
+                  height: `calc(min(var(--c3d-fit-h), calc(var(--c3d-fit-w) / ${ratio})) + var(--c3d-matte-h, 0px))`,
+                } : {}),
                 transformStyle: 'preserve-3d',
                 backfaceVisibility: 'hidden',
                 transform: 'translate3d(-50%, -50%, -300px) scale(0.75)',
@@ -1085,6 +1097,14 @@ export default function Carousel3D({
                       loading={i === 0 ? undefined : 'lazy'}
                       fetchPriority={i === 0 ? undefined : 'low'}
                       className="c3d-card-img object-contain pointer-events-none select-none"
+                      onLoad={(event) => {
+                        const img = event.currentTarget;
+                        if (!dimensions && img.naturalWidth > 0 && img.naturalHeight > 0) {
+                          const naturalRatio = img.naturalWidth / img.naturalHeight;
+                          setLoadedRatios((previous) => previous[item.src] === naturalRatio
+                            ? previous : { ...previous, [item.src]: naturalRatio });
+                        }
+                      }}
                     />
                   )}
                   {isSpotlight && <span className="c3d-gloss" aria-hidden />}
@@ -1139,6 +1159,10 @@ export default function Carousel3D({
           >
             <p className="c3d-spot-name">{current.title}</p>
             {cardBlurb(current) && <p className="c3d-spot-desc">{cardBlurb(current)}</p>}
+            <p className="collector-work-details">
+              {[current.medium, current.dimensions, current.status].filter(Boolean).join(' · ') ||
+                'Explore the details with the studio'}
+            </p>
             <div className="c3d-spot-row">
               {price && (
                 <span
@@ -1154,15 +1178,17 @@ export default function Carousel3D({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                aria-label={`Buy ${current.title} — inquire on WhatsApp`}
+                aria-label={`Inquire about ${current.title} on WhatsApp`}
                 className="buy-painting-btn"
               >
                 <svg className="buy-painting-ico" viewBox="0 0 24 24" aria-hidden>
                   <path d={WHATSAPP_ICON_PATH} />
                 </svg>
-                <span>Buy this painting</span>
+                <span>{current.status === 'Sold' ? 'Discuss this artwork' :
+                  current.status === 'Reserved' ? 'Ask about availability' : 'Make this artwork yours'}</span>
               </a>
             </div>
+            <p className="collector-enquiry-note">A personal conversation, not a checkout. Confirm price, framing and delivery with the studio.</p>
           </motion.div>
         </AnimatePresence>
       )}
@@ -1286,21 +1312,23 @@ export default function Carousel3D({
       {isDeck && (
         <div className="mt-3 flex flex-col items-center gap-2">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={prev} aria-label="Previous artwork" className="c3d-round">
+            <button type="button" disabled={count < 2} onClick={prev} aria-label="Previous artwork" className="c3d-round">
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div className="c3d-deck-counter tabular-nums">
               <b>{pad2(index + 1)}</b>
               <span>/ {pad2(count)}</span>
             </div>
-            <button type="button" onClick={next} aria-label="Next artwork" className="c3d-round">
+            <button type="button" disabled={count < 2} onClick={next} aria-label="Next artwork" className="c3d-round">
               <ChevronRight className="h-5 w-5" />
             </button>
             {playToggle('')}
           </div>
-          <div className="c3d-track">
-            <div ref={progressBarRef} className="c3d-track-fill" style={{ width: '0%' }} />
-          </div>
+          {autoplayEnabled && (
+            <div className="c3d-track">
+              <div ref={progressBarRef} className="c3d-track-fill" style={{ width: '0%' }} />
+            </div>
+          )}
         </div>
       )}
 
@@ -1317,9 +1345,9 @@ export default function Carousel3D({
         </div>
       )}
 
-      {(isRail || isDeck) && (
+      {showInfo && (isRail || isDeck) && (
         <p className="c3d-hint">
-          {index + 1} / {count} — tap a photo to bring it forward, tap it again to enlarge
+          {index + 1} / {count} — swipe to explore, tap a photo to enlarge
         </p>
       )}
       {isPolaroid && (

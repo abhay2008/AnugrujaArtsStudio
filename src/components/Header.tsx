@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, X } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useScrollLock } from '@/lib/scrollLock';
-import { readPerfTier } from '@/lib/perfTier';
+import { useReducedMotion } from '@/lib/useReducedMotion';
 
 /** What the header ticker shows when it borrows the wordmark's place. */
 export interface TrendingTeaser {
@@ -107,6 +107,12 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   const [expanded, setExpanded] = useState(true);
   /** True while the trending teaser occupies the wordmark's place. */
   const [swap, setSwap] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const [tickerHovered, setTickerHovered] = useState(false);
+  const [tickerFocused, setTickerFocused] = useState(false);
+  const [tabHidden, setTabHidden] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const reducedMotion = useReducedMotion();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -185,59 +191,72 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
     };
   }, []);
 
-  // ── Random wordmark ↔ trending teaser swap ──
-  // Every ~30–55s the brand name rolls up and the trending announcement rolls
-  // into its exact place for ~4.5s, then rolls back out. One transform pair,
-  // ~1s of motion per swap, nothing continuous — and skipped entirely on lite
-  // devices and for reduced-motion visitors. Hidden tabs postpone instead of
-  // swapping into a screen nobody is watching.
   useEffect(() => {
-    if (!teaser) return;
-    if (readPerfTier() === 'lite') return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    let alive = true;
-    let showTimer: number | undefined;
-    let hideTimer: number | undefined;
-
-    const schedule = (delay: number) => {
-      showTimer = window.setTimeout(() => {
-        if (!alive) return;
-        if (document.hidden) {
-          schedule(15000); // check again later — never swap invisibly
-          return;
-        }
-        setSwap(true);
-        hideTimer = window.setTimeout(() => {
-          if (!alive) return;
-          setSwap(false);
-          schedule(26000 + Math.random() * 24000);
-        }, 4500);
-      }, delay);
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const hero = pathname === '/' ? document.getElementById('banner') : null;
+      setPastHero(!hero || hero.getBoundingClientRect().bottom <=
+        (headerRef.current?.getBoundingClientRect().bottom ?? 0));
     };
-    schedule(18000 + Math.random() * 12000);
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const visibility = () => setTabHidden(document.hidden);
+    measure();
+    visibility();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    document.addEventListener('visibilitychange', visibility);
+    const resize = new ResizeObserver(schedule);
+    const hero = document.getElementById('banner');
+    if (hero) resize.observe(hero);
+    if (headerRef.current) resize.observe(headerRef.current);
 
     return () => {
-      alive = false;
-      window.clearTimeout(showTimer);
-      window.clearTimeout(hideTimer);
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      document.removeEventListener('visibilitychange', visibility);
     };
-  }, [teaser]);
+  }, [pathname]);
+
+  useEffect(() => {
+    // Never replace a link while somebody is focusing or pointing at it.
+    if (tickerFocused || tickerHovered || tabHidden) return;
+    if (!teaser || !pastHero) {
+      setSwap(false);
+      return;
+    }
+    setSwap(true);
+    if (reducedMotion) return; // Static announcement; the crest remains the home link.
+    let showing = true;
+    let timer: number;
+    const cycle = () => {
+      showing = !showing;
+      setSwap(showing);
+      timer = window.setTimeout(cycle, showing ? 8000 : 16000);
+    };
+    timer = window.setTimeout(cycle, 8000);
+    return () => window.clearTimeout(timer);
+  }, [teaser, pastHero, reducedMotion, tickerFocused, tickerHovered, tabHidden]);
 
   return (
     <>
       <header
+        ref={headerRef}
         className={`gallery-header sticky top-0 left-0 z-40 w-full ${
           expanded ? 'gallery-header--expanded' : ''
         }`}
       >
-        <div className="gallery-header-bar flex min-h-[4.5em] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-4 lg:px-8 xl:gap-6">
+        <div className="gallery-header-bar flex min-h-[4.5em] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_auto] xl:gap-6 xl:px-8">
           {/* ── Zone 1 · crest + brand name ──
               The wordmark is one face of a two-face ticker: occasionally the
-              trending teaser rolls into this exact footprint (no layout
+              trending teaser fades into this exact footprint (no layout
               change — the brand face keeps sizing the row). The founder/home
               link stays on the crest itself and on the brand face. */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <div className="header-brand-zone flex min-w-0 items-center gap-1.5 sm:gap-3">
             <Link
               href="/"
               aria-label={`${studioMeta.founder} — home`}
@@ -247,7 +266,16 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
                 <Image src="/images/logo.png" alt="" fill sizes="40px" className="object-contain p-1" />
               </span>
             </Link>
-            <span className="brand-swap" data-swap={swap ? 'on' : 'off'}>
+            <span
+              className="brand-swap"
+              data-swap={swap ? 'on' : 'off'}
+              onMouseEnter={() => setTickerHovered(true)}
+              onMouseLeave={() => setTickerHovered(false)}
+              onFocus={() => setTickerFocused(true)}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setTickerFocused(false);
+              }}
+            >
               <Link
                 href="/"
                 aria-hidden={swap || undefined}
@@ -286,7 +314,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
           </div>
 
           {/* ── Zone 2 · desktop navigation ── */}
-          <nav aria-label="Primary" className="hidden items-center justify-center gap-4 lg:flex xl:gap-7">
+          <nav aria-label="Primary" className="hidden items-center justify-center gap-4 xl:flex xl:gap-7">
             <Link href="/" className="gallery-nav-link">
               Home
             </Link>
@@ -338,13 +366,13 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
           {/* ── Zone 3 · actions ── */}
           <div className="flex shrink-0 items-center justify-end gap-2.5">
             {/* Desktop: Theme Toggle */}
-            <div className="hidden lg:flex items-center">
+            <div className="hidden xl:flex items-center">
               <ThemeToggle />
             </div>
 
             {/* Desktop: full social pill */}
             <div
-              className="header-social-strip hidden items-center gap-0.5 rounded-full p-1 lg:flex"
+              className="header-social-strip hidden items-center gap-0.5 rounded-full p-1 xl:flex"
               aria-label="Social media"
             >
               {SOCIAL_LINKS.map((social) => (
@@ -363,7 +391,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
             </div>
 
             {/* Mobile / tablet: one unified glass cluster */}
-            <div className="header-mobile-cluster flex items-center gap-0.5 rounded-full p-1 lg:hidden">
+            <div className="header-mobile-cluster flex items-center gap-0.5 rounded-full p-1 xl:hidden">
               {QUICK_SOCIALS.map((network) => {
                 const social = SOCIAL_LINKS.find((s) => s.network === network)!;
                 return (

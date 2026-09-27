@@ -120,8 +120,7 @@ export default function LandingHero() {
               </Link>
             </div>
 
-            {/* Directly under the pair above, and the anchor the floating
-                announcement docks to the header from. */}
+            {/* In-flow announcement; the header manages its own ticker. */}
             <TrendingSpotlight data={spotlight} />
           </div>
 

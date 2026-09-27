@@ -19,6 +19,9 @@ import {
   Award,
   HeartHandshake,
   ShoppingBag,
+  BadgeCheck,
+  Frame,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -26,30 +29,31 @@ export default function HomePage() {
     <div className="landing-page relative flex flex-col w-full overflow-x-hidden">
       <LandingHero />
 
-      {/* 2. BUY PAINTINGS — height-locked 100dvh showcase (zero page scroll) */}
-      {/* .buy-showcase-lock owns the viewport-height lock (vh first, dvh second —
-          older Windows Chromium engines ignore dvh units entirely and without
-          the fallback the section collapses to content height). */}
+      {/* The collector section can grow on short screens and with enlarged text. */}
       <section
         id="buy-paintings"
-        className="buy-showcase-lock landing-section relative mx-auto flex min-h-0 w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
+        className="collector-showcase landing-section relative mx-auto flex min-h-0 w-full max-w-7xl flex-col px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
       >
         <Reveal className="showcase-head shrink-0 space-y-1.5 text-center">
           <div className="inline-flex items-center gap-2 rounded-full glass-pill px-3 py-1 text-section-kicker text-studio-sunset">
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Originals Ready to Own</span>
+            <span>Buy Paintings · The Collector&apos;s Edit</span>
           </div>
           <h2 className="showcase-title font-decorative font-bold tracking-wide text-studio-gold">
-            Buy Paintings
+            A work of art. A place in your life.
           </h2>
           <p className="mx-auto max-w-xl font-editorial font-medium text-[clamp(0.9rem,1.6vh,1.05rem)] italic text-theme-muted">
-            Handcrafted watercolours &amp; realistic art, straight from the studio
+            Discover original watercolours and realist works, chosen for the spaces and stories you call your own.
           </p>
           <p className="mx-auto hidden max-w-2xl font-sans-ui font-medium text-[clamp(0.86rem,1.4vh,0.95rem)] text-theme-muted sm:block">
-            Three works in view — the centre piece takes the spotlight. Swipe or use the arrows,
-            tap to inspect, then inquire on WhatsApp.
+            Browse the collection, look closer, then speak directly with the studio.
           </p>
         </Reveal>
+        <div className="collector-assurances" aria-label="Your collecting journey">
+          <span><BadgeCheck aria-hidden />Original studio works</span>
+          <span><Frame aria-hidden />Discuss framing &amp; dimensions</span>
+          <span><MessageCircle aria-hidden />Personal acquisition guidance</span>
+        </div>
 
         <Reveal variant="fade" delay={120} className="flex min-h-0 w-full flex-1 items-stretch">
           {/* Catalog spotlight — disjoint from the hero flagship rail by construction. */}

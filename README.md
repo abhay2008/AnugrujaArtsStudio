@@ -21,6 +21,14 @@ This is a full **Next.js App Router** application: a public gallery site, a buil
 | **Chat assistant "Chitra"** | Floating chat widget backed by OpenRouter (server-side key only). Its knowledge is generated from the same `site.json` the site renders — new paintings are in the bot's context automatically |
 | **Image pipeline** | `next/image` + a custom optimizer: on upload, originals are compressed client-side; on display, right-sized variants (640/1080/1920) are served and cached |
 
+### Public UI layout invariants
+
+- The hero announcement stays in flow. Only `Header` owns the bounded brand/announcement swap after the hero scrolls past; focus, hover and hidden tabs pause it. Reduced motion uses a static announcement. Desktop navigation starts at 1280px; smaller widths use the drawer.
+- Event galleries reuse `Carousel3D`'s deck presentation with no autoplay and all event photos, not a cropped three-image mosaic. The shared frame uses natural dimensions from `imageSize()` (or image load for new uploads), constrained to the measured stage. Stage measurements must not feed back into the stage's own height.
+- The collector showcase grows with its content rather than clipping to one viewport. Medium, dimensions and status come from each artwork; certification, shipping insurance and scarcity must not be promised without verified content. Price confirmation and WhatsApp inquiry helpers remain authoritative.
+- Keep the hero display title's `1.24` line height and descender padding in both responsive rules. Do not restore a filter on the gradient-clipped title.
+- Autoplay is disabled for reduced motion and lite devices. Keep idle carousels off the shared frame loop. Run `npm run typecheck`, `npm run build` and `npm run audit:css` after changing these surfaces.
+
 ---
 
 ## 🏛️ How the Content Pipeline Works
