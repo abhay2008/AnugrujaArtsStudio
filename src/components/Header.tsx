@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, X } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
@@ -112,15 +112,62 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   const [tickerFocused, setTickerFocused] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const dropdownWrapRef = useRef<HTMLDivElement>(null);
+  const dropdownButtonRef = useRef<HTMLButtonElement>(null);
+  /* Hover opens the flyout; a click while already hovered *pins* it open
+     (instead of instantly closing what the pointer just opened), and a
+     second click closes. Pointer-leave only closes an unpinned menu. */
+  const dropdownPinnedRef = useRef(false);
   const reducedMotion = useReducedMotion();
   const pathname = usePathname();
 
   useEffect(() => {
     setDrawerOpen(false);
+    dropdownPinnedRef.current = false;
     setDropdownOpen(false);
   }, [pathname]);
 
   useScrollLock(drawerOpen);
+
+  /* While the Products & Services flyout is open: Escape closes it and
+     returns focus to the trigger, a pointer down anywhere outside the wrapper
+     closes it, and keyboard focus leaving the wrapper closes it — the menu
+     can never linger over the page after the visitor has moved on. */
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!dropdownWrapRef.current?.contains(e.target as Node)) {
+        dropdownPinnedRef.current = false;
+        setDropdownOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        dropdownPinnedRef.current = false;
+        setDropdownOpen(false);
+        dropdownButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [dropdownOpen]);
+
+  const onDropdownTriggerClick = useCallback(() => {
+    if (!dropdownOpen) {
+      dropdownPinnedRef.current = true;
+      setDropdownOpen(true);
+    } else if (!dropdownPinnedRef.current) {
+      /* Opened by the hover the click rode in on — pin it, don't slam it shut. */
+      dropdownPinnedRef.current = true;
+    } else {
+      dropdownPinnedRef.current = false;
+      setDropdownOpen(false);
+    }
+  }, [dropdownOpen]);
 
   // Escape closes the drawer.
   useEffect(() => {
@@ -250,7 +297,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
           expanded ? 'gallery-header--expanded' : ''
         }`}
       >
-        <div className="gallery-header-bar flex min-h-[4.5em] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_auto] xl:gap-6 xl:px-8">
+        <div className="gallery-header-bar flex min-h-[3.35em] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 sm:min-h-[3.9em] xl:grid xl:grid-cols-[minmax(0,1fr)_auto_auto] xl:gap-6 xl:px-8">
           {/* ── Zone 1 · crest + brand name ──
               The wordmark is one face of a two-face ticker: occasionally the
               trending teaser fades into this exact footprint (no layout
@@ -320,15 +367,27 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
             </Link>
 
             <div
+              ref={dropdownWrapRef}
               className="relative"
               onMouseEnter={() => setDropdownOpen(true)}
-              onMouseLeave={() => setDropdownOpen(false)}
+              onMouseLeave={() => {
+                if (!dropdownPinnedRef.current) setDropdownOpen(false);
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                  dropdownPinnedRef.current = false;
+                  setDropdownOpen(false);
+                }
+              }}
             >
               <button
                 type="button"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+                ref={dropdownButtonRef}
+                id="products-services-menu-button"
+                onClick={onDropdownTriggerClick}
                 aria-expanded={dropdownOpen}
                 aria-haspopup="true"
+                aria-controls="products-services-menu"
                 className="gallery-nav-link inline-flex items-center gap-1"
               >
                 Products &amp; Services
@@ -338,17 +397,28 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
               </button>
 
               {dropdownOpen && (
-                <div className="glass-panel-sunset absolute right-0 top-full z-50 mt-2 flex w-64 flex-col rounded-2xl border border-studio-gold/25 py-2.5 shadow-2xl">
+                <div
+                  id="products-services-menu"
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="products-services-menu-button"
+                  className="gallery-dropdown-panel absolute right-0 top-full z-50 mt-2 flex w-64 flex-col rounded-2xl py-2.5 shadow-2xl"
+                >
                   {PRODUCT_LINKS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`gallery-nav-dropdown ${item.sub ? 'pl-9 text-xs' : ''} ${
-                        item.top ? 'mt-1 border-t border-purple-800/40 pt-2.5' : ''
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
+                    <Fragment key={item.href}>
+                      {item.top && <span className="gallery-dropdown-divider" aria-hidden="true" />}
+                      <Link
+                        href={item.href}
+                        role="menuitem"
+                        onClick={() => {
+                          dropdownPinnedRef.current = false;
+                          setDropdownOpen(false);
+                        }}
+                        className={`gallery-nav-dropdown ${item.sub ? 'gallery-nav-dropdown--sub' : ''}`}
+                      >
+                        {item.label}
+                      </Link>
+                    </Fragment>
                   ))}
                 </div>
               )}

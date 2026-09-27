@@ -10,7 +10,7 @@ import { isPriceConfirmed, priceNote, publicPriceLabel } from '@/lib/price';
 import { paintingInquiryLink } from '@/lib/inquiry';
 import { subscribe, type FrameSubscription } from '@/lib/frameLoop';
 import { isConstrainedConnection, usePerfTier } from '@/lib/perfTier';
-import { hasImageVariants, imageSize, imageUrl, lightboxWidth } from '@/lib/imageSrc';
+import { hasImageVariants, imageSize, imageUrl, lightboxWidth, lqipUrl } from '@/lib/imageSrc';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { readOsTag } from '@/lib/osTier';
 
@@ -258,6 +258,15 @@ export default function Carousel3D({
      tears the image while animating instead of just costing frames. */
   const blurAllowed = tier === 'full' && readOsTag() !== 'windows';
 
+  /* Low-power hardware and reduced-motion visitors get the same carousel on a
+     flat plane: translateX + scale + opacity only. Multi-layer 3D projections
+     (perspective + rotateY + translateZ per card) force the mobile GPU raster
+     pipeline to re-composite several transformed layers per frame — that is
+     what drained batteries and stuttered touch on integrated graphics. The
+     layout math (offsets, spacing, snapping, wrap) is identical; only the
+     projection written to each card changes. */
+  const flat = tier === 'lite' || reducedMotion;
+
   const posRef = useRef(0);
   const targetRef = useRef(0);
   const velRef = useRef(0);
@@ -343,12 +352,14 @@ export default function Carousel3D({
       const blur = Math.round(L.blur * 100) / 100;
       const zIndex = 140 - Math.round(abs * 50);
       const clickable = abs <= 1.4;
-      const payload = `${x}|${y}|${z}|${rotateY}|${rotateZ}|${scale}|${opacity}|${brightness}|${blur}|${zIndex}|${clickable}`;
+      const payload = `${x}|${y}|${z}|${rotateY}|${rotateZ}|${scale}|${opacity}|${brightness}|${blur}|${zIndex}|${clickable}|${flat ? 'F' : '3'}`;
 
       if (cache[i] === payload) continue;
       cache[i] = payload;
 
-      el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
+      el.style.transform = flat
+        ? `translate3d(calc(-50% + ${x}px), -50%, 0) scale(${scale})`
+        : `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
       el.style.opacity = String(opacity);
       el.style.zIndex = String(zIndex);
       /* Brightness is a cheap per-pixel multiply — safe even under Windows
@@ -371,7 +382,7 @@ export default function Carousel3D({
         el.classList.toggle('is-live', shouldBeLive);
       }
     }
-  }, [blurAllowed, count, spacing, variant]);
+  }, [blurAllowed, count, flat, spacing, variant]);
 
   /**
    * One integration step. Returns false once the carousel has settled, which is
@@ -1082,6 +1093,21 @@ export default function Carousel3D({
                   className={`c3d-card-media cursor-zoom-in${isCentre ? ' is-centre' : ''}`}
                 >
                   {nearCentre && (
+                    /* Ambient matte behind the contained image: while a photo's
+                       true ratio is unknown (fresh upload, no manifest entry)
+                       the frame briefly keeps its default shell, and this
+                       blurred echo turns the letterbox into gallery matting.
+                       Once the frame fits the photo exactly, the image covers
+                       it completely. */
+                    <span
+                      className="c3d-ambient-underlay"
+                      aria-hidden="true"
+                      style={{
+                        backgroundImage: `url("${(lqipUrl(item.src) ?? imageUrl(item.src, 480)).replace(/["\\]/g, '')}")`,
+                      }}
+                    />
+                  )}
+                  {nearCentre && (
                     <Image
                       src={item.src}
                       alt={item.title}
@@ -1194,7 +1220,7 @@ export default function Carousel3D({
       )}
 
       {showInfo && current && isRail && (
-        <div className="c3d-plaque mt-4 flex items-center gap-3 px-3 py-2.5 sm:px-4">
+        <div className="c3d-plaque mt-3 flex items-center gap-3 px-3 py-2.5 sm:px-4">
           <span className="c3d-plaque-no hidden shrink-0 sm:inline">
             Plate {pad2(index + 1)}
           </span>
@@ -1228,7 +1254,7 @@ export default function Carousel3D({
       {showInfo && current && isDeck && (
         /* Story plate: name + category up top, a two-line description beneath —
            every workshop image carries its own explanation. */
-        <div className="c3d-deck-plate c3d-deck-plate--story mt-3 px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="c3d-deck-plate c3d-deck-plate--story mt-2 px-4 py-2.5 sm:px-5">
           <div className="flex items-center gap-3">
             <span className="c3d-deck-no">{pad2(index + 1)}</span>
             <p className="c3d-story-title min-w-0 flex-1">{current.title}</p>
@@ -1243,7 +1269,7 @@ export default function Carousel3D({
       )}
 
       {showInfo && current && isPolaroid && (
-        <div className="mt-4 text-center">
+        <div className="mt-2.5 text-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={current.id}
@@ -1281,7 +1307,7 @@ export default function Carousel3D({
       )}
 
       {isRail && (
-        <div className="mt-3 flex flex-col items-center gap-2.5">
+        <div className="mt-2.5 flex flex-col items-center gap-2">
           <div className="flex w-full items-center gap-3">
             <span className="c3d-counter shrink-0 tabular-nums">
               {pad2(index + 1)}
@@ -1310,7 +1336,7 @@ export default function Carousel3D({
       )}
 
       {isDeck && (
-        <div className="mt-3 flex flex-col items-center gap-2">
+        <div className="mt-2 flex flex-col items-center gap-1.5">
           <div className="flex items-center gap-3">
             <button type="button" disabled={count < 2} onClick={prev} aria-label="Previous artwork" className="c3d-round">
               <ChevronLeft className="h-5 w-5" />
@@ -1333,7 +1359,7 @@ export default function Carousel3D({
       )}
 
       {isPolaroid && (
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
           <button type="button" onClick={prev} aria-label="Previous artwork" className="c3d-text-btn">
             ‹ Prev
           </button>
