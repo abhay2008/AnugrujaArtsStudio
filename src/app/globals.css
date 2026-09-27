@@ -131,7 +131,14 @@
   --header-underlay: #12071f;
   --quicknav-underlay: #1c0f2c;
   --vitrine-bg: linear-gradient(180deg, rgba(42, 18, 62, 0.5) 0%, rgba(22, 8, 36, 0.55) 100%);
-  --panel-sunset-bg: linear-gradient(135deg, rgba(40, 16, 58, 0.55) 0%, rgba(24, 10, 38, 0.58) 100%);
+  /* Frosted lacquer, not clear glass: panels must stay legible over artwork
+     even when backdrop-filter fails to composite (Windows iGPU stacks). */
+  --panel-sunset-bg: linear-gradient(135deg, rgba(40, 16, 58, 0.9) 0%, rgba(24, 10, 38, 0.92) 100%);
+  /* Navigation flyout: near-opaque so zero background text bleeds through. */
+  --dropdown-lacquer: linear-gradient(160deg, rgba(26, 8, 42, 0.97) 0%, rgba(18, 5, 29, 0.98) 100%);
+  --dropdown-border: rgba(212, 175, 55, 0.35);
+  --dropdown-bevel: rgba(255, 255, 255, 0.1);
+  --dropdown-divider: rgba(242, 215, 112, 0.22);
   /* Translucent on purpose: the edge fades sit over the page's ambient orbs,
      so an opaque band shows a hard step where the stage clips it. */
   --carousel-fade-peak: rgba(16, 4, 22, 0.62);
@@ -160,6 +167,10 @@
   --nav-dropdown-hover-bg: rgba(249, 115, 22, 0.12);
   --nav-dropdown-hover-text: #fff;
   --scrollbar-track: rgba(38, 10, 58, 0.6);
+  --scrollbar-thumb: linear-gradient(180deg, #f2d770, #d4af37, #996515);
+  --scrollbar-thumb-hover: linear-gradient(180deg, #fceda2, #e5c158, #b8860b);
+  /* Solid mid-tone for the W3C `scrollbar-color` engine (no gradients there). */
+  --scrollbar-thumb-flat: #d4af37;
   --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.35);
   --shimmer-a: #f0df2a;
   --shimmer-b: #fff7c2;
@@ -255,7 +266,13 @@
   --header-underlay: #f6f1e9;
   --quicknav-underlay: #fdfaf4;
   --vitrine-bg: linear-gradient(180deg, rgba(253, 250, 246, 0.8) 0%, rgba(246, 240, 230, 0.78) 100%);
-  --panel-sunset-bg: linear-gradient(135deg, rgba(252, 246, 238, 0.82) 0%, rgba(246, 238, 228, 0.8) 100%);
+  /* Frosted alabaster lacquer — cards stay readable over the paper grain. */
+  --panel-sunset-bg: linear-gradient(135deg, rgba(255, 253, 249, 0.94) 0%, rgba(250, 244, 234, 0.93) 100%);
+  /* Navigation flyout: near-opaque cotton-paper lacquer. */
+  --dropdown-lacquer: linear-gradient(160deg, rgba(255, 252, 248, 0.98) 0%, rgba(250, 243, 232, 0.98) 100%);
+  --dropdown-border: rgba(140, 106, 30, 0.35);
+  --dropdown-bevel: rgba(255, 255, 255, 0.9);
+  --dropdown-divider: rgba(140, 106, 30, 0.22);
   --carousel-fade-peak: rgba(247, 243, 235, 0.85);
   --gold-text: #6b4f12;
   --color-gold: #7a5c1e;
@@ -282,6 +299,11 @@
   --nav-dropdown-hover-bg: rgba(180, 83, 9, 0.1);
   --nav-dropdown-hover-text: #1a1612;
   --scrollbar-track: rgba(122, 94, 24, 0.1);
+  /* Burnished gold-ochre on paper — the dark neon-orange thumb was jarring
+     against the alabaster canvas. */
+  --scrollbar-thumb: linear-gradient(180deg, #c29d38, #966f1a, #6e4e0b);
+  --scrollbar-thumb-hover: linear-gradient(180deg, #d4af37, #ab8122, #7a5710);
+  --scrollbar-thumb-flat: #966f1a;
   --shadow-soft: 0 12px 36px rgba(90, 70, 50, 0.09);
   --shimmer-a: #8f6f1a;
   --shimmer-b: #c9a227;
@@ -294,6 +316,11 @@ html {
      than white. Owned by <html> now that <body> no longer paints a background
      (see body::before below). */
   background-color: var(--page-bg-fallback);
+  /* W3C scrollbar spec (Firefox 64+, Chromium 121+, Safari 17.4+): without
+     this, non-WebKit engines ignore the WebKit rules below and paint a
+     jarring stock OS scrollbar over the atelier canvas. */
+  scrollbar-color: var(--scrollbar-thumb-flat) var(--scrollbar-track);
+  scrollbar-width: thin;
 }
 
 body,
@@ -375,8 +402,8 @@ body::before {
 
 .text-section-lead {
   font-weight: 500;
-  font-size: clamp(1rem, 1.1vw + 0.4rem, 1.18rem);
-  line-height: 1.66;
+  font-size: clamp(0.95rem, 1.1vw + 0.4rem, 1.125rem);
+  line-height: 1.55;
   color: var(--text-soft);
 }
 
@@ -583,6 +610,8 @@ body::before {
    border and radius sit directly on the image edges; the name/description
    get their own reserved row underneath, outside the frame. */
 .c3d-card-shell {
+  --c3d-fit-w: min(var(--c3d-card-w), calc(var(--c3d-stage-width, 400px) * 0.78));
+  --c3d-fit-h: min(var(--c3d-card-h), calc(var(--c3d-stage-measured-height, 450px) - 48px - var(--c3d-matte-h, 0px)));
   width: var(--c3d-card-w);
   height: var(--c3d-card-h);
   contain: layout paint style;
@@ -759,9 +788,9 @@ body::before {
    Variant 1 — SPOTLIGHT: glossy cinematic coverflow (Buy Paintings)
    ---------------------------------------------------------------- */
 .c3d-root--spotlight {
-  --c3d-card-w: clamp(200px, 68vw, 420px);
-  --c3d-card-h: clamp(240px, 44vh, 520px);
-  --c3d-caption-h: 3.05rem;
+  --c3d-card-w: clamp(200px, 64vw, 400px);
+  --c3d-card-h: clamp(220px, 36vh, 380px);
+  --c3d-caption-h: 2.8rem;
   --c3d-radius: 1rem;
   --c3d-border: 1px solid rgba(234, 179, 8, 0.2);
   --c3d-border-centre: 1px solid rgba(234, 179, 8, 0.45);
@@ -774,7 +803,7 @@ body::before {
 
 .c3d-stage--spotlight {
   flex: 1 1 auto;
-  min-height: clamp(360px, 48vh, 560px);
+  min-height: clamp(280px, 42vh, 440px);
   height: var(--c3d-stage-height, auto);
   perspective: 1500px;
   perspective-origin: 50% 50%;
@@ -800,9 +829,9 @@ body::before {
    ---------------------------------------------------------------- */
 .c3d-root--rail {
   /* Kept narrower on phones so the neighbouring plates stay tappable. */
-  --c3d-card-w: clamp(170px, 56vw, 470px);
-  --c3d-card-h: clamp(280px, 50vh, 560px);
-  --c3d-caption-h: 3.3rem;
+  --c3d-card-w: clamp(170px, 54vw, 440px);
+  --c3d-card-h: clamp(230px, 36vh, 390px);
+  --c3d-caption-h: 3rem;
   --c3d-radius: 0.35rem;
   --c3d-border: 1px solid rgba(242, 215, 112, 0.35);
   --c3d-border-centre: 2px solid rgba(242, 215, 112, 0.85);
@@ -811,7 +840,7 @@ body::before {
 }
 
 .c3d-stage--rail {
-  height: var(--c3d-stage-height, clamp(340px, 54vh, 680px));
+  height: var(--c3d-stage-height, clamp(270px, 40vh, 440px));
   perspective: 1500px;
   perspective-origin: 50% 50%;
   transform-style: preserve-3d;
@@ -840,9 +869,12 @@ body::before {
    Variant 3 — DECK: fanned card stack with a numbered counter
    ---------------------------------------------------------------- */
 .c3d-root--deck {
-  --c3d-card-w: clamp(200px, 66vw, 400px);
-  --c3d-card-h: clamp(300px, 52vh, 580px);
-  --c3d-caption-h: 3.4rem;
+  /* Balanced ~1:1.1 shell instead of a tall portrait one: landscape workshop
+     photos fit the frame instead of floating in vertical letterbox voids, and
+     the reclaimed height keeps captions + controls inside the laptop fold. */
+  --c3d-card-w: clamp(240px, 55vw, 380px);
+  --c3d-card-h: clamp(260px, 38vh, 420px);
+  --c3d-caption-h: 3rem;
   --c3d-radius: 0.75rem;
   --c3d-border: 1px solid rgba(242, 215, 112, 0.22);
   --c3d-border-centre: 1px solid rgba(242, 215, 112, 0.6);
@@ -851,7 +883,7 @@ body::before {
 }
 
 .c3d-stage--deck {
-  height: var(--c3d-stage-height, clamp(340px, 56vh, 700px));
+  height: var(--c3d-stage-height, clamp(280px, 42vh, 440px));
   perspective: 1500px;
   perspective-origin: 50% 50%;
   transform-style: preserve-3d;
@@ -915,8 +947,8 @@ body::before {
    Variant 4 — POLAROID: flat photo wall of tilted matte prints
    ---------------------------------------------------------------- */
 .c3d-root--polaroid {
-  --c3d-card-w: clamp(190px, 62vw, 380px);
-  --c3d-card-h: clamp(260px, 46vh, 500px);
+  --c3d-card-w: clamp(190px, 58vw, 360px);
+  --c3d-card-h: clamp(220px, 34vh, 370px);
   --c3d-caption-h: 4.1rem;
   --c3d-radius: 0.25rem;
   --c3d-border: 1px solid rgba(255, 255, 255, 0.35);
@@ -926,7 +958,7 @@ body::before {
 }
 
 .c3d-stage--polaroid {
-  height: var(--c3d-stage-height, clamp(320px, 52vh, 640px));
+  height: var(--c3d-stage-height, clamp(260px, 40vh, 420px));
   perspective: none;
   transform-style: preserve-3d;
 }
@@ -1045,64 +1077,78 @@ body::before {
 }
 
 /* Wide desktop layouts: use the available horizontal canvas instead of
-   letting fixed viewport heights make the cards feel undersized or clipped. */
+   letting fixed viewport heights make the cards feel undersized or clipped.
+   Stage and card heights stay inside the vertical-economy budget
+   (≤ 460px) even on 4K canvases — width, not height, absorbs the extra room. */
 @media (min-width: 1280px) {
   .c3d-root--spotlight {
-    --c3d-card-w: clamp(360px, 31vw, 520px);
-    --c3d-card-h: clamp(380px, 58vh, 620px);
+    --c3d-card-w: clamp(320px, 28vw, 460px);
+    --c3d-card-h: clamp(300px, 40vh, 420px);
   }
 
   .c3d-root--rail {
-    --c3d-card-w: clamp(320px, 34vw, 540px);
-    --c3d-card-h: clamp(390px, 58vh, 640px);
+    --c3d-card-w: clamp(300px, 30vw, 500px);
+    --c3d-card-h: clamp(280px, 40vh, 420px);
   }
 
   .c3d-root--deck {
-    --c3d-card-w: clamp(340px, 31vw, 500px);
-    --c3d-card-h: clamp(400px, 60vh, 660px);
+    --c3d-card-w: clamp(320px, 26vw, 420px);
+    --c3d-card-h: clamp(300px, 40vh, 420px);
   }
 
   .c3d-root--polaroid {
-    --c3d-card-w: clamp(320px, 29vw, 480px);
-    --c3d-card-h: clamp(360px, 56vh, 600px);
+    --c3d-card-w: clamp(280px, 25vw, 420px);
+    --c3d-card-h: clamp(270px, 38vh, 400px);
+  }
+
+  .c3d-stage--rail {
+    height: var(--c3d-stage-height, clamp(340px, 44vh, 460px));
+  }
+
+  .c3d-stage--deck {
+    height: var(--c3d-stage-height, clamp(350px, 44vh, 460px));
+  }
+
+  .c3d-stage--polaroid {
+    height: var(--c3d-stage-height, clamp(330px, 42vh, 440px));
   }
 }
 
 @media (min-width: 1536px) {
   .c3d-root--spotlight {
-    --c3d-card-w: min(34vw, 560px);
+    --c3d-card-w: min(30vw, 500px);
   }
 
   .c3d-root--rail {
-    --c3d-card-w: min(36vw, 580px);
+    --c3d-card-w: min(32vw, 540px);
   }
 
   .c3d-root--deck {
-    --c3d-card-w: min(34vw, 540px);
+    --c3d-card-w: min(28vw, 440px);
   }
 
   .c3d-root--polaroid {
-    --c3d-card-w: min(32vw, 520px);
+    --c3d-card-w: min(26vw, 440px);
   }
 }
 
 /* Short viewports — pair with the height-locked showcase section */
 @media (max-height: 700px) {
   .c3d-root--spotlight {
-    --c3d-card-h: clamp(200px, 40vh, 440px);
+    --c3d-card-h: clamp(190px, 34vh, 340px);
     --c3d-caption-h: 2.6rem;
   }
 
   .c3d-root--rail {
-    --c3d-card-h: clamp(220px, 42vh, 440px);
+    --c3d-card-h: clamp(190px, 34vh, 340px);
   }
 
   .c3d-root--deck {
-    --c3d-card-h: clamp(230px, 44vh, 460px);
+    --c3d-card-h: clamp(200px, 34vh, 340px);
   }
 
   .c3d-root--polaroid {
-    --c3d-card-h: clamp(210px, 40vh, 420px);
+    --c3d-card-h: clamp(180px, 32vh, 320px);
     --c3d-caption-h: 3.4rem;
   }
 }
@@ -1648,6 +1694,10 @@ body.has-quicknav .site-footer {
 /* ------------------------------- */
 /* Custom Scrollbar                */
 /* ------------------------------- */
+/* Dual-engine spec: the W3C `scrollbar-color`/`scrollbar-width` pair lives on
+   `html` above; these WebKit/Blink rules supply the gradient thumb. Both read
+   theme tokens, so light mode gets burnished gold-ochre on paper instead of
+   the old hardcoded neon-orange gradient. */
 ::-webkit-scrollbar {
   width: 9px;
   height: 9px;
@@ -1658,12 +1708,15 @@ body.has-quicknav .site-footer {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f97316, #d1a515, #8a5a10);
-  border-radius: 6px;
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #fb923c, #f0df2a, #d1a515);
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }
 
 /* ------------------------------- */
@@ -2358,6 +2411,16 @@ body.has-quicknav .site-footer {
     opacity: 1 !important;
     transform: none !important;
   }
+  /* Framer-revealed blocks: never leave a server-rendered `opacity: 0` inline
+     style in charge of whether the content is readable. */
+  .journey-heading-wrap,
+  .chapter-card,
+  .atelier-accolades-section .section-title-wrap,
+  .accolade-card,
+  .outreach-item {
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .light-pool,
   .page-ambient-orb,
   .hero-emblem-ring-outer,
@@ -2743,7 +2806,7 @@ body.has-quicknav .site-footer {
    max-height/opacity/transform — a brief one-time layout animation, not a
    continuous one. */
 .gallery-header--expanded .gallery-header-bar {
-  min-height: 6.4em;
+  min-height: 5.2em;
 }
 .header-tagline {
   overflow: hidden;
@@ -2810,18 +2873,82 @@ body.has-quicknav .site-footer {
   border-bottom-color: rgba(122, 94, 24, 0.4);
 }
 
+/* ── Products & Services flyout — lacquered, opaque, compositing-proof ──
+   The old panel was a 55%-alpha glass sheet: on Windows/iGPU stacks the
+   backdrop blur frequently fails to composite, leaving page text and artwork
+   bleeding straight through the menu. The lacquer below is near-opaque on its
+   own, so the blur is decorative garnish and never load-bearing. */
+.gallery-dropdown-panel {
+  background: var(--dropdown-lacquer);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid var(--dropdown-border);
+  box-shadow:
+    inset 0 1px 0 var(--dropdown-bevel),
+    0 24px 60px -18px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme='light'] .gallery-dropdown-panel {
+  box-shadow:
+    inset 0 1px 0 var(--dropdown-bevel),
+    0 18px 48px -16px rgba(90, 70, 50, 0.28);
+}
+
+.gallery-dropdown-divider {
+  height: 1px;
+  margin: 0.35rem 0.9rem;
+  background: linear-gradient(90deg, transparent, var(--dropdown-divider), transparent);
+}
+
 .gallery-nav-dropdown {
+  position: relative;
   display: block;
-  padding: 0.5rem 1rem;
+  padding: 0.55rem 2rem 0.55rem 1rem;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.85rem;
+  font-weight: 500;
   color: var(--nav-dropdown-text);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-.gallery-nav-dropdown:hover {
+/* Subtle gold chevron that slides in on hover/focus */
+.gallery-nav-dropdown::after {
+  content: '›';
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translate(-4px, -50%);
+  opacity: 0;
+  color: var(--color-gold);
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.gallery-nav-dropdown:hover,
+.gallery-nav-dropdown:focus-visible {
   background: var(--nav-dropdown-hover-bg);
   color: var(--nav-dropdown-hover-text);
+}
+
+.gallery-nav-dropdown:hover::after,
+.gallery-nav-dropdown:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.gallery-nav-dropdown--sub {
+  padding-left: 2.25rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-nav-dropdown,
+  .gallery-nav-dropdown::after {
+    transition: none;
+  }
 }
 
 /* Light mode: warm body copy that still uses amber/yellow utility classes */
@@ -3001,27 +3128,20 @@ html[data-os='windows'] .site-brand-line {
   color: var(--gold-text);
 }
 
-/* ── Brand ticker: the wordmark is one face of a two-face roll ──
-   Occasionally the trending announcement rolls up into the wordmark's exact
-   footprint for a few seconds (timers live in Header.tsx). The brand face
-   stays in flow and keeps sizing the row, so the header's height and width
-   NEVER change — the teaser face merely overlays it, absolutely positioned.
-   Only transform + opacity animate, ~0.55s per swap, nothing continuous.
-   Transforms sit on the faces (ancestors of the gradient-clipped spans),
-   never inside them — transformed children of a background-clip:text parent
-   make Chrome drop the text paint (see the mobile stacked-lines note above). */
+/* The in-flow brand sizes both ticker faces. Only opacity changes; neither
+   face may travel outside the reserved header footprint. */
 .brand-swap {
   position: relative;
   display: flex;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  padding-block: 0.2rem;
 }
 
 .brand-face {
   min-width: 0;
-  transition:
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.45s ease;
-  will-change: transform;
+  transition: opacity 0.3s ease;
 }
 
 .brand-face--brand {
@@ -3039,17 +3159,17 @@ html[data-os='windows'] .site-brand-line {
   overflow: hidden;
   text-decoration: none;
   opacity: 0;
-  transform: translateY(115%);
+  visibility: hidden;
   pointer-events: none;
 }
 
 .brand-swap[data-swap='on'] .brand-face--brand {
-  transform: translateY(-115%);
   opacity: 0;
+  visibility: hidden;
 }
 
 .brand-swap[data-swap='on'] .brand-face--teaser {
-  transform: translateY(0);
+  visibility: visible;
   opacity: 1;
   pointer-events: auto;
 }
@@ -3057,6 +3177,7 @@ html[data-os='windows'] .site-brand-line {
 .brand-swap-text {
   display: flex;
   min-width: 0;
+  width: 100%;
   flex-direction: column;
 }
 
@@ -3246,8 +3367,10 @@ html[data-os='windows'] .site-brand-line {
 
 [data-theme='light'] [class*='text-amber-100'],
 [data-theme='light'] [class*='text-amber-200'],
+[data-theme='light'] [class*='text-amber-300'],
 [data-theme='light'] [class*='text-yellow-50'],
-[data-theme='light'] [class*='text-yellow-100'] {
+[data-theme='light'] [class*='text-yellow-100'],
+[data-theme='light'] [class*='text-yellow-200'] {
   color: var(--text-muted);
 }
 
@@ -3906,9 +4029,11 @@ html[data-os='windows'] .site-brand-line {
 
 .display-heading {
   max-width: 100%;
-  font-size: clamp(1.9rem, 5vw, 3.2rem);
+  /* Section titles stay inside the compact editorial scale: big enough to
+     command the room, small enough that heading + content fit one fold. */
+  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.16;
   letter-spacing: 0.03em;
   text-wrap: balance;
   overflow-wrap: break-word;
@@ -3951,12 +4076,12 @@ html[data-os='windows'] .site-brand-line {
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(3rem, 8vh, 5.5rem) clamp(1rem, 4vw, 1.75rem);
+  padding: clamp(2rem, 5vh, 3.5rem) clamp(1rem, 4vw, 1.75rem);
   scroll-margin-top: 5.5rem;
 }
 
 .atelier-journey-section {
-  padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
+  padding-bottom: clamp(1.25rem, 3vh, 2rem);
 }
 
 @media (min-width: 1280px) {
@@ -4177,12 +4302,12 @@ html[data-os='windows'] .site-brand-line {
 .journey-chapters-col {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.25rem, 3vw, 2rem);
+  gap: clamp(1rem, 2.4vw, 1.6rem);
 }
 
 .chapter-card {
   position: relative;
-  padding: clamp(1.2rem, 2.6vw, 1.8rem);
+  padding: clamp(1.1rem, 2.2vw, 1.5rem);
   border-radius: 6px;
   border: 1px solid var(--atelier-hairline);
   background: var(--atelier-card-bg);
@@ -4266,7 +4391,7 @@ html[data-os='windows'] .site-brand-line {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: clamp(1rem, 2.5vw, 1.6rem);
-  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
 }
 
 @media (min-width: 1280px) {
@@ -4920,9 +5045,9 @@ html[data-os='windows'] .site-brand-line {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 4.6em);
+  min-height: calc(100dvh - 4em);
   overflow: hidden;
-  padding: clamp(1.5rem, 4vh, 2.75rem) clamp(1rem, 4vw, 2.5rem) clamp(1.75rem, 5vh, 3rem);
+  padding: clamp(1.1rem, 3vh, 2rem) clamp(1rem, 4vw, 2.5rem) clamp(1.25rem, 3.5vh, 2.25rem);
   isolation: isolate;
   scroll-margin-top: 0;
 }
@@ -4972,7 +5097,7 @@ html[data-os='windows'] .site-brand-line {
   max-width: 1280px;
   margin: auto;
   flex-direction: column;
-  gap: clamp(1.5rem, 3.5vh, 2.6rem);
+  gap: clamp(1rem, 2.5vh, 1.8rem);
 }
 
 .atelier-hero-grid {
@@ -4992,7 +5117,7 @@ html[data-os='windows'] .site-brand-line {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.6rem, 1.6vh, 1rem);
+  gap: clamp(0.5rem, 1.3vh, 0.85rem);
   text-align: center;
   position: relative;
   z-index: 4;
@@ -5045,7 +5170,9 @@ html[data-os='windows'] .site-brand-line {
   font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   font-weight: 700;
   font-size: clamp(2.1rem, 6.6vw, 3.9rem);
-  line-height: 1.06;
+  line-height: 1.24;
+  padding-block: 0.08em 0.18em;
+  overflow: visible;
   letter-spacing: 0.008em;
   text-wrap: balance;
   background: var(--atelier-headline-fill);
@@ -5073,7 +5200,7 @@ html[data-os='windows'] .site-brand-line {
   font-style: italic;
   font-weight: 600;
   font-size: clamp(1.05rem, 2.4vw, 1.42rem);
-  line-height: 1.4;
+  line-height: 1.32;
   color: var(--text-primary);
   opacity: 0.95;
 }
@@ -5084,7 +5211,7 @@ html[data-os='windows'] .site-brand-line {
 .hero-cta-cluster {
   display: flex;
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 0.35rem;
   flex-direction: column;
   align-items: stretch;
   gap: 0.75rem;
@@ -5388,12 +5515,7 @@ html {
 /* ------------------------------- */
 /* Spotlight bar                     */
 /* ------------------------------- */
-/* One announcement, two homes. The in-flow slot sits directly below the hero's
-   Buy Paintings / Explore Classes pair: it is the pill on arrival, it reserves
-   its own room, and it is what renders without JavaScript, under reduced motion
-   and on the lite tier. `.spotlight-dock` is the second, fixed copy that takes
-   over on the first scroll and rides up onto the header's crest — both are laid
-   out by the rules below, so the hand-over is pixel-identical either way. */
+/* The hero announcement stays in flow at every scroll position. */
 .spotlight-slot {
   display: flex;
   width: 100%;
@@ -5403,102 +5525,8 @@ html {
 @media (min-width: 1024px) {
   .spotlight-slot {
     justify-content: flex-start;
-    /* The hero column is a little narrower than the announcement wants to be,
-       and a clipped headline reads worse than a pill that runs slightly past
-       the column's edge. Desktop only: the row is centred on smaller screens
-       and wraps there instead. */
-    width: max-content;
-    max-width: calc(100% + 9rem);
+    max-width: 100%;
   }
-}
-
-/* While the dock owns the pill the in-flow copy keeps its box (the hero still
-   reserves the room) but leaves the paint and the accessibility tree, so there
-   is never a doubled link or a doubled announcement. */
-.spotlight-slot[data-enhanced='true'] .spotlight-pill {
-  visibility: hidden;
-}
-
-.spotlight-dock {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 44;
-  visibility: hidden;
-  pointer-events: none;
-  transform-origin: left top;
-  /* Deliberately transparent, and deliberately not blurred: Safari 26 samples
-     fixed/sticky boxes at the viewport edge when it tints browser chrome, and
-     it ignores glass painted on an inner element instead. */
-}
-
-.spotlight-dock[data-visible='true'] {
-  visibility: visible;
-}
-
-.spotlight-dock-track {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-}
-
-@media (min-width: 1024px) {
-  .spotlight-dock-track {
-    justify-content: flex-start;
-  }
-}
-
-.spotlight-dock .spotlight-pill {
-  pointer-events: auto;
-  transition: border-color 0.4s ease, box-shadow 0.4s ease,
-    background-color 0.4s ease;
-}
-
-/* Docked: the chip anchors to the crest and stops short of the header's own
-   controls, which is why it left-aligns on phones too. */
-.spotlight-dock[data-docked='true'] .spotlight-dock-track {
-  justify-content: flex-start;
-}
-
-.spotlight-dock[data-docked='true'] .spotlight-pill {
-  max-width: var(--dock-max-w, none);
-  /* Opaque and a shade brighter than the header it lands on: a frosted chip
-     let the crest it is supposed to cover read straight through it. The
-     gradient above stays, so the chip keeps the pill's identity. */
-  background-color: var(--spotlight-base-docked);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  /* Docked: the chip keeps the pill's own light source but turns the heat up a
-     notch — a warmer halo, so it still reads as the lit object on the header
-     rather than as another piece of header chrome. */
-  border-color: rgba(242, 215, 112, 0.62);
-  box-shadow:
-    0 18px 44px -18px rgba(0, 0, 0, 0.72),
-    0 0 0 1px rgba(212, 175, 55, 0.3),
-    0 0 32px -14px rgba(249, 115, 22, 0.6),
-    inset 0 1px 0 var(--glass-highlight),
-    inset 0 -20px 34px -24px var(--spotlight-inner);
-}
-
-[data-theme='light'] .spotlight-dock[data-docked='true'] .spotlight-pill {
-  border-color: rgba(140, 106, 30, 0.62);
-  box-shadow:
-    0 16px 36px -16px rgba(90, 70, 50, 0.35),
-    0 0 0 1px rgba(184, 151, 72, 0.3),
-    0 0 30px -14px rgba(212, 175, 55, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -20px 34px -24px var(--spotlight-inner);
-}
-
-/* The headline is what the header has no room for: it tightens away as the pill
-   arrives, leaving category · date · seats as the docked chip. */
-.spotlight-dock .spotlight-title {
-  transition: max-width 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-}
-
-.spotlight-dock[data-docked='true'] .spotlight-title {
-  max-width: 0;
-  opacity: 0;
 }
 
 /* Landing-page arrival — the pop the visitor is meant to notice. Held back
@@ -5557,10 +5585,6 @@ html[data-preloader='on'] .spotlight-slot .spotlight-pill {
   .spotlight-slot .spotlight-pill,
   .spotlight-pill::after {
     animation: none;
-  }
-  .spotlight-dock .spotlight-pill,
-  .spotlight-dock .spotlight-title {
-    transition: none;
   }
 }
 
@@ -5855,7 +5879,7 @@ html[data-preloader='on'] .spotlight-slot .spotlight-pill {
 
   .atelier-brand-title {
     font-size: clamp(1.85rem, 7.6vw, 2.45rem);
-    line-height: 1.12;
+    line-height: 1.24;
     letter-spacing: 0.01em;
     text-wrap: balance;
   }
@@ -6283,10 +6307,6 @@ html[data-preloader='on'] .spotlight-slot .spotlight-pill {
 [data-theme='light'] .atelier-quote {
   color: #5b2c6f;
   opacity: 1;
-}
-
-[data-theme='light'] .atelier-brand-title {
-  filter: drop-shadow(0 2px 8px rgba(140, 106, 30, 0.15));
 }
 
 /* ——— 4. Orbital crest: gilded rings + royal amethyst lacquer jewel core ——— */
@@ -7775,68 +7795,40 @@ html[data-perf='lite'] .chat-caret {
 }
 
 /* ================================================================
-   BELOW-FOLD RENDER CONTAINMENT
+   BELOW-FOLD LAYOUT CONTAINMENT
    ================================================================
-   The home page is around 10,000px tall, and every section of it used to be
-   styled, laid out and painted on load whether or not anyone ever scrolled
-   there. `content-visibility: auto` lets the browser skip all three for the
-   sections that are off screen and pay for them on approach — on a weak CPU
-   that takes most of the page out of the style/layout/paint path entirely.
+   These deep sections are contained so style/layout work inside them (carousel
+   captions swapping, reveal transitions, image loads) never invalidates the
+   rest of the page.
 
-   `contain-intrinsic-size: auto <estimate>` keeps the scrollbar honest before
-   the first render (the estimates below are measured section heights at a
-   phone width); the `auto` keyword then remembers the real height, so the
-   first render is the only one that uses a guess.
+   This used to be `content-visibility: auto` + `contain-intrinsic-size`
+   guesses. That skipped off-screen rendering, but every estimate was wrong by
+   hundreds of pixels on some breakpoint, so the moment a section un-skipped,
+   the document grew or shrank and the native scrollbar thumb visibly hitched
+   and resized under the visitor's cursor — a glitchy, broken feel that no
+   estimate tuning can fully remove (real heights vary continuously with
+   viewport width). The carousels already park their frame loops off-screen and
+   the images lazy-load, so the skip rendered very little extra savings.
+
+   `contain: layout style` keeps the genuinely valuable half (layout and
+   counter scoping) while the section's real height always participates in the
+   document — the scrollbar geometry is computed once and never moves.
 
    Deliberately NOT applied to:
-     • `#banner` / `.landing-hero` — above the fold, and the intro hands over
-       to it, so it must be laid out from the start;
+     • `#banner` / `.landing-hero` — above the fold;
      • `.atelier-journey-section` — its `.sticky-profile-card` is positioned
        against the page scroller and containment would trap it in its own box.
-   Carousels inside these sections are safe: each stage measures itself with a
-   ResizeObserver, which fires when containment releases the real size.
-
-   The risk to watch is the reveal engine: a skipped subtree has no boxes, so
-   an IntersectionObserver on its descendants can miss them and leave content
-   at `opacity: 0`. That is why `npm run audit:perf` measures exactly that —
-   the walk reports how many `.reveal` elements are still hidden, then parks
-   the page on each one and re-checks, and the budget is zero for both. It was
-   this metric that caught the harness's own short scroll, and it is what makes
-   this block safe to keep.
+   No `paint` containment: decorative overflow (orbs, edge fades) must not be
+   clipped, and no `position: fixed` descendants live inside these sections
+   (the chat dock and lightbox are portalled to <body>).
    ================================================================ */
-@supports (content-visibility: auto) {
-  #buy-paintings,
-  #workshops,
-  #achievements,
-  #three,
-  .landing-contact-bridge,
-  .site-footer {
-    content-visibility: auto;
-  }
-
-  #buy-paintings {
-    contain-intrinsic-size: auto 900px;
-  }
-
-  #workshops {
-    contain-intrinsic-size: auto 1400px;
-  }
-
-  #achievements {
-    contain-intrinsic-size: auto 1900px;
-  }
-
-  #three {
-    contain-intrinsic-size: auto 1500px;
-  }
-
-  .landing-contact-bridge {
-    contain-intrinsic-size: auto 420px;
-  }
-
-  .site-footer {
-    contain-intrinsic-size: auto 640px;
-  }
+#buy-paintings,
+#workshops,
+#achievements,
+#three,
+.landing-contact-bridge,
+.site-footer {
+  contain: layout style;
 }
 
 /* ================================================================
@@ -8128,8 +8120,8 @@ html[data-os='windows'] .chapter-card {
 /* ── 3. dvh → vh cascade. Newer Windows engines ignore the second
         declaration; engines without dvh units fall back to it. ── */
 html[data-os='windows'] .atelier-hero-viewport {
-  min-height: calc(100vh - 4.6em);
-  min-height: calc(100dvh - 4.6em);
+  min-height: calc(100vh - 4em);
+  min-height: calc(100dvh - 4em);
 }
 
 @media (max-width: 560px) {
@@ -8571,5 +8563,285 @@ html:not([data-theme='light']) .c3d-root--spotlight .c3d-card-media:not(.is-cent
   .c3d-card-blurb {
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+}
+
+/* ================================================================
+   WINDOWS HIGH CONTRAST — forced-colors: active
+   ================================================================
+   Gradient-clipped headlines paint their glyphs with a transparent fill; the
+   forced palette replaces `color` but not always the clip, so they can vanish.
+   Give them real system ink, and keep the floating/overlay chrome outlined. */
+@media (forced-colors: active) {
+  .display-heading,
+  .profile-name,
+  .atelier-brand-title,
+  .gold-sunset-shimmer,
+  .showcase-title {
+    background: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    color: CanvasText !important;
+    -webkit-text-fill-color: CanvasText !important;
+  }
+
+  .chat-fab,
+  .chapter-card,
+  [role='dialog'][aria-modal='true'] button {
+    border: 1px solid ButtonText;
+    forced-color-adjust: auto;
+  }
+}
+
+/* Bounded header zones: announcements never compete with navigation. */
+.header-brand-zone {
+  flex: 1 1 0;
+  max-width: 24rem;
+}
+
+.brand-face--brand {
+  width: 100%;
+}
+
+.site-brand-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-block: 0.12em;
+}
+
+.brand-swap-cat {
+  color: var(--gold-text);
+}
+
+@media (max-width: 480px) {
+  .header-mobile-cluster > a {
+    display: none; /* All social links remain in the navigation drawer. */
+  }
+  .gallery-header .site-brand-title {
+    font-size: clamp(0.78rem, 3.7vw, 1rem);
+  }
+}
+
+[data-perf='lite'] .brand-face {
+  transition: none;
+}
+
+/* Each frame follows its photograph; the stage and controls stay stationary. */
+.c3d-root--polaroid {
+  --c3d-matte-h: 1.5rem;
+}
+
+.c3d-root--polaroid .c3d-card-caption {
+  height: var(--c3d-matte-h);
+  min-height: 0;
+  padding: 0;
+}
+
+.c3d-card-img,
+[data-theme='light'] .c3d-card-img {
+  background: transparent;
+}
+
+/* Ambient matte: a blurred, zoomed echo of the photo fills the frame wherever
+   the contained image cannot (chiefly fresh admin uploads whose aspect ratio
+   is not in the manifest yet — the frame only learns their true ratio after
+   the first load, so wide photos briefly sit letterboxed in the default
+   shell). Painted from the 32px LQIP derivative, so it costs a few hundred
+   bytes and one static raster; the blur never animates, so there is no
+   per-frame resample like the old card-level filter. The foreground image
+   sits above it (z-index 1) and covers it completely once the frame fits. */
+.c3d-ambient-underlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.15);
+  filter: blur(16px) saturate(1.12) brightness(0.8);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+[data-theme='light'] .c3d-ambient-underlay {
+  filter: blur(16px) saturate(1.05);
+  opacity: 0.38;
+}
+
+.c3d-card-img {
+  position: relative;
+  z-index: 1;
+}
+
+[data-perf='lite'] .c3d-ambient-underlay {
+  display: none;
+}
+
+/* Low-power tier: the physics loop swaps rotateY/rotateZ/translateZ for a
+   flat translateX + scale (see `flat` in Carousel3D.tsx), so the stage must
+   not keep a live perspective that would still force 3D compositing layers. */
+[data-perf='lite'] .c3d-stage {
+  perspective: none;
+}
+
+.registration-event-gallery {
+  min-width: 0;
+  align-self: center;
+  padding: 1rem 0.5rem;
+  background: var(--surface-inset);
+}
+
+.registration-event-gallery .c3d-root {
+  --c3d-card-w: 360px;
+  --c3d-card-h: 350px;
+}
+
+.registration-event-gallery .c3d-stage {
+  height: clamp(270px, 40vw, 400px);
+}
+
+.registration-event-gallery .c3d-ribbon {
+  display: none;
+}
+
+.registration-gallery-hint {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.registration-events-heading .display-heading {
+  max-width: 30ch;
+  margin-inline: auto;
+  font-size: clamp(1.3rem, 3vw, 2.25rem);
+  line-height: 1.22;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.registration-event-cta,
+.collector-showcase .buy-painting-btn {
+  background: linear-gradient(120deg, #f2d770, #d4af37);
+  color: #1a062b;
+}
+
+.registration-event-cta:hover {
+  box-shadow: 0 10px 26px rgba(212, 175, 55, 0.25);
+}
+
+.registration-event-type,
+.registration-event-seats,
+.registration-event-detail svg {
+  color: var(--gold-text);
+}
+
+.c3d-round:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.registration-event-card--text {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  .registration-event-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A collector's edit, with enough room for enlarged text and real metadata. */
+#buy-paintings.collector-showcase {
+  height: auto;
+  max-height: none;
+  gap: 1.25rem;
+}
+
+.collector-showcase .showcase-title {
+  max-width: 22ch;
+  margin-inline: auto;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.2;
+}
+
+.collector-assurances {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem 1.5rem;
+  padding-block: 0.85rem;
+  border-block: 1px solid var(--atelier-hairline);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.collector-assurances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.collector-assurances svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--gold-text);
+}
+
+.collector-showcase .c3d-stage--spotlight {
+  flex: none;
+  min-height: 0;
+  height: clamp(280px, 42vh, 440px);
+}
+
+@media (min-width: 1280px) {
+  .collector-showcase .c3d-stage--spotlight {
+    height: clamp(340px, 44vh, 460px);
+  }
+}
+
+.collector-showcase .c3d-card-media.is-centre {
+  border: 3px double #d4af37;
+}
+
+.collector-showcase .c3d-stage--spotlight::before {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(242, 215, 112, 0.12), transparent 65%),
+    radial-gradient(ellipse at 50% 95%, rgba(26, 6, 43, 0.5), transparent 60%);
+}
+
+.collector-work-details {
+  margin-top: 0.5rem;
+  color: var(--gold-text);
+  font-size: 0.8rem;
+}
+
+.collector-enquiry-note {
+  max-width: 44ch;
+  margin: 0.75rem auto 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.collector-showcase .c3d-spot-price {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.registration-event-gallery .c3d-deck-floor {
+  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.1), transparent 70%);
+}
+
+[data-perf='lite'] .collector-showcase .c3d-gloss,
+[data-perf='lite'] .collector-showcase .c3d-stage--spotlight::before,
+[data-perf='lite'] .collector-showcase .buy-painting-btn::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collector-showcase .c3d-gloss,
+  .collector-showcase .buy-painting-btn::after {
+    display: none;
   }
 }

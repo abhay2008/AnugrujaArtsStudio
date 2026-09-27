@@ -34,11 +34,11 @@ function LinkedinMark({ className = '' }: { className?: string }) {
 
 export default function Footer() {
   return (
-    <footer className="site-footer w-full py-12 px-4 border-t border-[var(--border-soft)] relative overflow-hidden">
+    <footer className="site-footer w-full py-10 px-4 border-t border-[var(--border-soft)] relative overflow-hidden">
       {/* Subtle sunset ambient glow */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-studio-sunset/10 blur-[80px] pointer-events-none" />
 
-      <Reveal className="max-w-4xl mx-auto flex flex-col items-center gap-5 text-center relative z-10">
+      <Reveal className="max-w-4xl mx-auto flex flex-col items-center gap-4 text-center relative z-10">
         {/* Mini logo + name */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="logo-chrome relative w-11 h-11 rounded-full overflow-hidden border group-hover:border-studio-sunset transition-colors">

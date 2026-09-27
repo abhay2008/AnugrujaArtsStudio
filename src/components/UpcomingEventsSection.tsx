@@ -1,9 +1,8 @@
 'use client';
 
 import { CalendarDays, Clock3, ExternalLink, MapPin, Users } from 'lucide-react';
-import { useLightbox } from '@/components/LightboxContext';
+import Carousel3D from '@/components/Carousel3D';
 import { eventRegistrationLink } from '@/lib/inquiry';
-import { responsiveImage } from '@/lib/imageSrc';
 import type { StudioEvent } from '@/lib/types';
 
 function eventImages(event: StudioEvent): string[] {
@@ -13,7 +12,6 @@ function eventImages(event: StudioEvent): string[] {
 }
 
 export default function UpcomingEventsSection({ events }: { events: StudioEvent[] }) {
-  const { openGallery } = useLightbox();
   if (events.length === 0) return null;
 
   return (
@@ -32,7 +30,8 @@ export default function UpcomingEventsSection({ events }: { events: StudioEvent[
       <div className="registration-events-list">
         {events.map((event) => {
           const images = eventImages(event);
-          const slides = images.map((src) => ({
+          const slides = images.map((src, index) => ({
+            id: `${event.id}-photo-${index}`,
             src,
             title: event.title,
             description: event.description,
@@ -40,29 +39,16 @@ export default function UpcomingEventsSection({ events }: { events: StudioEvent[
           }));
 
           return (
-            <article key={event.id} className="registration-event-card">
+            <article key={event.id} className={`registration-event-card${images.length ? '' : ' registration-event-card--text'}`}>
               {images.length > 0 && (
-                <div className={`registration-event-images ${images.length > 1 ? 'is-gallery' : ''}`}>
-                  {images.slice(0, 3).map((src, index) => (
-                    <button
-                      key={`${src}-${index}`}
-                      type="button"
-                      className="registration-event-image group"
-                      onClick={() => openGallery(slides, index)}
-                      aria-label={`View ${event.title} photo ${index + 1} larger`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {/* WebP derivative at the width this slot actually uses, with
-                          real dimensions so the card never shifts as it loads. */}
-                      <img
-                        {...responsiveImage(src, '(max-width: 640px) 92vw, 420px', 960)}
-                        alt={`${event.title} — photo ${index + 1}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <span className="registration-event-image-hint" aria-hidden>View larger</span>
-                    </button>
-                  ))}
+                <div className="registration-event-gallery">
+                  <Carousel3D
+                    items={slides}
+                    variant="deck"
+                    showInfo={false}
+                    label={`${event.title} event photos`}
+                  />
+                  <p className="registration-gallery-hint">Swipe to explore · Tap a photo to enlarge</p>
                 </div>
               )}
 

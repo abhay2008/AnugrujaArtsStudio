@@ -557,9 +557,14 @@ export default function ChatWidget() {
     </div>
   );
 
-  return (
+  /* The whole widget — launcher, nudge and panel — renders at <body> level.
+     Only the panel used to be portalled, so the launcher and nudge stayed
+     inside the route transition wrapper: any lingering transform on it turned
+     their `position: fixed` into "fixed to the page box", which parked the FAB
+     beside the footer instead of the viewport corner. */
+  return createPortal(
     <>
-      {open && createPortal(chatPanel, document.body)}
+      {open && chatPanel}
       {/* Contextual invite bubble — pops out of the launcher, never blocks it.
           The wrapper is pointer-events-none so it can never eat a tap meant
           for the FAB; only the bubble itself is clickable (opens the chat). */}
@@ -600,6 +605,7 @@ export default function ChatWidget() {
           <span key={pulseKey} className="chat-fab-pulse absolute inset-0 rounded-full" aria-hidden />
         )}
       </button>
-    </>
+    </>,
+    document.body
   );
 }

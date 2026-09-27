@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { GraduationCap, Palette, Scissors, Quote } from 'lucide-react';
 import { studioData } from '@/data/studioData';
 
@@ -16,29 +16,54 @@ const EDUCATION_ICONS = [GraduationCap, Scissors];
  * Left column is a sticky narrative stage (portrait, live chapter indicator,
  * credentials). Right column holds the scroll-driven chapter cards that
  * animate in with Framer Motion as they enter the viewport.
+ *
+ * Reveal rules:
+ *  • Motion props are identical on the server and the client. Reduced motion
+ *    is handled by `<MotionConfig reducedMotion="user">` in app/template.tsx;
+ *    branching here on Framer's `useReducedMotion` (true on the first client
+ *    render, false on the server) stranded the server-rendered
+ *    `opacity: 0` inline style, because React does not patch attribute
+ *    mismatches on hydration.
+ *  • Cards reveal once. `once: false` reverted every card to `opacity: 0` the
+ *    moment it dropped below the threshold, so a reader between two cards
+ *    could see an empty column.
+ *  • The chapter rail is driven by a separate observer on a thin centre band
+ *    of the viewport, so it is independent of card height, viewport height
+ *    and display scaling (125%/150% Windows viewports are only ~600–750px).
  */
 export default function ArtistJourneySection() {
-  const reducedMotion = useReducedMotion();
   const { artist, journey } = studioData;
   const { eyebrow, heading, metrics, chapters } = journey;
   const [activeIndex, setActiveIndex] = useState(0);
+  const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
-  const rise = (from: number) =>
-    reducedMotion
-      ? {}
-      : { initial: { opacity: 0, y: from }, whileInView: { opacity: 1, y: 0 } };
+  useEffect(() => {
+    const cards = cardRefs.current.filter((el): el is HTMLElement => Boolean(el));
+    if (!cards.length || typeof IntersectionObserver === 'undefined') return;
+
+    /* A 10%-tall band across the middle of the viewport: whichever card
+       crosses it is the chapter being read. Works for any card height. */
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const index = cards.indexOf(entry.target as HTMLElement);
+          if (index >= 0) setActiveIndex(index);
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [chapters.length]);
 
   return (
     <section id="journey" className="atelier-journey-section" aria-labelledby="journey-heading">
       <motion.header
         className="journey-heading-wrap"
-        {...(reducedMotion
-          ? {}
-          : {
-              initial: { opacity: 0, y: 26 },
-              whileInView: { opacity: 1, y: 0 },
-              viewport: { once: true, amount: 0.6 },
-            })}
+        initial={{ opacity: 0, y: 26 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.8, ease: EASE }}
       >
         <span className="eyebrow-gold">{eyebrow}</span>
@@ -120,11 +145,14 @@ export default function ArtistJourneySection() {
           {chapters.map((chapter, index) => (
             <motion.article
               key={chapter.num}
+              ref={(el) => {
+                cardRefs.current[index] = el;
+              }}
               className="chapter-card"
-              {...rise(52)}
-              onViewportEnter={() => setActiveIndex(index)}
-              viewport={{ once: false, amount: 0.4 }}
-              transition={{ duration: 0.8, ease: EASE, delay: reducedMotion ? 0 : 0.05 }}
+              initial={{ opacity: 0, y: 52 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.8, ease: EASE, delay: 0.05 }}
             >
               <div className="chapter-header">
                 <span className="chapter-tag">{chapter.tag}</span>

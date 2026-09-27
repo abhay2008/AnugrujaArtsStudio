@@ -29,13 +29,10 @@ export default function AccoladesSection() {
     <section id="achievements" className="atelier-accolades-section" aria-labelledby="accolades-heading">
       <motion.header
         className="section-title-wrap"
-        {...(reducedMotion
-          ? {}
-          : {
-              initial: { opacity: 0, y: 26 },
-              whileInView: { opacity: 1, y: 0 },
-              viewport: { once: true, amount: 0.6 },
-            })}
+        /* Same props on server and client — see ArtistJourneySection. */
+        initial={{ opacity: 0, y: 26 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.8, ease: EASE }}
       >
         <span className="eyebrow-gold">Institutional Recognition</span>
@@ -55,7 +52,7 @@ export default function AccoladesSection() {
           <motion.article
             key={`${item.year}-${item.title}`}
             className="accolade-card"
-            initial={reducedMotion ? false : { opacity: 0, scale: 0.95, y: 18 }}
+            initial={{ opacity: 0, scale: 0.95, y: 18 }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.6, ease: EASE, delay: reducedMotion ? 0 : index * 0.12 }}
@@ -167,7 +164,7 @@ export default function AccoladesSection() {
               <motion.div
                 className="outreach-item"
                 key={out.label}
-                initial={reducedMotion ? false : { opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.55, ease: EASE, delay: reducedMotion ? 0 : i * 0.09 }}

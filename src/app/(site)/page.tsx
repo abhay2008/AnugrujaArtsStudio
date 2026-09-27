@@ -19,6 +19,9 @@ import {
   Award,
   HeartHandshake,
   ShoppingBag,
+  BadgeCheck,
+  Frame,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -26,30 +29,31 @@ export default function HomePage() {
     <div className="landing-page relative flex flex-col w-full overflow-x-hidden">
       <LandingHero />
 
-      {/* 2. BUY PAINTINGS — height-locked 100dvh showcase (zero page scroll) */}
-      {/* .buy-showcase-lock owns the viewport-height lock (vh first, dvh second —
-          older Windows Chromium engines ignore dvh units entirely and without
-          the fallback the section collapses to content height). */}
+      {/* The collector section can grow on short screens and with enlarged text. */}
       <section
         id="buy-paintings"
-        className="buy-showcase-lock landing-section relative mx-auto flex min-h-0 w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-8 sm:pb-[4.75rem] sm:pt-[4.6em] sm:px-6"
+        className="collector-showcase landing-section relative mx-auto flex min-h-0 w-full max-w-7xl flex-col px-4 py-7 sm:pb-[3.8rem] sm:pt-[3.6em] sm:px-6"
       >
         <Reveal className="showcase-head shrink-0 space-y-1.5 text-center">
           <div className="inline-flex items-center gap-2 rounded-full glass-pill px-3 py-1 text-section-kicker text-studio-sunset">
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Originals Ready to Own</span>
+            <span>Buy Paintings · The Collector&apos;s Edit</span>
           </div>
           <h2 className="showcase-title font-decorative font-bold tracking-wide text-studio-gold">
-            Buy Paintings
+            A work of art. A place in your life.
           </h2>
           <p className="mx-auto max-w-xl font-editorial font-medium text-[clamp(0.9rem,1.6vh,1.05rem)] italic text-theme-muted">
-            Handcrafted watercolours &amp; realistic art, straight from the studio
+            Discover original watercolours and realist works, chosen for the spaces and stories you call your own.
           </p>
           <p className="mx-auto hidden max-w-2xl font-sans-ui font-medium text-[clamp(0.86rem,1.4vh,0.95rem)] text-theme-muted sm:block">
-            Three works in view — the centre piece takes the spotlight. Swipe or use the arrows,
-            tap to inspect, then inquire on WhatsApp.
+            Browse the collection, look closer, then speak directly with the studio.
           </p>
         </Reveal>
+        <div className="collector-assurances" aria-label="Your collecting journey">
+          <span><BadgeCheck aria-hidden />Original studio works</span>
+          <span><Frame aria-hidden />Discuss framing &amp; dimensions</span>
+          <span><MessageCircle aria-hidden />Personal acquisition guidance</span>
+        </div>
 
         <Reveal variant="fade" delay={120} className="flex min-h-0 w-full flex-1 items-stretch">
           {/* Catalog spotlight — disjoint from the hero flagship rail by construction. */}
@@ -65,7 +69,7 @@ export default function HomePage() {
       {/* 5. Workshops & Events — every image carries its story */}
       <section
         id="workshops"
-        className="landing-section section-atelier mx-auto w-full max-w-7xl space-y-8 px-4 py-[clamp(2.5rem,7vh,4.5rem)] scroll-mt-20 sm:px-8"
+        className="landing-section section-atelier mx-auto w-full max-w-7xl space-y-6 px-4 py-[clamp(2rem,5vh,3.25rem)] scroll-mt-20 sm:px-8"
       >
         <Reveal delay={100} variant="fade">
           <UpcomingEventsSection events={upcomingEvents} />
@@ -99,7 +103,7 @@ export default function HomePage() {
       {/* 6. Testimonies — student wall, fully user-driven */}
       <section
         id="three"
-        className="landing-section section-wall mx-auto w-full max-w-7xl space-y-8 px-4 py-[clamp(2.5rem,7vh,4.5rem)] scroll-mt-20 sm:px-8"
+        className="landing-section section-wall mx-auto w-full max-w-7xl space-y-6 px-4 py-[clamp(2rem,5vh,3.25rem)] scroll-mt-20 sm:px-8"
       >
         <Reveal className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-pill text-section-kicker text-studio-sunset mb-1">
@@ -121,7 +125,7 @@ export default function HomePage() {
 
         {/* Highlighted Quote Block */}
         <Reveal delay={150}>
-          <div className="glass-panel-sunset max-w-4xl mx-auto p-6 sm:p-10 rounded-3xl relative overflow-hidden shadow-2xl">
+          <div className="glass-panel-sunset max-w-4xl mx-auto p-6 sm:p-8 rounded-3xl relative overflow-hidden shadow-2xl">
             <span className="absolute -top-4 left-6 text-7xl sm:text-8xl text-studio-sunset/20 font-serif-display leading-none select-none pointer-events-none">
               &ldquo;
             </span>
@@ -141,16 +145,16 @@ export default function HomePage() {
       {/* 7. Direct Contact Action Bridge */}
       {/* `landing-contact-bridge` is the hook for below-fold render
           containment (see globals.css) — it needs a name to be targeted. */}
-      <section className="landing-contact-bridge py-12 px-4 text-center">
+      <section className="landing-contact-bridge py-10 px-4 text-center">
         <Reveal>
           <h3 className="font-decorative text-2xl sm:text-3xl gold-sunset-shimmer mb-2">
             Get in Touch with Master Artist Anuradha
           </h3>
-          <p className="text-theme-muted text-sm sm:text-base mb-6">
+          <p className="text-theme-muted text-sm sm:text-base mb-5">
             Direct inquiries for painting sales, workshops, or custom commissions
           </p>
           {/* ContactActionButtons inlined (Gmail + WhatsApp) */}
-          <div className="w-full max-w-md mx-auto my-6 px-0">
+          <div className="w-full max-w-md mx-auto my-5 px-0">
             <div className="glass-panel-sunset rounded-3xl p-2.5 sm:p-3 border border-studio-sunset/30 shadow-2xl flex items-center justify-between gap-3 sm:gap-4">
               <a
                 href={`mailto:${studioMeta.email}`}
