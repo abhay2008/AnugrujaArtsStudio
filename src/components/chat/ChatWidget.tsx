@@ -34,6 +34,11 @@ interface ChatbotConfig {
 }
 
 const WHATSAPP_URL = 'https://wa.me/919849238464';
+const CHAT_HISTORY_KEY = '__chat_open';
+
+function isChatEntry(state: unknown): boolean {
+  return Boolean(state && typeof state === 'object' && (state as Record<string, unknown>)[CHAT_HISTORY_KEY]);
+}
 
 /** Shown when the CMS doesn't define suggested prompts — guide visitors to
  *  the studio topics visitors ask about most. */
@@ -139,15 +144,83 @@ export default function ChatWidget() {
     return () => cancelAnimationFrame(frame);
   }, [messages, streaming, open, reducedMotion]);
 
+  const ownsHistoryRef = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const claimHistoryEntry = useCallback(() => {
+    if (typeof window === 'undefined' || ownsHistoryRef.current) return;
+    const state = { ...(window.history.state ?? {}), [CHAT_HISTORY_KEY]: true };
+    try {
+      if (isChatEntry(window.history.state)) {
+        window.history.replaceState(state, '');
+      } else {
+        window.history.pushState(state, '');
+      }
+      ownsHistoryRef.current = true;
+    } catch {
+      /* History unavailable */
+    }
+  }, []);
+
+  const closeChat = useCallback(() => {
+    setOpen(false);
+    if (!ownsHistoryRef.current) return;
+    ownsHistoryRef.current = false;
+    if (typeof window !== 'undefined' && isChatEntry(window.history.state)) {
+      window.history.back();
+    }
+  }, []);
+
+  // System back button & edge-swipe gesture navigation (popstate)
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      if (!ownsHistoryRef.current || isChatEntry(event.state)) return;
+      ownsHistoryRef.current = false;
+      setOpen(false);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Touch swipe gestures to close (swipe down on header, or swipe right across header / back stroke)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.changedTouches.length !== 1) return;
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    const deltaX = e.changedTouches[0].clientX - start.x;
+    const deltaY = e.changedTouches[0].clientY - start.y;
+    const duration = Date.now() - start.time;
+
+    // Fast swipe down (pull down to dismiss, primarily vertical)
+    if (deltaY > 45 && Math.abs(deltaY) > Math.abs(deltaX) * 1.1 && duration < 500) {
+      closeChat();
+      return;
+    }
+    // Fast swipe right / back stroke across header (primarily horizontal)
+    if (deltaX > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1 && duration < 500) {
+      closeChat();
+      return;
+    }
+  }, [closeChat]);
+
   // ESC to close.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') closeChat();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  }, [open, closeChat]);
 
   // Random FAB heartbeat — one subtle gold ring ripple every ~22–50s.
   // Cost: a single composited layer for ~1.6s, nothing continuous. Skipped on
@@ -337,14 +410,25 @@ export default function ChatWidget() {
   /** Clear the nudge the moment the chat opens; chips come back on reopen. */
   const toggleChat = useCallback(() => {
     setOpen((v) => {
-      if (!v) clearNudge();
-      return !v;
+      if (v) {
+        if (ownsHistoryRef.current) {
+          ownsHistoryRef.current = false;
+          if (typeof window !== 'undefined' && isChatEntry(window.history.state)) {
+            window.history.back();
+          }
+        }
+        return false;
+      } else {
+        clearNudge();
+        claimHistoryEntry();
+        pinnedRef.current = true;
+        setJumpVisible(false);
+        setShowChips(true);
+        setUnread(false);
+        return true;
+      }
     });
-    pinnedRef.current = true;
-    setJumpVisible(false);
-    setShowChips(true);
-    setUnread(false);
-  }, [clearNudge]);
+  }, [clearNudge, claimHistoryEntry]);
 
   if (!mounted || !config.enabled) return null;
 
@@ -359,8 +443,22 @@ export default function ChatWidget() {
                  sm:inset-x-auto sm:bottom-40 sm:right-6 sm:w-[min(calc(100vw-3rem),400px)] sm:h-[min(72dvh,580px)] sm:max-h-[calc(100dvh-11rem)]"
       style={{ '--chat-vvh': viewport ? `${viewport.height}px` : '100dvh', '--chat-vtop': `${viewport?.top ?? 0}px`, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' } as React.CSSProperties}
     >
+      {/* Mobile drag handle indicator */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="flex w-full cursor-grab justify-center pt-2 pb-0.5 sm:hidden"
+        aria-hidden="true"
+      >
+        <span className="h-1 w-10 rounded-full bg-studio-gold/30" />
+      </div>
+
       {/* Header — deep-plum → sunset gradient sheen */}
-      <div className="chat-header relative flex items-center gap-3 border-b border-studio-gold/20 px-4 py-3.5">
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="chat-header relative flex items-center gap-3 border-b border-studio-gold/20 px-4 py-3 sm:py-3.5 select-none"
+      >
         <span className="chat-avatar relative flex h-10 w-10 items-center justify-center rounded-full shadow-md">
           <Sparkles className="h-5 w-5 text-purple-950" />
           <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#1d062e]" aria-hidden />
@@ -379,7 +477,7 @@ export default function ChatWidget() {
           WhatsApp
         </a>
         <button
-          onClick={() => setOpen(false)}
+          onClick={closeChat}
           aria-label="Close chat"
           className="rounded-lg p-2 text-yellow-100/70 transition-all hover:rotate-90 hover:bg-purple-900/60 hover:text-white"
         >
@@ -531,6 +629,15 @@ export default function ChatWidget() {
      beside the footer instead of the viewport corner. */
   return createPortal(
     <>
+      {open && (
+        <div
+          className="fixed inset-0 z-[59] bg-black/45 backdrop-blur-[2px] transition-opacity sm:hidden"
+          onClick={closeChat}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          aria-hidden="true"
+        />
+      )}
       {open && chatPanel}
       {/* Contextual invite bubble — pops out of the launcher, never blocks it.
           The wrapper is pointer-events-none so it can never eat a tap meant

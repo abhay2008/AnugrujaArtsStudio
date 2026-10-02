@@ -20,11 +20,11 @@ export const dynamic = 'force-dynamic';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function primaryModel(): string {
-  return process.env.OPENROUTER_MODEL || 'inclusionai/ling-3.0-flash-vl:free';
+  return process.env.OPENROUTER_MODEL || 'inclusionai/ling-3.0-flash-sante:free';
 }
 
 function fallbackModels(): string[] {
-  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'nex-agi/nex-n2.5-mini:free,meta-llama/llama-3.2-3b-instruct:free,google/gemini-2.0-flash-lite-preview:free';
+  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'apodex/apodex-1.1-mini:free,liquid/lfm-2.5-2.6b:free,openrouter/free';
   return raw
     .split(',')
     .map((m) => m.trim())
@@ -253,7 +253,8 @@ export async function POST(req: NextRequest) {
           model,
           stream: true,
           temperature: 0.4,
-          max_tokens: 900,
+          max_tokens: 600,
+          ...(!model.includes('liquid') ? { reasoning: { effort: 'none' } } : {}),
           messages: [
             { role: 'system', content: systemPrompt(liveContext, langHint) },
             ...trimmedHistory.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 400) })),

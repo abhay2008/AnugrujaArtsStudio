@@ -48,7 +48,7 @@ try {
   behavior = 'cascade';
   const cascade = await invoke('When is your next workshop?', 'cascade');
   check(models.length === 2 && cascade.text.includes('"layer":"llm"'), '429 attempts secondary model before local fallback');
-  check(models[0] === 'inclusionai/ling-3.0-flash-vl:free' && models[1] === 'nex-agi/nex-n2.5-mini:free', 'model priority respected');
+  check(models[0] === 'inclusionai/ling-3.0-flash-sante:free' && models[1] === 'apodex/apodex-1.1-mini:free', 'model priority respected');
   for (const mode of ['all429', 'all500', 'network', 'timeout']) {
     models.length = 0;
     behavior = mode;
