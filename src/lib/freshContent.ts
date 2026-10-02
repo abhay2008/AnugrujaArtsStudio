@@ -39,6 +39,8 @@ interface FreshState {
  * never adopt an older remote over our newer content.
  */
 let pendingRemoteSync = false;
+let lastLocalSignature = '';
+let generation = 0;
 
 function signatureOf(content: SiteContent): string {
   try {
@@ -68,6 +70,8 @@ export function resetFreshContent(): void {
   state.lastFetchAt = 0;
   state.inFlight = null;
   pendingRemoteSync = false;
+  lastLocalSignature = signatureOf(getSiteContentSync());
+  generation++;
 }
 
 /**
@@ -77,12 +81,14 @@ export function resetFreshContent(): void {
  * refreshes from adopting an OLDER remote until GitHub catches up (e.g. the
  * commit failed, or is still propagating).
  */
-export function adoptFreshContent(content: SiteContent): void {
+export function adoptFreshContent(content: SiteContent, published = false): void {
+  lastLocalSignature = signatureOf(getSiteContentSync());
+  generation++;
   state.content = content;
   state.signature = signatureOf(content);
   state.lastFetchAt = Date.now();
   state.inFlight = null;
-  pendingRemoteSync = githubConfigured();
+  pendingRemoteSync = !published && githubConfigured();
 }
 
 /**
@@ -91,7 +97,16 @@ export function adoptFreshContent(content: SiteContent): void {
  * before the first fetch completes).
  */
 export function getFreshContentSync(): SiteContent {
-  if (!state.signature) state.signature = signatureOf(state.content);
+  // Sibling admin writes share disk, not module memory. Detect them on the
+  // request path too; a remote-only deployment still uses the adopted copy.
+  const local = getSiteContentSync();
+  const localSignature = signatureOf(local);
+  if (!state.signature || (localSignature !== lastLocalSignature)) {
+    if ((!lastLocalSignature && localSignature !== signatureOf(state.content)) ||
+        (lastLocalSignature && localSignature !== lastLocalSignature)) adoptFreshContent(local);
+    lastLocalSignature = localSignature;
+    if (!state.signature) state.signature = signatureOf(state.content);
+  }
   return state.content;
 }
 
@@ -101,17 +116,18 @@ export function getFreshContentSync(): SiteContent {
  * the last known content. Adopted only when the fetched content parses AND
  * differs from what we have.
  */
-export function refreshFreshContent(): void {
-  if (!githubConfigured()) return;
+export function refreshFreshContent(force = false): Promise<void> {
+  if (!githubConfigured()) return Promise.resolve();
   const now = Date.now();
-  if (now - state.lastFetchAt < TTL_MS) return;
-  if (state.inFlight) return;
+  if (state.inFlight) return state.inFlight;
+  if (!force && now - state.lastFetchAt < TTL_MS) return Promise.resolve();
 
+  const startedGeneration = generation;
   state.lastFetchAt = now;
   state.inFlight = (async () => {
     try {
       const remote = await getRemoteTextFile('content/site.json');
-      if (!remote) return;
+      if (!remote || startedGeneration !== generation) return;
       const parsed = JSON.parse(remote) as SiteContent;
       if (!parsed || !parsed.galleries) return;
       const sig = signatureOf(parsed);
@@ -133,6 +149,7 @@ export function refreshFreshContent(): void {
       state.inFlight = null;
     }
   })();
+  return state.inFlight;
 }
 
 /** True when the local file no longer matches the adopted remote content. */

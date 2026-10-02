@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useRef } from 'react';
+import { useDialogFocus, useScrollLock } from '@/lib/scrollLock';
 import { X, CheckCircle, CloudUpload, Loader2, ExternalLink } from 'lucide-react';
 
 /** A photo waiting to be published, shown for a last look before committing. */
@@ -45,11 +45,14 @@ export default function ReviewChangesModal({
   confirmLabel = 'Confirm & Commit to GitHub',
   drafts,
 }: ReviewChangesModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useScrollLock(isOpen);
+  useDialogFocus(panelRef, isOpen);
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#1d062e] border border-studio-gold/50 shadow-2xl p-6 text-[#fdf5cf] space-y-6">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} data-scrollable="true" className="max-h-[90dvh] overflow-y-auto overscroll-contain relative w-full max-w-lg rounded-2xl bg-[#1d062e] border border-studio-gold/50 shadow-2xl p-6 text-[#fdf5cf] space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -58,7 +61,9 @@ export default function ReviewChangesModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-purple-900/60 text-yellow-200 hover:text-white"
+            disabled={isCommitting}
+            aria-label="Close review"
+            className="min-h-[44px] min-w-[44px] p-1 rounded-lg hover:bg-purple-900/60 text-yellow-200 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -66,7 +71,7 @@ export default function ReviewChangesModal({
 
         {/* New paintings preview */}
         {drafts && drafts.length > 0 && (
-          <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-xl border border-purple-900/50 bg-[#140320] p-3 sm:grid-cols-3">
+          <div data-scrollable="true" className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-xl border border-purple-900/50 bg-[#140320] p-3 sm:grid-cols-3">
             {drafts.map((draft) => (
               <div
                 key={draft.id}
@@ -100,7 +105,7 @@ export default function ReviewChangesModal({
 
         {/* Change List — hidden for the upload flow when nothing is staged yet */}
         {(!drafts || drafts.length === 0 || changes.length > 0) && (
-        <div className="max-h-60 overflow-y-auto space-y-2 p-3 rounded-xl bg-[#140320] border border-purple-900/50">
+        <div data-scrollable="true" className="max-h-60 overflow-y-auto space-y-2 p-3 rounded-xl bg-[#140320] border border-purple-900/50">
           {changes.length === 0 ? (
             <p className="text-sm text-yellow-200/50 italic py-2">No pending modifications detected.</p>
           ) : (
@@ -129,8 +134,9 @@ export default function ReviewChangesModal({
           </div>
         )}
 
+        {commitStatus && <p role="status" className="text-sm text-yellow-100">{commitStatus}</p>}
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={onClose}
@@ -141,7 +147,7 @@ export default function ReviewChangesModal({
           </button>
           <button
             type="button"
-            onClick={() => void onConfirm()}
+            onClick={() => { void onConfirm().catch(() => {}); }}
             disabled={isCommitting || (changes.length === 0 && !drafts?.length)}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-black font-bold text-sm shadow-lg disabled:opacity-50"
           >

@@ -3,7 +3,7 @@ import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
 import { tokenize } from '@/lib/chatbot/rag/bm25';
 
 /**
- * Smart request router — decides the cheapest layer that can answer well.
+ * Fallback-only classifier. Primary messages always route to the LLM.
  *
  *   preprogrammed  → deterministic CMS reply           (0 OpenRouter requests)
  *   faq            → admin FAQ answer, strong overlap  (0 OpenRouter requests)
@@ -30,7 +30,10 @@ const FAQ_COVERAGE_THRESHOLD = 0.6;
  */
 const FAQ_DETAIL_ESCAPE = /(price|cost|fee|how much|compare|difference|exactly|specific|which|why|duration|long|timing|schedule|materials?|medium)/i;
 
-export function routeMessage(validatedText: string): RouteAction {
+export function routeMessage(validatedText: string, options: { fallback?: boolean } = {}): RouteAction {
+  // Primary traffic must never be intercepted by lexical matching. Existing
+  // FAQ/lookup classification is available only to an explicit local fallback.
+  if (!options.fallback) return { action: 'llm' };
   const q = (validatedText ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
   // ── Tier 1: deterministic preprogrammed replies (strict matching) ────────

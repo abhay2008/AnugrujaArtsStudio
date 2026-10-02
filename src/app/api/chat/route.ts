@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { buildStudioContext } from '@/lib/chatbot/context';
-import { CHATBOT_CONTEXT_TAG } from '@/lib/chatbot/context';
 import { retrieveContext, contentRevisionHash } from '@/lib/chatbot/rag';
-import { lookupCachedReply, storeCachedReply } from '@/lib/chatbot/responseCache';
 import {
   validateInput,
   refusalFor,
@@ -11,11 +9,9 @@ import {
   looksOffTopic,
   MAX_SESSION_MESSAGES,
 } from '@/lib/chatbot/guardrails';
-import { chatRateLimiter, freeLayerRateLimiter } from '@/lib/chatbot/rateLimit';
+import { chatRateLimiter } from '@/lib/chatbot/rateLimit';
 import { logLlmQuery } from '@/lib/chatbot/queryLog';
-import { whatsappLink } from '@/lib/chatbot/lookup';
-import { routeMessage } from '@/lib/chatbot/router';
-import { getSiteContentSync } from '@/lib/serverContent';
+import { whatsappLink, enhancedFallbackReply } from '@/lib/chatbot/lookup';
 import { getFreshContentSync, refreshFreshContent } from '@/lib/freshContent';
 
 export const runtime = 'nodejs';
@@ -28,7 +24,7 @@ function primaryModel(): string {
 }
 
 function fallbackModels(): string[] {
-  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'nex-agi/nex-n2.5-mini:free';
+  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'nex-agi/nex-n2.5-mini:free,meta-llama/llama-3.2-3b-instruct:free,google/gemini-2.0-flash-lite-preview:free';
   return raw
     .split(',')
     .map((m) => m.trim())
@@ -151,25 +147,16 @@ function sseTextResponse(rawText: string, layer?: string): Response {
 export async function POST(req: NextRequest) {
   // ── 0. Config gate ─────────────────────────────────────────────────────
   const apiKey = process.env.OPENROUTER_API_KEY;
-  refreshFreshContent();
-  const content = getFreshContentSync();
-  if (content.chatbot?.enabled === false) {
-    return Response.json({ error: 'Chat is temporarily unavailable.' }, { status: 503 });
-  }
-  if (!apiKey) {
-    console.warn('OPENROUTER_API_KEY missing — chat disabled.');
-    return Response.json({ error: 'Chat is not configured yet. Please contact us on WhatsApp!' }, { status: 503 });
-  }
 
   // ── 1. Parse & validate body ───────────────────────────────────────────
-  let body: { messages?: ChatMessage[] };
+  let body: { messages?: ChatMessage[] } | null;
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const history = Array.isArray(body.messages) ? body.messages : [];
+  const history = Array.isArray(body?.messages) ? body.messages : [];
   // Empty conversations are invalid; absurdly long ones are abusive. Anything
   // in between is trimmed to the last MAX_SESSION_MESSAGES messages: an older
   // cached widget bundle may still send its full stored history, and the chat
@@ -185,24 +172,6 @@ export async function POST(req: NextRequest) {
   // ── 2. Guardrails: abuse caps + input filter (zero API cost) ──────────
   const ip = clientIp(req);
 
-  // Generous cap on ALL traffic (30/min, 240/day) — free layers cost nothing,
-  // so good-faith visitors get headroom while scrapers get a soft stop.
-  const freeRate = freeLayerRateLimiter.check(ip);
-  if (!freeRate.allowed) {
-    return Response.json(
-      { error: `Chitra needs a short rest — please try again in ${freeRate.retryAfterSeconds}s, or reach us directly on WhatsApp!` },
-      { status: 429, headers: { 'Retry-After': String(freeRate.retryAfterSeconds) } }
-    );
-  }
-
-  // Tight cap protecting the OpenRouter quota (8/min, 40/day) — consulted
-  // only when the request actually needs the LLM (see step 4).
-  let llmRate: { allowed: boolean; retryAfterSeconds: number } | null = null;
-  const consumeLlmQuota = () => {
-    if (!llmRate) llmRate = chatRateLimiter.check(ip);
-    return llmRate;
-  };
-
   const lastUser = [...trimmedHistory].reverse().find((m) => m.role === 'user');
   const verdict = validateInput(lastUser?.content ?? '');
   if (!verdict.ok) {
@@ -211,41 +180,25 @@ export async function POST(req: NextRequest) {
     return sseTextResponse(refusalFor(verdict.reason));
   }
 
-  // ── 3. Smart router: preprogrammed → FAQ → LLM ────────────────────────
-  // Decides the cheapest layer that can answer well. Preprogrammed and FAQ
-  // replies are deterministic CMS-derived answers (zero OpenRouter requests);
-  // everything nuanced falls through to the RAG-backed LLM path.
-  const routed = routeMessage(verdict.text);
-  if (routed.action === 'preprogrammed') {
-    const pre = sanitizeOutput(routed.text);
-    return sseTextResponse(pre, 'preprogrammed');
-  }
-  if (routed.action === 'faq') {
-    return sseTextResponse(sanitizeOutput(routed.text), 'faq');
-  }
+  // Check cross-process/serverless publishes before building either answer.
+  await refreshFreshContent(true);
+  const liveContent = getFreshContentSync();
+  if (liveContent.chatbot?.enabled === false) return Response.json({ error: 'Chat is temporarily unavailable.' }, { status: 503 });
 
-  // ── 4. LLM quota + response cache ──────────────────────────────────────
-  // The tight OpenRouter quota is consumed here — only when the router has
-  // actually escalated to the LLM path. Cached hits replay a stored reply
-  // without calling OpenRouter, so they do not consume the tight quota.
-  const llmQuota = consumeLlmQuota();
-  if (!llmQuota.allowed) {
-    return Response.json(
-      { error: `Chitra needs a short rest — please try again in ${llmQuota.retryAfterSeconds}s, or reach us directly on WhatsApp!` },
-      { status: 429, headers: { 'Retry-After': String(llmQuota.retryAfterSeconds) } }
-    );
+  // Every validated studio question goes to OpenRouter first. Neither FAQ
+  // matching nor response caching may intercept a successful AI request.
+  const fallback = (note: string) => sseTextResponse(
+    sanitizeOutput(`${note}\n\n${enhancedFallbackReply(verdict.text)}`), 'fallback',
+  );
+  if (!apiKey) {
+    // Configuration errors are not visitor quota failures; expose a useful
+    // service error rather than silently disguising them as an AI response.
+    return Response.json({ error: 'AI chat is not configured. Please contact the studio on WhatsApp.' }, { status: 503 });
   }
-
-  // Fresh sessions only: a repeat question deep in a conversation may depend
-  // on earlier turns, so a cached answer could contradict what was just said.
-  const isFreshSession = trimmedHistory.length <= 2;
-  // Kick a background refresh of the latest admin-published content (GitHub)
-  // and key the revision to it, so a price/status change made in the admin
-  // portal reaches the chatbot within a minute — even before a redeploy.
-  refreshFreshContent();
-  const revision = contentRevisionHash(getFreshContentSync());
+  const quota = chatRateLimiter.check(ip);
+  if (!quota.allowed) return fallback('I’ve reached the AI chat allowance for now; here’s help from the latest studio information.');
   const langHint = languageHint(verdict.text);
-  const models = [primaryModel(), ...fallbackModels()];
+  const models = [...new Set([primaryModel(), ...fallbackModels()])];
   const primary = models[0];
 
   // FAQ mining: record which questions fell through to the LLM (never for
@@ -253,13 +206,6 @@ export async function POST(req: NextRequest) {
   // via /api/chatbot-queries and promote frequent ones into FAQs, which
   // then answer at zero OpenRouter cost forever.
   logLlmQuery({ q: verdict.text, lang: langHint, model: primary });
-
-  if (isFreshSession) {
-    const cached = lookupCachedReply(verdict.text, revision, primary, langHint);
-    if (cached.hit && cached.reply) {
-      return sseTextResponse(cached.reply, 'cached');
-    }
-  }
 
   // ── 5. RAG: compact core + only the chunks relevant to this question ───
   let liveContext: string;
@@ -281,11 +227,22 @@ export async function POST(req: NextRequest) {
   // ── 6. Call OpenRouter with model fallbacks ───────────────────────────
   let upstream: Response | null = null;
   let usedModel = '';
+  let providerAbort: AbortController | null = null;
 
+  const deadline = Date.now() + 24_000;
+  let upstreamStatus = 0;
+  let recoverableFailure = false;
   for (const model of models) {
+    if (req.signal.aborted) return new Response(null, { status: 499 });
+    if (Date.now() >= deadline) break;
+    const attemptAbort = new AbortController();
+    const onAbort = () => attemptAbort.abort();
+    req.signal.addEventListener('abort', onAbort, { once: true });
+    const attemptTimer = setTimeout(onAbort, Math.min(8000, Math.max(1, deadline - Date.now())));
     try {
       const res = await fetch(OPENROUTER_URL, {
         method: 'POST',
+        signal: attemptAbort.signal,
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
@@ -296,7 +253,8 @@ export async function POST(req: NextRequest) {
           model,
           stream: true,
           temperature: 0.4,
-          max_tokens: 900,            messages: [
+          max_tokens: 900,
+          messages: [
             { role: 'system', content: systemPrompt(liveContext, langHint) },
             ...trimmedHistory.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 400) })),
           ],
@@ -306,35 +264,53 @@ export async function POST(req: NextRequest) {
       if (res.ok && res.body) {
         upstream = res;
         usedModel = model;
+        providerAbort = attemptAbort;
         break;
       }
-      console.warn(`Chat model ${model} failed: ${res.status} ${await res.text().catch(() => '')}`.slice(0, 400));
+      upstreamStatus = res.status;
+      if (res.status === 429 || res.status >= 500) recoverableFailure = true;
+      await res.body?.cancel();
+      console.warn(`Chat model ${model} failed: ${res.status}`);
+      // Missing/free models can retire; try the next configured model. Bad
+      // credentials and invalid requests must not masquerade as quota issues.
+      if (res.status !== 429 && res.status < 500 && res.status !== 404) {
+        return Response.json({ error: 'The AI service is unavailable. Please contact the studio on WhatsApp.' }, { status: 502 });
+      }
     } catch (err) {
+      if (req.signal.aborted) return new Response(null, { status: 499 });
+      recoverableFailure = true;
       console.warn(`Chat model ${model} threw:`, err instanceof Error ? err.message : err);
+    } finally {
+      clearTimeout(attemptTimer);
+      req.signal.removeEventListener('abort', onAbort);
     }
   }
 
   if (!upstream || !upstream.body) {
-    return Response.json(
-      { error: 'Chitra is a little overwhelmed right now — please try again soon, or WhatsApp us directly!' },
-      { status: 502 }
-    );
+    if (upstreamStatus === 404 && !recoverableFailure) return Response.json({ error: 'The configured AI models are unavailable. Please contact the studio on WhatsApp.' }, { status: 502 });
+    return fallback('The AI service is busy; I can still help using the latest studio information.');
   }
 
   // ── 7. Relay the stream, sanitizing output on the way out ────────────
   // Generic WhatsApp deep link (no prefilled text) for LLM-path replies.
-  const llmWaLink = whatsappLink(content.brand);
+  const llmWaLink = whatsappLink(liveContent.brand, verdict.text);
   const decoder = new TextDecoder();
   let buffer = '';
   let full = '';
   let started = false;
   let refused = false;
 
+  let cancelled = false;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      controller.enqueue(sseEncode('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink, revision: contentRevisionHash(getFreshContentSync()) }));
+      const emit = (event: string, data: unknown) => { if (!cancelled) controller.enqueue(sseEncode(event, data)); };
+      emit('start', {});
+      emit('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink, revision: contentRevisionHash(getFreshContentSync()) });
 
       const reader = upstream!.body!.getReader();
+      const abortStream = () => providerAbort?.abort();
+      req.signal.addEventListener('abort', abortStream, { once: true });
+      const streamTimeout = setTimeout(abortStream, 25_000);
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -363,9 +339,8 @@ export async function POST(req: NextRequest) {
                 full += delta;
                 if (!started) {
                   started = true;
-                  controller.enqueue(sseEncode('start', {}));
                 }
-                controller.enqueue(sseEncode('delta', { text: delta }));
+                emit('delta', { text: delta });
               }
             } catch {
               // Partial JSON across chunk boundary — next read completes it.
@@ -375,41 +350,37 @@ export async function POST(req: NextRequest) {
 
         // ── 7. Output guardrails on the assembled reply ─────────────────
         if (!started || refused || !full.trim()) {
-          controller.enqueue(
-            sseEncode('delta', {
-              text:
-                "I'm having a little trouble answering right now. Please ask again in a moment, or reach the studio directly on WhatsApp — we'd love to help! 🎨",
-            })
-          );
+          const local = extractMapsTag(extractImgTag(extractWaTag(enhancedFallbackReply(verdict.text)).text).text);
+          emit('meta', { layer: 'fallback', wa: whatsappLink(liveContent.brand, verdict.text) });
+          emit('replace', { text: sanitizeOutput(`The AI connection paused; here’s help from the latest studio information.\n\n${local.text}`) });
         } else {
           const sanitized = sanitizeOutput(full);
           if (mentionsUnknownPrice(sanitized, liveContext) || looksOffTopic(sanitized)) {
             // The partial stream may already be wrong/hallucinated — REPLACE
             // it with the safe fallback instead of appending more text.
-            controller.enqueue(
-              sseEncode('replace', {
-                text:
-                  "Hmm, I want to be careful with that answer. The studio team can confirm details instantly on WhatsApp — or ask me about paintings, prices, classes or events!",
-              }),
-            );
+            emit('replace', { text: 'I want to be careful with those details. The studio team can confirm them personally on WhatsApp.' });
           } else {
-            // Cache the sanitized success for future identical questions.
-            storeCachedReply(verdict.text, revision, primary, langHint, sanitized, 'llm');
             if (sanitized !== full) {
               // Emit a corrected final version replacing the streamed raw text.
-              controller.enqueue(sseEncode('replace', { text: sanitized }));
+              emit('replace', { text: sanitized });
             }
           }
         }
-        controller.enqueue(sseEncode('done', {}));
+        emit('done', {});
       } catch (err) {
         console.error('Chat stream error:', err);
-        controller.enqueue(sseEncode('delta', { text: 'The connection glitched — please try again!' }));
-        controller.enqueue(sseEncode('done', {}));
+        emit('meta', { layer: 'fallback', wa: whatsappLink(liveContent.brand, verdict.text) });
+        emit('replace', { text: sanitizeOutput('The AI connection paused; here’s help from the latest studio information.\n\n' + extractMapsTag(extractImgTag(extractWaTag(enhancedFallbackReply(verdict.text)).text).text).text) });
+        emit('done', {});
       } finally {
-        controller.close();
+        clearTimeout(streamTimeout);
+        req.signal.removeEventListener('abort', abortStream);
+        await reader.cancel().catch(() => {});
+        reader.releaseLock();
+        if (!cancelled) controller.close();
       }
     },
+    cancel() { cancelled = true; providerAbort?.abort(); },
   });
 
   return new Response(stream, {

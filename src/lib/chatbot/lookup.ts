@@ -6,6 +6,41 @@ export type PreprogrammedReply =
   | { matched: true; text: string; action?: { type: 'whatsapp'; message: string } }
   | { matched: false; text?: undefined; action?: undefined };
 
+/** Local, live-CMS responder used only when the AI service cannot answer. */
+export function enhancedFallbackReply(query: string): string {
+  const content = getFreshContentSync();
+  const tokens = query.toLowerCase().split(/\W+/).filter(Boolean);
+  const intents: Record<string, string[]> = {
+    workshop: ['workshop', 'event', 'retreat', 'masterclass', 'exhibition', 'seats'],
+    classes: ['classes', 'class', 'course', 'learn', 'curriculum', 'admission', 'tuition'],
+    location: ['location', 'address', 'visit', 'directions'],
+    timings: ['timing', 'hours', 'open', 'schedule'],
+    commission: ['commission', 'custom', 'portrait', 'mural'],
+    paintings: ['painting', 'purchase', 'buy', 'price', 'available', 'original'],
+  };
+  const best = Object.entries(intents).map(([intent, words]) => ({
+    intent, score: tokens.filter((t) => words.some((w) => fuzzyTokenMatch(t, w))).length,
+  })).sort((a, b) => b.score - a.score)[0];
+  const reply = lookupAndReply(query);
+  if (best?.score && best.intent === 'workshop') {
+    const upcoming = [...(content.events?.upcoming ?? [])].sort((a, b) => (a.dateIso || '9999').localeCompare(b.dateIso || '9999'));
+    const event = upcoming[0];
+    if (event) return `Our next listed event is **${event.title}** on **${event.date}**.\n\n${event.location || content.brand.locationLabel}${event.seatsRemaining !== undefined ? ` · **${event.seatsRemaining} seats remaining**` : ''}.\n\n${event.description || 'The studio would love to welcome you.'}\n\n[WA:Register for ${event.title}]`;
+  }
+  if (reply.matched) {
+    if (/\[WA:[^\]]+\]\s*$/.test(reply.text)) return reply.text;
+    return reply.text + (reply.action ? `\n\n[WA:${reply.action.message}]` : `\n\n[WA:${query.slice(0, 180)}]`);
+  }
+  if (best?.score) {
+    if (best.intent === 'classes') return classesAndCoursesReply(content, content.brand) + '\n\n[WA:Enquire about class admissions]';
+    if (best.intent === 'paintings') return saleCatalogReply(content.galleries.sale ?? [], content.brand) + '\n\n[WA:Enquire about available originals]';
+    if (best.intent === 'commission') return commissionReply(content.brand) + '\n\n[WA:Enquire about a custom commission]';
+    if (best.intent === 'location') return locationReply(content.brand);
+    if (best.intent === 'timings') return `Class times and visiting hours are confirmed personally by the studio. Share your preferred day and time and we’ll help you plan a visit.\n\n[WA:Please confirm studio hours and class timings]`;
+  }
+  return `Namaste! I can help with the studio’s paintings, courses, commissions and workshops. For the finer details of your question, ${content.brand.founder} will be happy to help personally.\n\n[WA:${query.slice(0, 180)}]`;
+}
+
 /**
  * Best available WhatsApp deep link for the studio.
  *

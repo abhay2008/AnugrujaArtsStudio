@@ -3,7 +3,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
-/** `compact` drops the 44px hit area for the tight mobile header cluster. */
+/** Compact changes visual density, never the minimum touch footprint. */
 export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, toggleTheme, mounted } = useTheme();
 
@@ -13,7 +13,7 @@ export default function ThemeToggle({ compact = false }: { compact?: boolean }) 
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
       className={`theme-toggle flex items-center justify-center rounded-xl transition-all active:scale-95 ${
-        compact ? 'h-8 w-8' : 'touch-target min-w-[40px] min-h-[40px]'
+        compact ? 'h-11 w-11' : 'touch-target'
       }`}
     >
       {!mounted ? (

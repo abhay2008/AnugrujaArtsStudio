@@ -8845,3 +8845,114 @@ html:not([data-theme='light']) .c3d-root--spotlight .c3d-card-media:not(.is-cent
     display: none;
   }
 }
+
+/* Master finisher: scroll ownership, compact courses and atelier chat. */
+.atelier-hero-grid { grid-template-columns: minmax(0, 1fr); }
+.hero-text-col, .hero-crest-col { min-width: 0; }
+@media (max-width: 1023.98px) {
+  [data-theme='light'] .site-brand-title { background-image: none; color: var(--gold-text); -webkit-text-fill-color: currentColor; }
+}
+
+@media (min-width: 1024px) { .atelier-hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); } }
+@media (max-width: 767px) {
+  .hero-cta-cluster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .atelier-brand-title { overflow-wrap: normal; }
+  .atelier-subtitle, .atelier-quote { white-space: normal; }
+  .btn-atelier-outline, .btn-atelier-solid { min-width: 0; font-size: clamp(.62rem, 2.6vw, .78rem); letter-spacing: .04em; }
+  .spotlight-title { white-space: normal; }
+}
+body:has(#site-navigation-drawer:not([inert])) .chat-fab,
+body:has(#site-navigation-drawer:not([inert])) .chat-nudge-wrap { visibility: hidden; }
+
+.header-drawer {
+  height: 100vh;
+  height: 100dvh;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.header-icon-btn, .header-social-btn, .header-social-pill { min-height: 44px; min-width: 44px; }
+.header-mobile-cluster { gap: 0; padding: 0; }
+@media (max-width: 380px) {
+  .header-mobile-cluster > a:nth-child(2) { display: none; }
+}
+.chat-panel {
+  isolation: isolate;
+  background: linear-gradient(135deg, #1a062b, #2d0c46);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.chat-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 10% 10%, var(--ambient-purple), transparent 55%), radial-gradient(ellipse at 90% 90%, var(--ambient-gold), transparent 55%);
+  opacity: .25;
+  animation: chatAmbience 14s ease-in-out infinite alternate;
+}
+@keyframes chatAmbience { to { opacity: .4; } }
+.chat-header, .chat-input-bar, .chat-chip-dock { flex-shrink: 0; }
+.chat-scroll { touch-action: pan-y; -webkit-overflow-scrolling: touch; overflow-anchor: none; }
+.chat-chip-row { touch-action: pan-x; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: rgba(242,215,112,.35) transparent; }
+.chat-chip-row::-webkit-scrollbar { display: block; height: 3px; }
+.chat-chip-row::-webkit-scrollbar-thumb { background: rgba(242,215,112,.35); border-radius: 4px; }
+.chat-chip { min-height: 44px; animation: none; }
+.chat-header button, .chat-header a, .chat-bubble a { min-height: 44px; min-width: 44px; }
+.chat-bubble { overflow-wrap: anywhere; border-radius: 18px; }
+.chat-bubble--user { background: rgba(88,28,135,.4); border: 1px solid rgba(242,215,112,.2); color: #fff1c2; }
+.chat-bubble--user::after { display: none; }
+.chat-bubble--bot { background: rgba(8,4,13,.65); }
+.chat-bubble p + p { margin-top: .45rem; }
+.chat-bubble ul, .chat-bubble ol { margin: .4rem 0; padding-left: 1.2rem; }
+.chat-bubble ul { list-style: disc; }
+.chat-bubble ol { list-style: decimal; }
+.chat-bubble strong, .chat-bubble a { color: var(--gold-text); font-weight: 600; }
+.chat-bubble a { text-decoration: underline; }
+.chat-bubble blockquote { border-left: 2px solid var(--gold-text); padding-left: .65rem; margin-block: .5rem; }
+.chat-bubble code { font-size: .85em; border-radius: 4px; background: rgba(128,128,128,.15); padding: .1rem .25rem; }
+.chat-bubble pre { white-space: pre-wrap; }
+.chat-jump { align-self: center; min-height: 44px; padding: .5rem 1rem; color: var(--gold-text); border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface-panel); }
+@media (max-width: 639px) {
+  .chat-panel { top: calc(var(--chat-vtop, 0px) + 8px); bottom: auto; height: calc(var(--chat-vvh, 100vh) - 16px); max-height: calc(var(--chat-vvh, 100vh) - 16px); }
+  .chat-input-bar { padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+}
+[data-theme='light'] .chat-panel { background: #f8f4eb; }
+[data-theme='light'] .chat-header, [data-theme='light'] .chat-input-bar, [data-theme='light'] .chat-chip-dock { background: rgba(228,214,190,.5); }
+[data-theme='light'] .chat-bubble--bot { background: rgba(255,255,255,.8); color: #1a1612; }
+[data-theme='light'] .chat-bubble--user { background: #e5d9ed; color: #251331; }
+[data-theme='light'] .chat-chip, [data-theme='light'] .chat-header p, [data-theme='light'] .chat-header button { color: #4a3515; }
+[data-theme='light'] .chat-input-bar input { background: #fffaf2; color: #1a1612; }
+[data-theme='light'] .chat-input-bar input::placeholder { color: #5c5449; }
+.courses-page { color: var(--text-primary); }
+.courses-page h1 { color: var(--gold-text); font-size: clamp(1.6rem, 5.5vw, 3rem); line-height: 1.3; padding-block: .12em; }
+.course-track { scroll-margin-top: 90px; }
+.course-track h2 { color: var(--gold-text); font-size: clamp(1.25rem, 3.8vw, 1.85rem); line-height: 1.35; }
+.course-track > div > svg { color: var(--gold-text); }
+.course-module { border: 1px solid var(--border-strong); border-radius: 14px; padding: 1rem; background: var(--surface-card); line-height: 1.65; }
+.course-tag { border: 1px solid var(--border-strong); border-radius: 999px; padding: .3rem .65rem; color: var(--gold-text); background: var(--surface-pill); font: 600 .75rem/1.4 system-ui, sans-serif; }
+.course-inquiry { display: inline-flex; gap: .5rem; align-items: center; min-height: 44px; padding: .5rem .85rem; border-radius: 12px; border: 1px solid var(--border-strong); color: var(--gold-text); font: 600 .8rem/1.4 system-ui, sans-serif; }
+.course-showcase .c3d-stage { height: clamp(220px, 36svh, 280px) !important; }
+@media (min-width: 768px) { .course-showcase .c3d-stage { height: clamp(280px, 42svh, 360px) !important; } }
+.event-photo-editor dialog { overscroll-behavior: contain; }
+body:has(.event-photo-editor dialog[open]) { overflow: hidden; }
+.admin-surface button, .admin-surface a { min-height: 44px; }
+.admin-surface button { min-width: 44px; }
+.admin-surface button > svg, .admin-surface a > svg { flex-shrink: 0; }
+.admin-surface input:not([type='checkbox']):not([type='radio']):not([type='file']), .admin-surface select, .admin-surface textarea { min-width: 0; min-height: 44px; }
+.admin-surface h1, .admin-surface h2, .admin-surface h3 { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .admin-surface input:not([type='checkbox']):not([type='radio']):not([type='file']), .admin-surface select, .admin-surface textarea { font-size: 16px; }
+  .admin-surface header { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (max-width: 639px) { .event-photo-editor > .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); } }
+.event-photo-editor > .grid > article { min-width: 0; }
+.event-photo-editor > .grid > article p { overflow-wrap: anywhere; }
+.event-photo-editor label, .event-photo-editor button { max-width: 100%; }
+.event-photo-editor label > svg, .event-photo-editor button > svg { flex-shrink: 0; }
+.event-photo-editor button:focus-visible, .course-inquiry:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+@media (max-width: 640px) { .courses-page .glass-panel, .courses-page .glass-card { -webkit-backdrop-filter: none; backdrop-filter: none; } }
+[data-perf='lite'] .chat-panel::before { animation: none; }
+@media (prefers-reduced-motion: reduce) { .chat-panel::before { animation: none; } }

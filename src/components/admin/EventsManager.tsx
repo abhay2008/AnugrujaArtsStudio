@@ -9,13 +9,13 @@ import {
   Plus,
   Sparkles,
   Trash2,
-  Upload,
   X,
 } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import type { StudioEvent } from '@/lib/types';
 import type { CommitFlow } from './AdminShell';
 import { useConfirm } from './ConfirmDialog';
+import EventPhotoGallery from './EventPhotoGallery';
 
 function makeId(): string {
   return `ev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -35,23 +35,27 @@ function EventEditor({
   onChange,
   onCancel,
   onSave,
-  onUploadPhotos,
   uploading,
+  setUploading,
+  uploadFile,
+  gallery,
   heading,
 }: {
   draft: StudioEvent;
   onChange: (e: StudioEvent) => void;
   onCancel: () => void;
   onSave: () => void;
-  onUploadPhotos: (files: FileList | null) => Promise<void>;
   uploading: boolean;
+  setUploading: (busy: boolean) => void;
+  uploadFile: (file: File) => Promise<string>;
+  gallery: { src: string; title: string }[];
   heading: string;
 }) {
   return (
     <div className="p-4 sm:p-5 space-y-4 animate-fadeIn">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-sm text-[#ffe76c] font-blippo">{heading}</h3>
-        <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-purple-900/60 text-yellow-200" aria-label="Cancel editing">
+        <h3 className="font-bold text-sm text-[#ffe76c] font-decorative">{heading}</h3>
+        <button disabled={uploading} onClick={onCancel} className="p-1.5 rounded-lg hover:bg-purple-900/60 text-yellow-200" aria-label="Cancel editing">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -126,26 +130,11 @@ function EventEditor({
           />
         </div>
         <div className="sm:col-span-2 space-y-2">
-          <label className={labelCls}>Event photos</label>
-          <textarea
-            className={`${inputCls} min-h-[64px]`}
-            placeholder="One image path or URL per line"
-            value={(draft.images ?? (draft.image ? [draft.image] : [])).join('\n')}
-            onChange={(e) => onChange({ ...draft, images: e.target.value.split(/\n|,/).map((value) => value.trim()).filter(Boolean) })}
+          <EventPhotoGallery
+            images={draft.images ?? (draft.image ? [draft.image] : [])}
+            onChange={(images) => onChange({ ...draft, images, image: images[0] || '' })}
+            upload={uploadFile} gallery={gallery} onBusy={setUploading}
           />
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-studio-gold/30 bg-purple-950/70 px-3 py-2 text-[11px] font-bold text-yellow-100/80 hover:border-studio-gold/60 hover:text-white">
-            <Upload className="h-3.5 w-3.5 text-studio-gold" />
-            {uploading ? 'Uploading photos…' : 'Upload photos from computer'}
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              disabled={uploading}
-              className="sr-only"
-              onChange={(e) => void onUploadPhotos(e.target.files)}
-            />
-          </label>
-          <p className="text-[10px] text-yellow-200/45">Uploaded images are added to the gallery above. Click any photo on the public site to enlarge it.</p>
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Description</label>
@@ -166,10 +155,11 @@ function EventEditor({
       </div>
 
       <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-md text-xs bg-purple-950 text-yellow-200 hover:bg-purple-900 border border-purple-800">
+        <button disabled={uploading} onClick={onCancel} className="px-3 py-1.5 rounded-md text-xs bg-purple-950 text-yellow-200 hover:bg-purple-900 border border-purple-800">
           Cancel
         </button>
         <button
+          disabled={uploading || !draft.title.trim() || !draft.date.trim()}
           onClick={onSave}
           className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md text-xs bg-amber-500 text-black font-bold hover:bg-amber-400 shadow-sm"
         >
@@ -225,20 +215,6 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
     setDraft(null);
   };
 
-  const uploadPhotos = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
-        urls.push(await uploadFile(file));
-      }
-      setDraft((current) => current ? { ...current, images: [...(current.images ?? []), ...urls] } : current);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const saveEdit = () => {
     if (!draft || !editing) return;
     if (!draft.title.trim() || !draft.date.trim()) return;
@@ -274,19 +250,19 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
 
     return (
       <div className="rounded-3xl border border-studio-gold/25 bg-[#190626]/90 p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
             {isUpcoming ? (
-              <CalendarPlus className="w-5 h-5 text-amber-300" />
+              <CalendarPlus className="w-5 h-5 shrink-0 text-amber-300" />
             ) : (
-              <History className="w-5 h-5 text-yellow-200/70" />
+              <History className="w-5 h-5 shrink-0 text-yellow-200/70" />
             )}
-            <h3 className="font-blippo text-lg text-[#ffe76c]">{isUpcoming ? 'Upcoming Events & Workshops' : 'Past Events & Exhibitions'}</h3>
+            <h3 className="font-decorative text-lg text-[#ffe76c]">{isUpcoming ? 'Upcoming Events & Workshops' : 'Past Events & Exhibitions'}</h3>
             <span className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-xs font-bold text-yellow-300">{items.length}</span>
           </div>
           <button
             onClick={() => addItem(list)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-3 py-2 text-xs font-bold text-black shadow-md hover:from-amber-400 hover:to-yellow-400"
+            className="inline-flex self-start shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-3 py-2 text-xs font-bold text-black shadow-md hover:from-amber-400 hover:to-yellow-400"
           >
             <Plus className="h-3.5 w-3.5" />
             Add {isUpcoming ? 'Upcoming' : 'Past'}
@@ -308,8 +284,10 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
                     onChange={setDraft}
                     onCancel={cancelEdit}
                     onSave={saveEdit}
-                    onUploadPhotos={uploadPhotos}
                     uploading={uploading}
+                    setUploading={setUploading}
+                    uploadFile={uploadFile}
+                    gallery={Object.values(content.galleries).flat().map((item) => ({ src: item.src, title: item.title }))}
                   />
                 </div>
               ) : (
@@ -317,7 +295,7 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
                   key={item.id}
                   className="rounded-2xl border border-purple-900/50 bg-[#160523]/80 p-3 transition-colors hover:border-studio-gold/40"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex flex-col md:flex-row items-stretch md:items-start gap-3">
                     {/*
                       The card body is the trigger for "edit or save?". It is a
                       real button, but it holds only text so the action icons
@@ -329,7 +307,7 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
                       onClick={() => setAskingId((prev) => (prev === item.id ? null : item.id))}
                       aria-expanded={askingId === item.id}
                       title="Ask what to do with this event"
-                      className="min-w-0 flex-1 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-studio-gold/60"
+                      className="min-w-0 flex-1 break-words [overflow-wrap:anywhere] rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-studio-gold/60"
                     >
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-sm text-[#fdf5cf]">{item.title}</span>
@@ -351,7 +329,7 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
                       )}
                     </button>
 
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex shrink-0 items-center justify-end gap-2 border-t border-purple-900/50 pt-2 md:border-0 md:pt-0">
                       <button
                         type="button"
                         title="Edit this event"
@@ -454,7 +432,7 @@ export default function EventsManager({ flow }: { flow: CommitFlow }) {
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-studio-sunset" />
-          <h2 className="font-blippo text-2xl text-[#ffe76c]">Events & Chatbot</h2>
+          <h2 className="font-decorative text-2xl text-[#ffe76c]">Events & Chatbot</h2>
         </div>
         <p className="max-w-3xl text-sm text-yellow-100/70">
           Keep the studio calendar fresh — upcoming workshops and past exhibitions. Everything you

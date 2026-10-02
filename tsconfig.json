@@ -40,7 +40,8 @@
     ".next-wizard/types/**/*.ts",
     ".next-wizard3/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    ".next-responsive-admin/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

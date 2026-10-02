@@ -258,6 +258,8 @@ function buildChunks(content: SiteContent): RagChunk[] {
         `- ${content.sections?.courses?.title ?? 'Classes & Courses'} — ${content.sections?.courses?.subtitle ?? 'Online & offline'}.`,
         `- Student artwork samples on file: ${classCount}.`,
         `- Kids under 15: twice-weekly batches (pencil, colored pencils, watercolor, soft pastel). Ages 15+: weekly (charcoal, watercolor, acrylic, oil). Open to ages 7 to 70+.`,
+        '- Watercolour mastery: 3-month foundational or 6-month professional; transparent washes, colour theory, glazing, wet-on-wet, landscapes and photorealistic practice.',
+        '- Art fundamentals and sketching: 2-month intensive; forms, light/shadow, 1/2/3-point perspective, graphite, charcoal and pencil.',
         `- Registration & fee details are handled personally via WhatsApp ${brand.phoneDisplay}.`,
       ],
       ['class', 'course', 'diploma', 'student', 'learn', 'beginner', 'batch', 'fee', 'fees', 'nata', 'nid', 'nift', 'ceed', 'uceed', 'bfa', 'entrance', 'exam', 'coaching', 'enroll', 'admission'],

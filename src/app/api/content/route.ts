@@ -6,7 +6,7 @@ import { cookieIsValid, COOKIE_NAME } from '@/lib/adminAuth';
 import { CHATBOT_CONTEXT_TAG, resetStudioContextCache } from '@/lib/chatbot/context';
 import { resetRagIndex, contentRevisionHash } from '@/lib/chatbot/rag';
 import { invalidateResponseCache } from '@/lib/chatbot/responseCache';
-import { adoptFreshContent, resetFreshContent } from '@/lib/freshContent';
+import { adoptFreshContent, getFreshContentSync } from '@/lib/freshContent';
 import type { SiteContent } from '@/lib/types';
 
 /**
@@ -113,11 +113,15 @@ export async function POST(req: NextRequest) {
       } catch (ghErr) {
         const msg = ghErr instanceof Error ? ghErr.message : 'GitHub commit failed';
         console.error('GitHub commit error:', ghErr);
-        if (!localOk) {
-          return NextResponse.json({ error: `GitHub commit failed: ${msg}` }, { status: 500 });
-        }
+        return NextResponse.json({ error: `GitHub commit failed: ${msg}. Your draft is still available to retry.` }, { status: 502 });
       }
     }
+
+    if (!localOk && !githubResult) return NextResponse.json({ error: 'Nothing was saved: configure GitHub publishing on this deployment.' }, { status: 500 });
+    adoptFreshContent(body, Boolean(githubResult));
+    resetStudioContextCache();
+    resetRagIndex();
+    invalidateResponseCache();
 
     // Revalidate public static pages so changes appear immediately, and
     // drop the chatbot's cached context so the AI assistant knows about the
@@ -136,8 +140,8 @@ export async function POST(req: NextRequest) {
       // Adopt the just-published content immediately (no TTL wait), and let
       // the background GitHub probe adopt the committed version within a
       // minute — deploy or no deploy.
-      adoptFreshContent(body);
-      if (githubResult) resetFreshContent();
+      adoptFreshContent(body, Boolean(githubResult));
+      // Never reset to the bundled disk snapshot after a remote-only save.
     } catch {}
 
     return NextResponse.json({
@@ -146,7 +150,7 @@ export async function POST(req: NextRequest) {
       localSaved: localOk,
       // Chatbot context revision after this publish — surfaced in the admin
       // portal so a human can see the AI assistant's knowledge move forward.
-      revision: contentRevisionHash(getSiteContentSync()),
+      revision: contentRevisionHash(getFreshContentSync()),
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to update content';

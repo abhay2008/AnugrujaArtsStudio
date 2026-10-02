@@ -28,6 +28,7 @@ export function githubRepoUrl(): string {
 async function githubFetch(path: string, init?: RequestInit) {
   const res = await fetch(`${GITHUB_API}${path}`, {
     cache: 'no-store',
+    signal: AbortSignal.timeout(15_000),
     ...init,
     headers: {
       Accept: 'application/vnd.github+json',

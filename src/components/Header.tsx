@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, X } from 'lucide-react';
 import { studioMeta } from '@/data/artData';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useScrollLock } from '@/lib/scrollLock';
+import { useDialogFocus, useScrollLock } from '@/lib/scrollLock';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 
 /** What the header ticker shows when it borrows the wordmark's place. */
@@ -104,7 +104,7 @@ function BurgerGlyph({ open }: { open: boolean }) {
 export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   /** True while the trending teaser occupies the wordmark's place. */
   const [swap, setSwap] = useState(false);
   const [pastHero, setPastHero] = useState(false);
@@ -112,6 +112,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   const [tickerFocused, setTickerFocused] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
   const dropdownWrapRef = useRef<HTMLDivElement>(null);
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   /* Hover opens the flyout; a click while already hovered *pins* it open
@@ -128,6 +129,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
   }, [pathname]);
 
   useScrollLock(drawerOpen);
+  useDialogFocus(drawerRef, drawerOpen);
 
   /* While the Products & Services flyout is open: Escape closes it and
      returns focus to the trigger, a pointer down anywhere outside the wrapper
@@ -507,16 +509,19 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
 
       {/* Off-canvas drawer — slides in from the right edge */}
       <aside
+        ref={drawerRef}
         id="site-navigation-drawer"
+        data-scrollable="true"
+        inert={!drawerOpen}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className={`header-drawer fixed inset-y-0 right-0 z-50 flex w-[82vw] max-w-[360px] flex-col overflow-y-auto border-l border-[#d4af37]/25 transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`header-drawer fixed inset-y-0 right-0 z-50 flex w-[82vw] max-w-[360px] flex-col overflow-y-auto overscroll-contain border-l border-[#d4af37]/25 transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
           drawerOpen ? 'visible translate-x-0' : 'invisible translate-x-full'
         }`}
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between border-b border-[#d4af37]/20 px-5 py-4">
+        <div className="shrink-0 flex items-center justify-between border-b border-[#d4af37]/20 px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="logo-chrome relative h-9 w-9 shrink-0 overflow-hidden rounded-full border">
               <Image src="/images/logo.png" alt="" fill sizes="36px" className="object-contain p-1" />
@@ -542,7 +547,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
         </div>
 
         {/* Nav links — staggered entrance */}
-        <nav aria-label="Mobile" className="flex flex-col px-5 py-2">
+        <nav aria-label="Mobile" className="shrink-0 flex flex-col px-5 py-2">
           {DRAWER_LINKS.map((item, i) => (
             <Link
               key={item.href}
@@ -559,7 +564,7 @@ export default function Header({ teaser }: { teaser?: TrendingTeaser | null }) {
         </nav>
 
         {/* Social tray + direct action, anchored to the base */}
-        <div className="mt-auto px-5 pb-6 pt-5">
+        <div className="mt-auto shrink-0 px-5 pb-6 pt-5">
           <p className="section-kicker mb-3 text-[10px] text-[var(--text-subtle)]">Connect</p>
           <div className="flex flex-wrap gap-2">
             {SOCIAL_LINKS.map((social, i) => (

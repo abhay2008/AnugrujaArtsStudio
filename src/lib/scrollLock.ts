@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type RefObject } from 'react';
 
 /**
  * Global scroll lock manager.
@@ -21,8 +21,9 @@ function isScrollableElement(el: HTMLElement | null): boolean {
   let current: HTMLElement | null = el;
   while (current && current !== document.body && current !== document.documentElement) {
     if (current.getAttribute('data-scrollable') === 'true' || current.classList.contains('allow-scroll')) {
-      const { overflowY } = window.getComputedStyle(current);
-      if (['auto', 'scroll'].includes(overflowY) && current.scrollHeight > current.clientHeight) {
+      const { overflowX, overflowY } = window.getComputedStyle(current);
+      if ((['auto', 'scroll'].includes(overflowY) && current.scrollHeight > current.clientHeight) ||
+          (['auto', 'scroll'].includes(overflowX) && current.scrollWidth > current.clientWidth)) {
         return true;
       }
     }
@@ -44,6 +45,8 @@ function handlePreventTouch(e: TouchEvent) {
   if (isScrollableElement(e.target as HTMLElement)) {
     return;
   }
+  // Native multi-touch is needed by zoomable lightboxes.
+  if (e.touches.length > 1) return;
   // Otherwise block touchmove to prevent body rubber-banding / scrolling
   if (e.cancelable) {
     e.preventDefault();
@@ -84,7 +87,8 @@ export function lockScroll() {
 export function unlockScroll() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  lockCount = Math.max(0, lockCount - 1);
+  if (lockCount === 0) return;
+  lockCount--;
 
   if (lockCount === 0) {
     const docEl = document.documentElement;
@@ -99,6 +103,30 @@ export function unlockScroll() {
     window.removeEventListener('wheel', handlePreventWheel, { capture: true });
     window.removeEventListener('touchmove', handlePreventTouch, { capture: true });
   }
+}
+
+/** Trap focus in a body-level drawer/dialog and return it to its opener. */
+export function useDialogFocus(ref: RefObject<HTMLElement | null>, open: boolean) {
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const root = ref.current;
+    const controls = () => Array.from(root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), [tabindex="0"]')).filter((el) => el.getClientRects().length > 0);
+    controls()[0]?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const items = controls();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !root.contains(document.activeElement))) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !root.contains(document.activeElement))) {
+        event.preventDefault(); first?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); previous?.focus({ preventScroll: true }); };
+  }, [open, ref]);
 }
 
 /**

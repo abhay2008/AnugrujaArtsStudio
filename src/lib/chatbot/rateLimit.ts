@@ -1,10 +1,9 @@
 /**
  * In-memory sliding-window rate limiter for the chat API.
  *
- * Sized for the OpenRouter free tier (~1000 requests/day on accounts with
- * lifetime credits) with a comfortable margin: 8 messages per minute and
- * 40 messages per day per IP. Good-faith visitors never notice it; scrapers
- * and scripted abuse get a soft stop instead of burning the studio's quota.
+ * Active AI quota: 30 requests per 25-minute sliding window per IP.
+ * Legacy minute/day factories remain for compatibility with older callers;
+ * the chat endpoint uses only createSlidingRateLimiter.
  */
 
 export interface RateVerdict {
@@ -78,12 +77,41 @@ export function createRateLimiter(options: { perMinute?: number; perDay?: number
 }
 
 /**
- * Limiter for the OpenRouter LLM path only — sized to protect the free-tier
- * quota (8/min, 40/day). Because the route only consults this AFTER the
- * preprogrammed/FAQ/cache layers, deterministic answers never consume the
- * studio's OpenRouter budget.
+ * Exact AI sliding window with bounded memory. The local responder is used
+ * after the quota, rather than emitting an unhelpful HTTP 429.
  */
-export const chatRateLimiter = createRateLimiter();
+export function createSlidingRateLimiter(options: { maxRequests?: number; windowMs?: number; maxIdentifiers?: number } = {}) {
+  const maxRequests = options.maxRequests ?? 30;
+  const windowMs = options.windowMs ?? 25 * 60 * 1000;
+  const maxIdentifiers = options.maxIdentifiers ?? 10_000;
+  const logs = new Map<string, number[]>();
+  let lastPrune = 0;
+  return {
+    check(identifier: string, now = Date.now()) {
+      if (now - lastPrune >= 60_000) {
+        lastPrune = now;
+        for (const [key, times] of logs) {
+          if (now - times[times.length - 1] >= windowMs) logs.delete(key);
+        }
+      }
+      const times = (logs.get(identifier) ?? []).filter((t) => now - t < windowMs);
+      if (times.length >= maxRequests) {
+        logs.set(identifier, times);
+        return { allowed: false, remaining: 0, retryAfterSeconds: Math.max(1, Math.ceil((times[0] + windowMs - now) / 1000)) };
+      }
+      // Do not evict active quotas to make room: unknown IPs use the local
+      // responder while the bounded store is saturated.
+      if (!logs.has(identifier) && logs.size >= maxIdentifiers) {
+        return { allowed: false, remaining: 0, retryAfterSeconds: 60 };
+      }
+      times.push(now);
+      logs.set(identifier, times);
+      return { allowed: true, remaining: maxRequests - times.length, retryAfterSeconds: 0 };
+    },
+  };
+}
+
+export const chatRateLimiter = createSlidingRateLimiter();
 
 /**
  * Generous abuse cap applied to ALL chat traffic, including free layers.

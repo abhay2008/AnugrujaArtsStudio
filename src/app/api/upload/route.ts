@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { commitBinaryFile, githubConfigured } from '@/lib/github';
 import { cookieIsValid, COOKIE_NAME } from '@/lib/adminAuth';
+import { refreshFreshContent } from '@/lib/freshContent';
+import { resetRagIndex } from '@/lib/chatbot/rag';
+import { randomUUID } from 'crypto';
+import sharp from 'sharp';
 
 const mimeToExt: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -33,16 +37,23 @@ export async function POST(req: NextRequest) {
     }
 
     const mime = match[1].trim().toLowerCase();
-    const rawExt = (filename?.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const ext = mimeToExt[mime] || rawExt || 'jpg';
+    if (!mimeToExt[mime] || mime === 'image/svg+xml') return NextResponse.json({ error: 'Unsupported image format. Upload a raster photo.' }, { status: 400 });
     const buffer = Buffer.from(match[2].trim(), 'base64');
+    if (!buffer.length || buffer.length > 12 * 1024 * 1024) return NextResponse.json({ error: 'Choose a photo up to 12 MB.' }, { status: 400 });
+    let optimized: Buffer;
+    try {
+      optimized = await sharp(buffer, { limitInputPixels: 40_000_000 }).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer();
+    } catch {
+      return NextResponse.json({ error: 'The photo could not be decoded. Choose a valid image.' }, { status: 400 });
+    }
+    const ext = 'webp';
 
     const safeBase =
       (filename || 'artwork')
         .replace(/[^a-zA-Z0-9._-]/g, '-')
         .replace(/\.[^.]+$/, '')
         .slice(0, 40) || 'artwork';
-    const unique = `${Date.now()}-${safeBase}.${ext}`;
+    const unique = `${randomUUID()}-${safeBase}.${ext}`;
 
     // Safely write to local public/images if available
     let localOk = false;
@@ -51,7 +62,7 @@ export async function POST(req: NextRequest) {
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      fs.writeFileSync(path.join(uploadDir, unique), buffer);
+      fs.writeFileSync(path.join(uploadDir, unique), optimized);
       localOk = true;
     } catch (fsErr) {
       console.warn('Local file write skipped or failed (expected on serverless):', fsErr);
@@ -62,11 +73,12 @@ export async function POST(req: NextRequest) {
       try {
         commitResult = await commitBinaryFile(
           `public/images/${unique}`,
-          buffer,
+          optimized,
           `Upload artwork asset ${unique}`
         );
       } catch (ghErr) {
         console.warn('GitHub commit failed for uploaded asset:', ghErr);
+        return NextResponse.json({ error: 'Photo publishing to GitHub failed. Please retry; the event draft was not changed.' }, { status: 502 });
       }
     } else if (!localOk) {
       return NextResponse.json(
@@ -75,7 +87,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    resetRagIndex();
+    await refreshFreshContent(true);
     return NextResponse.json({
+      localSaved: localOk,
       url: `/images/${unique}`,
       github: commitResult,
     });

@@ -125,7 +125,7 @@ export default function RootLayout({
             transition wrapper use transforms, which would turn `fixed`
             into "sized to that div" instead of the viewport. */}
         <StudioPreloader />
-        {children}
+        <div id="site-surface" className="min-w-0 flex-1">{children}</div>
       </body>
     </html>
   );

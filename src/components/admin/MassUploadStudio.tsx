@@ -838,7 +838,7 @@ export default function MassUploadStudio() {
 
               {/* Price and availability only exist for work that is for sale. */}
               {active.forSale && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="site-label" htmlFor="up-price">
                       Price (₹)
@@ -881,7 +881,7 @@ export default function MassUploadStudio() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="site-label" htmlFor="up-medium">
                     Medium (optional)

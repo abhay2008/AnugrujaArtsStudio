@@ -2,11 +2,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, X, Send, Sparkles, Square } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Square, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
 import { useChatNudge } from './useChatNudge';
 import { readPerfTier } from '@/lib/perfTier';
+import { useDialogFocus, useScrollLock } from '@/lib/scrollLock';
+import { useReducedMotion } from '@/lib/useReducedMotion';
+import { renderRich } from './markdown';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -33,91 +36,8 @@ interface ChatbotConfig {
 const WHATSAPP_URL = 'https://wa.me/919849238464';
 
 /** Shown when the CMS doesn't define suggested prompts — guide visitors to
- *  the cheap, well-answered paths (preprogrammed layer, zero LLM cost). */
+ *  the studio topics visitors ask about most. */
 const DEFAULT_CHIPS = ['What paintings are for sale?', 'What classes do you offer?', 'How much is painting 7?'];
-
-/** Bold segments (**…**) and internal links within one line — no HTML injection. */
-function boldify(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(\/[^)]*\))/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <strong key={i} className="font-semibold text-studio-gold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    const link = part.match(/^\[([^\]]+)\]\((\/[^)]*)\)$/);
-    if (link) {
-      return (
-        <a
-          key={i}
-          href={link[2]}
-          className="font-semibold text-studio-gold underline decoration-studio-gold/50 underline-offset-2 hover:decoration-studio-gold"
-        >
-          {link[1]}
-        </a>
-      );
-    }
-    return <React.Fragment key={i}>{part}</React.Fragment>;
-  });
-}
-
-/**
- * Render the model's light markdown (paragraphs, bullet/numbered lists,
- * **bold**) safely. Markdown tables from the model degrade to plain lines.
- */
-function renderRich(text: string): React.ReactNode {
-  const lines = text.split('\n');
-  const blocks: React.ReactNode[] = [];
-  let listItems: string[] = [];
-  let ordered = false;
-
-  const flushList = (key: string) => {
-    if (listItems.length === 0) return;
-    blocks.push(
-      <ul
-        key={key}
-        className={`my-1 ml-4 space-y-0.5 ${ordered ? 'list-decimal' : 'list-disc'}`}
-      >
-        {listItems.map((li, i) => (
-          <li key={i} className="pl-0.5">
-            {boldify(li)}
-          </li>
-        ))}
-      </ul>
-    );
-    listItems = [];
-  };
-
-  lines.forEach((raw, i) => {
-    const line = raw.trim();
-    const bullet = line.match(/^[-*•]\s+(.*)$/);
-    const numbered = line.match(/^\d+[.)]\s+(.*)$/);
-    if (bullet) {
-      if (ordered) flushList(`l${i}`);
-      ordered = false;
-      listItems.push(bullet[1]);
-      return;
-    }
-    if (numbered) {
-      if (!ordered) flushList(`l${i}`);
-      ordered = true;
-      listItems.push(numbered[1]);
-      return;
-    }
-    flushList(`l${i}`);
-    if (!line) return;
-    blocks.push(
-      <p key={`p${i}`} className={i > 0 ? 'mt-1.5' : ''}>
-        {boldify(line)}
-      </p>
-    );
-  });
-  flushList('end');
-
-  return <>{blocks}</>;
-}
 
 export default function ChatWidget() {
   const [config, setConfig] = useState<ChatbotConfig>({
@@ -141,9 +61,29 @@ export default function ChatWidget() {
   const { nudge, clear: clearNudge } = useChatNudge();
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const openRef = useRef(false);
+  const pinnedRef = useRef(true);
+  const reducedMotion = useReducedMotion();
+  const [jumpVisible, setJumpVisible] = useState(false);
+  const [viewport, setViewport] = useState<{ height: number; top: number } | null>(null);
+  useScrollLock(open);
+  useDialogFocus(panelRef, open);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    const update = () => setViewport({ height: vv?.height ?? window.innerHeight, top: vv?.offsetTop ?? 0 });
+    update();
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    return () => { vv?.removeEventListener('resize', update); vv?.removeEventListener('scroll', update); };
+  }, [open]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   useEffect(() => {
     openRef.current = open;
@@ -191,8 +131,13 @@ export default function ChatWidget() {
         sessionStorage.setItem('chitra_history', JSON.stringify(messages.slice(-40)));
       } catch {}
     }
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, streaming]);
+    if (!open || !pinnedRef.current) return;
+    const frame = requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: streaming || reducedMotion ? 'auto' : 'smooth' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, streaming, open, reducedMotion]);
 
   // ESC to close.
   useEffect(() => {
@@ -245,6 +190,8 @@ export default function ChatWidget() {
       const trimmed = text.trim();
       if (!trimmed || streaming) return;
 
+      pinnedRef.current = true;
+      setJumpVisible(false);
       setShowChips(false);
       const userMsg: ChatMsg = { role: 'user', content: trimmed };
       // Error/pending bubbles are local UI state only — the API must receive
@@ -301,8 +248,8 @@ export default function ChatWidget() {
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next[next.length - 1];
-                if (last?.role === 'assistant' && last.pending) {
-                  next[next.length - 1] = { ...last, wa, image, maps, layer };
+                if (last?.role === 'assistant') {
+                  next[next.length - 1] = { ...last, wa: wa ?? last.wa, image: image ?? last.image, maps: maps ?? last.maps, layer: layer ?? last.layer };
                 }
                 return next;
               });
@@ -338,6 +285,7 @@ export default function ChatWidget() {
         while (!(chunk = await reader.read()).done) {
           parser.push(decoder.decode(chunk.value, { stream: true }));
         }
+        parser.push(decoder.decode());
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') {
           if (timedOut) {
@@ -392,6 +340,8 @@ export default function ChatWidget() {
       if (!v) clearNudge();
       return !v;
     });
+    pinnedRef.current = true;
+    setJumpVisible(false);
     setShowChips(true);
     setUnread(false);
   }, [clearNudge]);
@@ -400,12 +350,14 @@ export default function ChatWidget() {
 
   const chatPanel = (
     <div
+      ref={panelRef}
       role="dialog"
+      aria-modal="true"
       aria-label="Chat with Chitra, the studio assistant"
       className="chat-panel fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-studio-gold/30 bg-[#160523]/98 shadow-2xl backdrop-blur-xl
                  inset-x-3 bottom-3 max-h-[min(78dvh,620px)] h-[min(78dvh,620px)]
                  sm:inset-x-auto sm:bottom-40 sm:right-6 sm:w-[min(calc(100vw-3rem),400px)] sm:h-[min(72dvh,580px)] sm:max-h-[calc(100dvh-11rem)]"
-      style={{ boxShadow: '0 0 40px rgba(242,215,112,0.15), 0 20px 60px rgba(0,0,0,0.6)' }}
+      style={{ '--chat-vvh': viewport ? `${viewport.height}px` : '100dvh', '--chat-vtop': `${viewport?.top ?? 0}px`, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' } as React.CSSProperties}
     >
       {/* Header — deep-plum → sunset gradient sheen */}
       <div className="chat-header relative flex items-center gap-3 border-b border-studio-gold/20 px-4 py-3.5">
@@ -414,8 +366,8 @@ export default function ChatWidget() {
           <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#1d062e]" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-blippo text-base leading-none text-[#ffe76c]">Chitra</p>
-          <p className="mt-1.5 text-[11px] font-medium tracking-wide text-emerald-300/90">Online · replies instantly</p>
+          <p className="font-decorative font-bold text-base leading-none text-[#ffe76c]">Chitra</p>
+          <p className="mt-1.5 text-[11px] font-medium tracking-wide text-emerald-300/90">Your studio companion</p>
         </div>
         <a
           href={WHATSAPP_URL}
@@ -436,7 +388,11 @@ export default function ChatWidget() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="chat-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} data-scrollable="true" onScroll={(event) => {
+        const el = event.currentTarget;
+        pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 72;
+        setJumpVisible(!pinnedRef.current);
+      }} className="chat-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -445,7 +401,7 @@ export default function ChatWidget() {
             <div
               className={`chat-bubble max-w-[86%] px-4 py-3 text-[14px] leading-relaxed sm:text-[14.5px] ${
                 m.role === 'user'
-                  ? 'chat-bubble--user chat-bubble--gold font-medium text-purple-950'
+                  ? 'chat-bubble--user font-medium text-yellow-100'
                   : 'chat-bubble--bot border border-studio-gold/20 text-yellow-50'
               }`}
             >
@@ -500,6 +456,12 @@ export default function ChatWidget() {
         ))}
       </div>
 
+      {jumpVisible && <button type="button" className="chat-jump" onClick={() => {
+        pinnedRef.current = true;
+        setJumpVisible(false);
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
+      }}>Jump to latest reply ↓</button>}
+
       {/* Suggested prompts — docked above the input like a quick-reply bar.
           Always in the same place, never interleaved with the transcript. */}
       {showChips && (
@@ -507,11 +469,16 @@ export default function ChatWidget() {
           <p className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] font-bold tracking-[0.14em] text-studio-gold/70 uppercase">
             <Sparkles className="h-3 w-3" aria-hidden />
             Try asking
+            <span className="ml-auto flex gap-1">
+              <button type="button" aria-label="Previous suggested questions" className="min-h-[44px] min-w-[44px] rounded-lg border border-studio-gold/20" onClick={() => chipsRef.current?.scrollBy({ left: -240, behavior: reducedMotion ? 'auto' : 'smooth' })}><ChevronLeft className="mx-auto h-4 w-4" /></button>
+              <button type="button" aria-label="More suggested questions" className="min-h-[44px] min-w-[44px] rounded-lg border border-studio-gold/20" onClick={() => chipsRef.current?.scrollBy({ left: 240, behavior: reducedMotion ? 'auto' : 'smooth' })}><ChevronRight className="mx-auto h-4 w-4" /></button>
+            </span>
           </p>
-          <div className="chat-chip-row flex gap-2 overflow-x-auto pb-1">
+          <div ref={chipsRef} data-scrollable="true" tabIndex={0} aria-label="Suggested questions; swipe for more" className="chat-chip-row flex min-w-0 gap-2 overflow-x-auto pb-1">
             {(config.suggestedPrompts.length > 0 ? config.suggestedPrompts : DEFAULT_CHIPS).slice(0, 6).map((p, i) => (
               <button
                 key={p}
+                disabled={streaming}
                 onClick={() => void send(p)}
                 style={{ animationDelay: `${0.15 + i * 0.06}s` }}
                 className="chat-chip shrink-0 whitespace-nowrap rounded-full border border-studio-gold/30 px-3.5 py-2 text-[12px] font-medium text-yellow-100/90 transition-all hover:-translate-y-0.5 hover:border-studio-gold/70 hover:bg-purple-900 hover:text-white hover:shadow-[0_4px_14px_rgba(242,215,112,0.18)] active:scale-95"
@@ -524,7 +491,7 @@ export default function ChatWidget() {
       )}
 
       {/* Input */}
-      <form onSubmit={submit} className="chat-input-bar flex items-center gap-2 border-t border-studio-gold/20 px-3 py-3">
+      <form onSubmit={submit}          className="chat-input-bar flex items-center gap-2 border-t border-studio-gold/20 px-3 py-3">
         <input
           ref={inputRef}
           value={input}
@@ -532,7 +499,7 @@ export default function ChatWidget() {
           placeholder="Ask about art, prices, classes…"
           maxLength={1000}
           aria-label="Type your message"
-          className="min-w-0 flex-1 rounded-xl border border-studio-gold/30 bg-purple-950/50 px-4 py-3 text-[14px] text-yellow-50 placeholder-yellow-100/35 transition-colors focus:border-studio-gold/70 focus:bg-purple-950/80 focus:outline-none focus:shadow-[0_0_0_3px_rgba(242,215,112,0.12)]"
+          className="min-w-0 flex-1 rounded-xl border border-studio-gold/30 bg-purple-950/50 px-4 py-3 text-base text-yellow-50 placeholder-yellow-100/35 transition-colors focus:border-studio-gold/70 focus:bg-purple-950/80 focus:outline-none focus:shadow-[0_0_0_3px_rgba(242,215,112,0.12)]"
         />
         {streaming ? (
           <button

@@ -20,7 +20,7 @@ export default function AdminLayout({
 }) {
   return (
     <SiteProvider>
-      <div className="min-h-dvh bg-[#100318] text-[#fdf5cf]">{children}</div>
+      <div className="admin-surface min-h-dvh bg-[#100318] text-[#fdf5cf]">{children}</div>
     </SiteProvider>
   );
 }

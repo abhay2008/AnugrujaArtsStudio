@@ -154,7 +154,7 @@ export default function GalleryManager() {
         {/* Search & View Mode Switcher */}
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           {/* Search Box */}
-          <div className="relative flex-1 sm:w-64 lg:w-72">
+          <div className="relative min-w-0 w-full sm:flex-1 sm:w-64 lg:w-72">
             <Search className="w-4 h-4 text-yellow-200/40 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -369,7 +369,7 @@ export default function GalleryManager() {
                 )}
 
                 {/* Steppers & Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-purple-900/40">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-purple-900/40">
                   <div className="flex items-center gap-1">
                     <button
                       title="Move to top (1st position)"
@@ -445,18 +445,18 @@ export default function GalleryManager() {
           {filteredItems.map(({ item, originalIdx: idx }) => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-3 rounded-xl bg-[#190626] border border-studio-gold/25 hover:border-studio-gold/60 transition-all"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl bg-[#190626] border border-studio-gold/25 hover:border-studio-gold/60 transition-all"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <span className="w-9 text-center text-xs font-mono font-bold text-studio-gold bg-black/40 py-1 px-1.5 rounded-md border border-purple-900">
                   #{idx + 1}
                 </span>
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-black/40 border border-purple-900 shrink-0">
                   <Image src={item.src} alt={item.title} fill className="object-cover" />
                 </div>
-                <div>
+                <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                   <h4 className="font-bold text-sm text-[#fdf5cf] leading-tight">{item.title}</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-2 mt-0.5">
                     <span className="text-xs text-yellow-200/60">{item.category || galleryDef.defaultCategory}</span>
                     {item.price && (
                       <span className="text-xs font-mono text-emerald-300 font-semibold">• {item.price}</span>
@@ -465,7 +465,7 @@ export default function GalleryManager() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center justify-end gap-2">
                 <div className="flex items-center gap-1">
                   <button
                     title="Jump position"

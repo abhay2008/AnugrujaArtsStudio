@@ -16,6 +16,8 @@ import {
   MAX_MESSAGE_CHARS,
 } from '../src/lib/chatbot/guardrails';
 import { createRateLimiter } from '../src/lib/chatbot/rateLimit';
+import { routeMessage as classifyMessage } from '../src/lib/chatbot/router';
+const routeMessage = (text: string) => classifyMessage(text, { fallback: true });
 import { detectTanglish, whatsappTag, matchByTitleTokens } from '../src/lib/chatbot/lookup';
 import { logLlmQuery, getLlmQueryStats, clearLlmQueryLog } from '../src/lib/chatbot/queryLog';
 
@@ -570,7 +572,8 @@ for (const q of mustStayDeterministic) {
 // ── 11. Smart router: preprogrammed vs FAQ vs LLM ───────────────────────
 section('Smart router (tiered decision layer)');
 
-import { routeMessage } from '../src/lib/chatbot/router';
+assert(classifyMessage('Hi').action === 'llm', 'primary greeting always reaches OpenRouter');
+assert(classifyMessage('How much is painting 12?').action === 'llm', 'primary painting query never intercepted');
 
 // Clear intents → preprogrammed (zero OpenRouter cost).
 assert(routeMessage('What paintings do you have for sale?').action === 'preprogrammed', 'sale catalog → preprogrammed');

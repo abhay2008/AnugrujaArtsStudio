@@ -230,12 +230,12 @@ export default function QuickNavManager() {
                 </div>
               ) : (
                 /* -------- read mode -------- */
-                <div className="flex items-center gap-3 p-3.5">
+                <div className="grid grid-cols-[16px_32px_minmax(0,1fr)] md:grid-cols-[16px_32px_minmax(0,1fr)_auto] items-center gap-3 p-3.5">
                   <GripVertical className="w-4 h-4 text-yellow-200/25 shrink-0" />
                   <span className="w-8 text-center text-xs font-mono font-bold text-studio-gold bg-black/40 py-1 px-1 rounded-md border border-purple-900 shrink-0">
                     {idx + 1}
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 break-words [overflow-wrap:anywhere]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm text-[#fdf5cf]">{item.label}</span>
                       <code className="text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-amber-300 border border-purple-900">
@@ -249,7 +249,7 @@ export default function QuickNavManager() {
                       <p className="text-xs text-yellow-100/50 mt-0.5 truncate">{item.subtitle}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="col-span-3 md:col-span-1 flex items-center justify-end gap-2 border-t border-purple-900/50 pt-2 md:border-0 md:pt-0">
                     <button
                       title="Move up"
                       disabled={idx === 0}

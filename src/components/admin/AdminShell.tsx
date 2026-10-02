@@ -36,8 +36,8 @@ export function useCommitFlow() {
     setIsCommitting(true);
     setCommitStatus('Committing changes directly to the GitHub main branch…');
     try {
-      await save();
-      setCommitStatus('Committed to GitHub — the live build will pick it up shortly.');
+      const commitUrl = await save();
+      setCommitStatus(commitUrl ? 'Changes committed to GitHub repository main branch.' : 'Saved locally only — GitHub is not configured.');
       setReviewOpen(false);
     } catch (err) {
       setCommitStatus(`Error: ${err instanceof Error ? err.message : 'Save failed'}`);
@@ -101,18 +101,18 @@ export function AdminTopBar({
   return (
     <header className="sticky top-0 z-40 border-b border-studio-gold/25 bg-[#160523]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-studio-gold/40 bg-gradient-to-br from-purple-800/70 via-amber-700/60 to-yellow-600/50">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-studio-gold/40 bg-gradient-to-br from-purple-800/70 via-amber-700/60 to-yellow-600/50">
             <Palette className="h-4 w-4 text-[#ffe76c]" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="font-blippo text-lg leading-none tracking-wide text-[#ffe76c]">{title}</h1>
             <p className="mt-1 text-[11px] text-yellow-100/60">{subtitle}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <nav className="hidden items-center gap-1.5 sm:flex">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <nav aria-label="Admin workspaces" data-scrollable="true" className="flex max-w-full items-center gap-1.5 overflow-x-auto">
             {NAV.map((item) => {
               const Icon = item.icon;
               const isActive = item.match === active;
@@ -120,7 +120,7 @@ export function AdminTopBar({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
                     isActive
                       ? 'border-studio-gold/70 bg-studio-purple/70 text-studio-gold'
                       : 'border-purple-900/60 bg-purple-950/60 text-yellow-100/75 hover:border-studio-gold/40 hover:text-white'
@@ -136,6 +136,7 @@ export function AdminTopBar({
           <Link
             href="/"
             target="_blank"
+            aria-label="Open public website"
             className="inline-flex items-center gap-1.5 rounded-xl border border-purple-900/60 bg-purple-950/60 px-3 py-1.5 text-xs font-semibold text-yellow-100/75 transition-colors hover:border-studio-gold/40 hover:text-white"
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -145,6 +146,7 @@ export function AdminTopBar({
           <button
             type="button"
             onClick={() => void signOut()}
+            aria-label="Sign out"
             className="inline-flex items-center gap-1.5 rounded-xl border border-red-900/60 bg-red-950/50 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-900/70"
           >
             <LogOut className="h-3.5 w-3.5" />
@@ -165,7 +167,7 @@ export function AdminTopBar({
 /** Floating commit bar used by the no-preview workspace. */
 export function AdminSavePill({ flow }: { flow: CommitFlow }) {
   return (
-    <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-studio-gold/30 bg-[#160523] px-3 py-2 shadow-2xl">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap justify-center items-center gap-2 rounded-full border border-studio-gold/30 bg-[#160523] px-3 py-2 shadow-2xl">
       <span className="hidden max-w-[16rem] truncate pl-2 text-[11px] font-medium text-yellow-100/70 sm:inline">
         {flow.status || 'Changes are stored in this browser until committed'}
       </span>

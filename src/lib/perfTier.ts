@@ -42,7 +42,8 @@ export const PERF_TIER_VALUE_SCRIPT = `(function(){try{
   var slowNet=(type==='slow-2g'||type==='2g'||type==='3g');
   var mem=typeof navigator.deviceMemory==='number'?navigator.deviceMemory:null;
   var cores=typeof navigator.hardwareConcurrency==='number'?navigator.hardwareConcurrency:null;
-  var weak=reduced||saveData||slowNet||(mem!==null&&mem<=2)||(cores!==null&&cores<=2);
+  var phone=matchMedia('(max-width: 767px) and (pointer: coarse)').matches;
+  var weak=phone||reduced||saveData||slowNet||(mem!==null&&mem<=2)||(cores!==null&&cores<=2);
   d.setAttribute('data-perf',weak?'lite':'full');
 }catch(e){}})();`;
 

@@ -11,6 +11,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
 
 const ROOT = process.cwd();
 const SUFFIXES = ['.ts', '.tsx', '/index.ts', '/index.tsx', '.js', '.mjs'];
@@ -34,6 +35,10 @@ export async function resolve(specifier, context, next) {
 
 /** Bundlers allow `import data from './x.json'`; Node wants an import attribute. */
 export async function load(url, context, next) {
+  if (url.endsWith('.tsx')) {
+    const source = await readFile(new URL(url), 'utf8');
+    return { format: 'module', source: ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText, shortCircuit: true };
+  }
   if (url.endsWith('.json')) {
     return { format: 'json', source: await readFile(new URL(url), 'utf8'), shortCircuit: true };
   }

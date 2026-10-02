@@ -62,7 +62,7 @@ export default function StudioConsole({ flow }: { flow: CommitFlow }) {
   }, [content.galleries, getPendingChanges]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
+    <div className="admin-console mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
       <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
         <StatCard label="Total Artworks" value={stats.totalArtworks} note="live items" icon={ImageIcon} tone="gold" />
         <StatCard label="Galleries" value={stats.collectionsCount} note="categories" icon={FolderOpen} tone="amber" />
@@ -76,7 +76,7 @@ export default function StudioConsole({ flow }: { flow: CommitFlow }) {
         />
       </div>
 
-      <div className="no-scrollbar flex items-center gap-2 overflow-x-auto border-b border-purple-900/60 pb-3">
+      <div data-scrollable="true" className="no-scrollbar flex items-center gap-2 overflow-x-auto border-b border-purple-900/60 pb-3">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -148,13 +148,13 @@ function StatCard({
 
   return (
     <div className="rounded-2xl border border-studio-gold/25 bg-[#190626]/90 p-4 shadow-lg transition-all hover:border-studio-gold/50">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] font-bold uppercase tracking-wider text-yellow-200/60">{label}</span>
         <div className="rounded-lg border border-purple-800/60 bg-purple-950/80 p-1.5 text-studio-gold">
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
+      <div className="mt-2 flex flex-wrap items-baseline gap-2">
         <span className={`font-blippo text-2xl md:text-3xl ${toneClass}`}>{value}</span>
         <span className="text-xs text-yellow-100/50">{note}</span>
       </div>

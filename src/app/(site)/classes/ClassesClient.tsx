@@ -2,169 +2,72 @@
 
 import Image from 'next/image';
 import Carousel3D from '@/components/Carousel3D';
-import AutoScroller from '@/components/AutoScroller';
 import ContactActionButtons from '@/components/ContactActionButtons';
-import { classGallery, watercolorGallery } from '@/data/artData';
+import { classGallery, watercolorGallery, studioMeta } from '@/data/artData';
 import { useLightbox } from '@/components/LightboxContext';
-import { GraduationCap, Droplet, Brush, CheckCircle, Clock, Users, Sparkles } from 'lucide-react';
+import { GraduationCap, Droplet, Brush, MessageCircle } from 'lucide-react';
+
+function Inquiry({ course }: { course: string }) {
+  const href = studioMeta.whatsappWaMe ? `${studioMeta.whatsappWaMe}?text=${encodeURIComponent(`Hello, I’d like to enquire about ${course}. Please share fees, timings and admission details.`)}` : studioMeta.whatsappUrl;
+  return <a href={href} target="_blank" rel="noopener noreferrer" className="course-inquiry"><MessageCircle className="h-4 w-4" />Enquire about this course</a>;
+}
 
 export default function ClassesClient() {
   const { openLightbox } = useLightbox();
-
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-16">
-      {/* Title */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-pill text-xs text-studio-sunset mb-1">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Curriculum &amp; Masterclasses</span>
+    <div className="courses-page mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 space-y-8 sm:space-y-10">
+      <header className="text-center space-y-2">
+        <p className="section-kicker">The Anugruja Art School</p>
+        <h1 className="font-decorative font-bold">Classes &amp; Courses</h1>
+        <p className="font-editorial text-xl sm:text-2xl">Anuradha Govarthanan · Master Artist &amp; Mentor</p>
+        <p className="text-sm text-[var(--text-muted)]">Learn online worldwide or in person at the studio. Ages 7–70+.</p>
+        <nav aria-label="Course tracks" className="flex flex-wrap justify-center gap-2 pt-2">
+          <a href="#online" className="course-tag min-h-[44px] inline-flex items-center">Ongoing classes</a>
+          <a href="#water" className="course-tag min-h-[44px] inline-flex items-center">Watercolour mastery</a>
+          <a href="#short" className="course-tag min-h-[44px] inline-flex items-center">Art fundamentals</a>
+        </nav>
+      </header>
+
+      <section id="online" className="course-track glass-panel rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex items-center gap-3"><GraduationCap className="h-6 w-6 shrink-0" /><h2 className="font-decorative font-bold">Online &amp; Offline Ongoing Classes</h2></div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <article className="course-module">
+            <div className="flex flex-wrap items-center gap-2"><h3 className="font-editorial font-semibold text-xl">Young artists</h3><span className="course-tag">Ages 7–15</span></div>
+            <p className="mt-2 text-sm">Twice-weekly sessions for children under 15: pencil, coloured pencils, watercolour and soft pastel.</p>
+          </article>
+          <article className="course-module">
+            <div className="flex flex-wrap items-center gap-2"><h3 className="font-editorial font-semibold text-xl">Adults &amp; lifelong learners</h3><span className="course-tag">Ages 15–70+</span></div>
+            <p className="mt-2 text-sm">Weekly adult sessions exploring charcoal, watercolour, acrylic and oil painting. Timings are arranged with the studio.</p>
+          </article>
         </div>
-        <h1 className="font-decorative text-4xl sm:text-6xl gold-sunset-shimmer font-bold tracking-wide">
-          Classes &amp; Courses
-        </h1>
-        <p className="font-editorial text-xl sm:text-3xl text-amber-200 font-medium">
-          Anuradha Govarthanan &mdash; Master Artist &amp; Mentor
-        </p>
-        <p className="font-editorial text-lg sm:text-xl text-studio-gold/90 italic">
-          Online-Offline, Watercolour &amp; Comprehensive Fine Arts Programs
-        </p>
-      </div>
-
-      {/* 1. Online & Offline Classes */}
-      <section id="online" className="glass-panel-sunset p-6 sm:p-10 rounded-3xl space-y-8 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-studio-sunset/20 pb-4">
-          <GraduationCap className="w-8 h-8 text-studio-sunset" />
-          <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
-            Online &amp; Offline Classes
-          </h2>
-        </div>
-
-        {/* Course highlights in glass cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
-            <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
-              <CheckCircle className="w-5 h-5 text-studio-sunset" />
-              <span>Global Accessibility</span>
-            </div>
-            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
-              Classes are conducted online, accommodating students worldwide at their preferred timings.
-            </p>
-          </div>
-
-          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
-            <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
-              <Clock className="w-5 h-5 text-studio-sunset" />
-              <span>Age-specific Schedule</span>
-            </div>
-            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
-              Weekly classes: twice a week for kids under 15, and once a week for adults.
-            </p>
-          </div>
-
-          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
-            <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
-              <Users className="w-5 h-5 text-studio-sunset" />
-              <span>All Age Groups (7 to 70+)</span>
-            </div>
-            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
-              Open to ages 7 and above, extending warmly to teenagers, adults, and senior citizens.
-            </p>
-          </div>
-
-          <div className="glass-card p-5 rounded-2xl border border-theme space-y-2 hover:border-studio-sunset/50 transition-all">
-            <div className="flex items-center gap-2.5 text-studio-gold font-blippo font-bold text-base sm:text-lg">
-              <Brush className="w-5 h-5 text-studio-sunset" />
-              <span>Mediums by Age Group</span>
-            </div>
-            <p className="text-yellow-100/90 text-sm sm:text-base leading-relaxed">
-              <strong>Kids (under 15):</strong> Pencil, colored pencils, watercolor, soft pastel.<br />
-              <strong>Above 15:</strong> Charcoal, watercolor, acrylic, oil paintings.
-            </p>
-          </div>
-        </div>
-
-        {/* Student Art Gallery Slideshow */}
-        <div className="pt-4">
-          <p className="text-center text-studio-gold font-decorative text-xl sm:text-2xl mb-4">
-            Student Works &amp; Class Milestones
-          </p>
-          <Carousel3D items={classGallery} showInfo={false} />
+        <Inquiry course="online and offline ongoing art classes" />
+        <div className="course-showcase">
+          <h3 className="font-editorial text-xl text-center mb-2">Student Works &amp; Class Milestones</h3>
+          <Carousel3D items={classGallery} variant="rail" showInfo={false} autoAdvanceIntervalMs={0} />
         </div>
       </section>
 
-      <hr className="border-t border-studio-gold/20 max-w-4xl mx-auto w-full" />
-
-      {/* 2. Watercolor Courses */}
-      <section id="water" className="glass-panel p-6 sm:p-10 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-studio-gold/20 pb-4">
-          <Droplet className="w-8 h-8 text-studio-sunset" />
-          <div>
-            <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
-              Watercolour Courses
-            </h2>
-            <p className="font-editorial text-lg sm:text-xl text-amber-200/90 italic">
-              Develop your artistic watercolour mastery &amp; photorealistic techniques
-            </p>
-          </div>
+      <section id="water" className="course-track glass-panel rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex items-center gap-3"><Droplet className="h-6 w-6 shrink-0" /><h2 className="font-decorative font-bold">Unzipping Watercolour Mastery</h2></div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <article className="course-module"><span className="course-tag">3-month foundational</span><h3 className="font-editorial text-xl font-semibold mt-2">Build a confident foundation</h3><p className="text-sm mt-1">Art fundamentals, colour theory, transparent washes, glazing and wet-on-wet techniques.</p></article>
+          <article className="course-module"><span className="course-tag">6-month professional</span><h3 className="font-editorial text-xl font-semibold mt-2">Deepen your practice</h3><p className="text-sm mt-1">Comprehensive handling of the medium, developing impressionistic, landscape and photorealistic approaches.</p></article>
         </div>
-
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 text-sm sm:text-base text-yellow-100/90">
-          <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Unzipping Watercolor Course</p>
-          <ul className="space-y-2">
-            <li>• <strong className="text-studio-gold">Course Options:</strong> Choose between 3 months foundational or 6 months comprehensive mastery.</li>
-            <li>• <strong className="text-studio-gold">Course Content:</strong> Learn in-depth techniques of transparent watercolors. Covers art fundamentals, color theory, washes, glazing, and wet-on-wet mechanics.</li>
-            <li>• <strong className="text-studio-gold">Outcome:</strong> Gain deep mastery in handling the medium with ability to paint in impressionistic, landscape, and photorealistic styles.</li>
-          </ul>
-        </div>
-
-        <div className="pt-2">
-          <AutoScroller items={watercolorGallery} itemHeight="h-72" />
-        </div>
+        <Inquiry course="the 3-month or 6-month watercolour course" />
+        <div className="course-showcase"><Carousel3D items={watercolorGallery} variant="rail" showInfo={false} autoAdvanceIntervalMs={0} /></div>
       </section>
 
-      <hr className="border-t border-studio-gold/20 max-w-4xl mx-auto w-full" />
-
-      {/* 3. Short Term Courses */}
-      <section id="short" className="glass-panel p-6 sm:p-10 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-studio-gold/20 pb-4">
-          <Brush className="w-8 h-8 text-studio-sunset" />
-          <div>
-            <h2 className="font-decorative text-2xl sm:text-4xl text-studio-gold font-bold">
-              Short Term Courses
-            </h2>
-            <p className="font-editorial text-lg sm:text-xl text-amber-200/90 italic">
-              Learn the fundamentals of art, perspective, and sketching
-            </p>
-          </div>
-        </div>
-
-        <div
-          onClick={() => openLightbox('/images/sc.jpeg', 'Short Term Course Syllabus')}
-          className="relative max-w-md mx-auto h-[300px] sm:h-[380px] rounded-2xl overflow-hidden border-2 border-studio-gold/80 shadow-2xl cursor-pointer hover:scale-105 active:scale-95 transition-all bg-studio-dark/90 group"
-        >
-          <Image
-            src="/images/sc.jpeg"
-            alt="Short Term Course Sketching"
-            fill
-            className="object-contain p-2"
-          />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-            <span className="px-4 py-2 rounded-full glass-pill text-xs font-blippo text-studio-gold">
-              Click to view syllabus
-            </span>
-          </div>
-        </div>
-
-        <div className="glass-card p-5 sm:p-6 rounded-2xl border border-theme space-y-3 text-sm sm:text-base text-yellow-100/90">
-          <p className="font-decorative text-lg sm:text-xl gold-sunset-shimmer font-bold">Art Fundamental and Sketching Program</p>
-          <ul className="space-y-2">
-            <li>• <strong className="text-studio-gold">Course Duration:</strong> 2 months intensive curriculum.</li>
-            <li>• <strong className="text-studio-gold">Course Content:</strong> Learn the basics of sketching, forms, light &amp; shadows, and 1/2/3-point perspective both theoretically and practically. Mediums: Graphite, Charcoal, and Pencil.</li>
-          </ul>
+      <section id="short" className="course-track glass-panel rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex items-center gap-3"><Brush className="h-6 w-6 shrink-0" /><h2 className="font-decorative font-bold">Art Fundamentals &amp; Sketching</h2></div>
+        <div className="grid gap-4 sm:grid-cols-[1fr_220px] items-start">
+          <div className="course-module"><span className="course-tag">2-month intensive</span><h3 className="font-editorial text-xl font-semibold mt-2">See, understand, draw</h3><ul className="mt-2 list-disc pl-5 space-y-1 text-sm"><li>Forms, light and shadow</li><li>One-, two- and three-point perspective</li><li>Theory and practical sketching</li><li>Graphite, charcoal and pencil</li></ul><div className="mt-4"><Inquiry course="the 2-month art fundamentals and sketching program" /></div></div>
+          <button type="button" onClick={() => openLightbox('/images/sc.jpeg', 'Art Fundamentals & Sketching Syllabus')} className="course-syllabus relative h-[220px] w-full overflow-hidden rounded-xl border border-[var(--border-strong)]" aria-label="Enlarge the sketching course syllabus">
+            <Image src="/images/sc.jpeg" alt="Art fundamentals and sketching syllabus" fill sizes="(max-width: 640px) 90vw, 220px" className="object-contain p-2" />
+            <span className="absolute bottom-2 inset-x-2 course-tag">Tap to view syllabus</span>
+          </button>
         </div>
       </section>
-
-      {/* Contact buttons */}
+      <p className="text-center text-sm text-[var(--text-muted)]">Fees, batch availability and exact schedules are confirmed personally by the studio.</p>
       <ContactActionButtons />
     </div>
   );

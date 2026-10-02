@@ -175,7 +175,7 @@ export default function PreviewEditorPane() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div data-scrollable="true" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
         {tab === 'site' ? (
           <SiteWideFields />
         ) : (

@@ -3,7 +3,7 @@
    Imported after globals.css. Overlay gated on html[data-preloader='on'],
    which PreloaderScript sets before first paint on first-visit sessions.
    Scroll lock ships via .preloader-lock — no scrollbar ever paints.
-   All motion is opacity / transform / filter / clip-path (compositor-only).
+   Exit motion is opacity-only; no iris clipping or full-screen filters.
    ========================================================================== */
 
 .preloader-lock {
@@ -27,20 +27,17 @@ html[data-preloader='on'] .pl-root {
   overflow: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  animation: plVeilIn 0.45s ease-out both;
+  opacity: 1;
+  isolation: isolate;
   --pl-iris-end: 0px;
 }
 
-/* Exit: cinematic iris — the veil collapses onto the studio crest (the
-   landing page's logo disc). The target is re-measured by JS so on mobile
-   it lands on the crest beside the name, and on desktop on the header
-   logo after the header slides in. */
+/* Single fade over a settled surface: clipping a live mobile compositing
+   tree caused flicker and exposed the page before it was ready. */
 html[data-preloader='on'] .pl-root[data-entering='true'] {
   pointer-events: none;
   cursor: default;
-  animation:
-    plIris 1.05s cubic-bezier(0.7, 0, 0.2, 1) forwards,
-    plIrisVeil 1s cubic-bezier(0.6, 0, 0.4, 1) forwards 120ms;
+  animation: plIrisVeil 0.4s ease-out forwards;
 }
 
 @keyframes plVeilIn {
@@ -382,10 +379,10 @@ html[data-preloader='on'] .pl-root[data-entering='true'] {
 /* Letter cascade: rise + unblur + rotateX settle, 34ms apart */
 .pl-ch {
   display: inline-block;
-  opacity: 0;
-  transform: translateY(0.55em) rotateX(45deg) scale(0.85);
+  opacity: 1;
+  transform: none;
   transform-origin: 50% 100%;
-  filter: blur(6px);
+  filter: none;
   transition:
     opacity 0.6s ease,
     transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
@@ -499,7 +496,8 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-tagline,
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-beam,
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-hint,
 html[data-preloader='on'] .pl-root[data-entering='true'] .pl-crest {
-  animation: plContentOut 0.5s cubic-bezier(0.6, 0, 0.8, 0.4) forwards;
+  animation: none !important;
+  transition: none;
 }
 
 @keyframes plContentOut {
@@ -572,6 +570,18 @@ html[data-preloader='on'] .pl-root[data-entering='true'] .pl-crest {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Keep the SSR surface laid out but unpainted until the handoff. No height,
+   scroll-position, transform or clipping changes happen when the veil leaves. */
+html[data-preloader='on']:not([data-preloader-exit]) #site-surface { visibility: hidden; }
+html[data-preloader='on'] #site-surface { pointer-events: none; }
+html[data-preloader='on'] #site-surface > div { opacity: 1 !important; }
+html[data-preloader='on'] .pl-ch.is-in { animation: none; background: none; -webkit-text-fill-color: currentColor; }
+html[data-preloader='on'] .pl-tagline { padding-inline: 18px; text-align: center; }
+@media (max-width: 640px) {
+  html[data-preloader='on'] .pl-ring { animation: none; }
+  html[data-preloader='on'] .pl-crest-img { filter: none; }
 }
 
 /* ------------------------------------------------------------ small screens */
