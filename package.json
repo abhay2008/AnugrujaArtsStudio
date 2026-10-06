@@ -21,6 +21,7 @@
     "perf:serve": "NEXT_DIST_DIR=.next-perf next start -p 3311",
     "test:framing": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-photo-framing.ts",
     "test:chat": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chatbot.ts",
+    "test:chat:attachments": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chat-attachments.ts",
     "test:chat:pipeline": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chat-pipeline.ts",
     "test:e2e": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/e2e-chat.ts"
   },

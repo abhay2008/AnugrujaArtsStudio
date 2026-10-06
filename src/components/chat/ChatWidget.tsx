@@ -1,7 +1,20 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
+import {
+  featuredGallery,
+  workshopGallery,
+  testimonialGallery,
+  achievementGallery,
+  classGallery,
+  watercolorGallery,
+  saleGallery,
+  commissionGallery,
+} from '@/data/artData';
+import { findPageLinks, findPaintings, type ChatGalleries, type ChatPainting } from './chatRefs';
+import { ChatPageLinks, ChatPaintingCarousel, ChatPaintingViewer } from './ChatAttachments';
 import { MessageCircle, X, Send, Sparkles, Square, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
@@ -44,6 +57,30 @@ function isChatEntry(state: unknown): boolean {
  *  the studio topics visitors ask about most. */
 const DEFAULT_CHIPS = ['What paintings are for sale?', 'What classes do you offer?', 'How much is painting 7?'];
 
+/** Build-time galleries — used to resolve painting references until (or if
+ *  never) the live CMS content arrives from /api/content. */
+const STATIC_GALLERIES: ChatGalleries = {
+  sale: saleGallery,
+  commission: commissionGallery,
+  featured: featuredGallery,
+  workshop: workshopGallery,
+  testimonial: testimonialGallery,
+  achievement: achievementGallery,
+  classes: classGallery,
+  watercolor: watercolorGallery,
+};
+
+/** Scroll to an element by id once it exists on `pathname` (route transitions
+ *  and lazy sections may render it a moment after navigation). */
+function scrollToSection(id: string, pathname: string, smooth: boolean, tries = 0): void {
+  const el = window.location.pathname === pathname ? document.getElementById(id) : null;
+  if (el) {
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    return;
+  }
+  if (tries < 30) window.setTimeout(() => scrollToSection(id, pathname, smooth, tries + 1), 120);
+}
+
 export default function ChatWidget() {
   const [config, setConfig] = useState<ChatbotConfig>({
     enabled: true,
@@ -75,6 +112,11 @@ export default function ChatWidget() {
   const reducedMotion = useReducedMotion();
   const [jumpVisible, setJumpVisible] = useState(false);
   const [viewport, setViewport] = useState<{ height: number; top: number } | null>(null);
+  // Live CMS galleries (fresh titles/prices/status) for painting references.
+  const [galleries, setGalleries] = useState<ChatGalleries>(STATIC_GALLERIES);
+  // In-panel artwork viewer opened from a reply carousel.
+  const [viewer, setViewer] = useState<{ items: ChatPainting[]; index: number } | null>(null);
+  const router = useRouter();
   useScrollLock(open);
   useDialogFocus(panelRef, open);
 
@@ -92,6 +134,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     openRef.current = open;
+    if (!open) setViewer(null);
   }, [open]);
 
   // Load CMS config once.
@@ -106,6 +149,9 @@ export default function ChatWidget() {
             welcomeMessage: data.chatbot.welcomeMessage || config.welcomeMessage,
             suggestedPrompts: Array.isArray(data.chatbot.suggestedPrompts) ? data.chatbot.suggestedPrompts : [],
           });
+        }
+        if (data?.galleries && typeof data.galleries === 'object') {
+          setGalleries(data.galleries as ChatGalleries);
         }
       })
       .catch(() => {});
@@ -141,7 +187,19 @@ export default function ChatWidget() {
       const el = scrollRef.current;
       if (el) el.scrollTo({ top: el.scrollHeight, behavior: streaming || reducedMotion ? 'auto' : 'smooth' });
     });
-    return () => cancelAnimationFrame(frame);
+    let settleTimer: number | undefined;
+    if (!streaming) {
+      settleTimer = window.setTimeout(() => {
+        const el = scrollRef.current;
+        if (el && pinnedRef.current) {
+          el.scrollTo({ top: el.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
+        }
+      }, 70);
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      if (settleTimer) clearTimeout(settleTimer);
+    };
   }, [messages, streaming, open, reducedMotion]);
 
   const ownsHistoryRef = useRef(false);
@@ -170,6 +228,75 @@ export default function ChatWidget() {
       window.history.back();
     }
   }, []);
+
+  /**
+   * Go to a page/section referenced in a reply. The chat's own history entry
+   * is unwound first (history.back → popstate) so the destination becomes a
+   * normal, back-navigable entry instead of stacking on top of a stale
+   * "chat open" state. Same-page sections just scroll smoothly.
+   */
+  const navigateTo = useCallback((href: string) => {
+    const url = new URL(href, window.location.origin);
+    if (url.origin !== window.location.origin) return;
+    const hash = decodeURIComponent(url.hash.slice(1));
+    const smooth = !reducedMotion;
+    const go = () => {
+      if (url.pathname === window.location.pathname) {
+        if (hash) scrollToSection(hash, url.pathname, smooth);
+        else window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+        return;
+      }
+      router.push(url.pathname + url.hash);
+      // The App Router scrolls to the hash itself; this is the safety net for
+      // sections that mount after the route transition.
+      if (hash) scrollToSection(hash, url.pathname, smooth);
+    };
+
+    setViewer(null);
+    const needsBack = ownsHistoryRef.current && isChatEntry(window.history.state);
+    ownsHistoryRef.current = false;
+    setOpen(false);
+    // Wait a beat so the scroll lock is released before we scroll/route.
+    if (!needsBack) {
+      window.setTimeout(go, 60);
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('popstate', finish);
+      window.setTimeout(go, 30);
+    };
+    window.addEventListener('popstate', finish);
+    window.history.back();
+    window.setTimeout(finish, 450);
+  }, [reducedMotion, router]);
+
+  const viewerOpenerRef = useRef<HTMLElement | null>(null);
+  const openViewer = useCallback((items: ChatPainting[], index: number) => {
+    viewerOpenerRef.current = document.activeElement as HTMLElement | null;
+    setViewer({ items, index });
+  }, []);
+  const closeViewer = useCallback(() => {
+    setViewer(null);
+    const opener = viewerOpenerRef.current;
+    viewerOpenerRef.current = null;
+    // After the transcript drops `inert` on the next commit.
+    window.setTimeout(() => opener?.isConnected && opener.focus({ preventScroll: true }), 0);
+  }, []);
+
+  // Paintings + page links referenced by each settled assistant reply.
+  const attachments = useMemo(
+    () =>
+      messages.map((m) => {
+        if (m.role !== 'assistant' || m.pending || m.error || !m.content) return null;
+        const paintings = findPaintings(m.content, galleries, m.image);
+        const links = findPageLinks(m.content);
+        return paintings.length || links.length ? { paintings, links } : null;
+      }),
+    [messages, galleries],
+  );
 
   // System back button & edge-swipe gesture navigation (popstate)
   useEffect(() => {
@@ -486,15 +613,17 @@ export default function ChatWidget() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} data-scrollable="true" onScroll={(event) => {
+      <div ref={scrollRef} data-scrollable="true" inert={viewer ? true : undefined} onScroll={(event) => {
         const el = event.currentTarget;
         pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 72;
         setJumpVisible(!pinnedRef.current);
       }} className="chat-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4">
-        {messages.map((m, i) => (
+        {messages.map((m, i) => {
+          const att = attachments[i];
+          return (
           <div
             key={i}
-            className={`chat-msg flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`chat-msg flex ${m.role === 'user' ? 'justify-end' : 'flex-col items-start'}`}
           >
             <div
               className={`chat-bubble max-w-[86%] px-4 py-3 text-[14px] leading-relaxed sm:text-[14.5px] ${
@@ -503,16 +632,6 @@ export default function ChatWidget() {
                   : 'chat-bubble--bot border border-studio-gold/20 text-yellow-50'
               }`}
             >
-              {m.image && !m.pending && (
-                <a
-                  href="/sale"
-                  className="mb-2.5 block overflow-hidden rounded-xl border border-studio-gold/25"
-                  title="View in the sale gallery"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.image} alt="Painting thumbnail" className="h-36 w-full object-cover" loading="lazy" />
-                </a>
-              )}
               {m.content ? (
                 <>
                   {renderRich(m.content)}
@@ -550,8 +669,22 @@ export default function ChatWidget() {
                 </a>
               )}
             </div>
+            {att && (
+              <div className="chat-attachments">
+                {att.paintings.length > 0 && (
+                  <ChatPaintingCarousel
+                    items={att.paintings}
+                    reducedMotion={reducedMotion}
+                    onOpen={(index) => openViewer(att.paintings, index)}
+                    onNavigate={navigateTo}
+                  />
+                )}
+                <ChatPageLinks links={att.links} onNavigate={navigateTo} />
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {jumpVisible && <button type="button" className="chat-jump" onClick={() => {
@@ -619,6 +752,17 @@ export default function ChatWidget() {
           </button>
         )}
       </form>
+
+      {viewer && (
+        <ChatPaintingViewer
+          items={viewer.items}
+          index={viewer.index}
+          waBase={WHATSAPP_URL}
+          onIndex={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+          onClose={closeViewer}
+          onNavigate={navigateTo}
+        />
+      )}
     </div>
   );
 
