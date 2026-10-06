@@ -8,6 +8,14 @@ import { resetRagIndex } from '@/lib/chatbot/rag';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 
+/**
+ * Vercel refuses request bodies over 4.5 MB with a bare 413 before this
+ * handler can run, so anything that *does* arrive near that line is answered
+ * with the same JSON contract the admin UI understands — and a payload that
+ * somehow slips through is never committed to the repository.
+ */
+const MAX_REQUEST_DATA_URL_LENGTH = 4_400_000;
+
 const mimeToExt: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -29,6 +37,13 @@ export async function POST(req: NextRequest) {
     const { filename, data } = (await req.json()) as { filename?: string; data?: string };
     if (!data || typeof data !== 'string' || !data.startsWith('data:')) {
       return NextResponse.json({ error: 'Expected valid data URL payload' }, { status: 400 });
+    }
+
+    if (data.length > MAX_REQUEST_DATA_URL_LENGTH) {
+      return NextResponse.json(
+        { error: 'That photo is too large to publish (4.5 MB upload limit). Re-export it at a smaller size and retry.' },
+        { status: 413 }
+      );
     }
 
     const match = data.match(/^data:([^;,]+)(?:;[^,]+)*;base64,(.+)$/s);

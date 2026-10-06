@@ -11,9 +11,42 @@ import React, {
 } from 'react';
 import initialFallback from '../../content/site.json';
 import type { SiteContent, ArtItem, GalleryKey, StudioEvents, ChatbotConfig } from '@/lib/types';
-import { optimizeImageForUpload } from '@/lib/imageOptimize';
+import { isWithinUploadLimit, optimizeImageForUpload } from '@/lib/imageOptimize';
 
 export const ADMIN_STORAGE_KEY = 'anugruja_admin_content_draft';
+
+/**
+ * Turn a failed admin request into something the studio owner can act on.
+ *
+ * The platform answers some failures (oversized body, expired session, a
+ * killed function) with plain text or an empty body, and `res.json()` swallows
+ * that — the admin would only ever see a generic "failed". Surface the real
+ * reason instead.
+ */
+async function describeHttpError(res: Response, fallback: string): Promise<string> {
+  const text = await res.text().catch(() => '');
+  try {
+    const parsed = JSON.parse(text) as { error?: string };
+    if (parsed?.error) return parsed.error;
+  } catch {
+    // Not JSON — fall through to the status-based wording below.
+  }
+
+  if (res.status === 413) {
+    return 'That payload is too large for this host (4.5 MB limit). Re-export the photo at a smaller size and try again.';
+  }
+  if (res.status === 401 || res.status === 403) {
+    return 'Your admin session expired. Sign in again and retry.';
+  }
+  if (res.status === 429) {
+    return 'Too many requests — wait a moment and retry.';
+  }
+  if (res.status === 504 || res.status === 502) {
+    return `${fallback}: the publishing service timed out. Retry in a moment — your draft is kept.`;
+  }
+  const detail = text.trim().slice(0, 160);
+  return detail ? `${fallback} (HTTP ${res.status}): ${detail}` : `${fallback} (HTTP ${res.status})`;
+}
 
 interface EditorState {
   workspace: 'studio' | 'preview';
@@ -465,6 +498,13 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       let dataUrl = options?.precomputedDataUrl;
       let filename = options?.precomputedFilename;
 
+      // A pre-computed payload that would bust the platform's request limit is
+      // worse than none at all — drop it and re-optimize the file instead.
+      if (dataUrl && !isWithinUploadLimit(dataUrl)) {
+        dataUrl = undefined;
+        filename = undefined;
+      }
+
       if (!dataUrl || !filename) {
         const optimized = await optimizeImageForUpload(file, options?.previewUrl);
         dataUrl = optimized.dataUrl;
@@ -478,8 +518,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) {
-        const errJson = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errJson.error || 'Artwork upload failed');
+        throw new Error(await describeHttpError(res, 'Artwork upload failed'));
       }
 
       const json = (await res.json()) as { url: string };
@@ -499,8 +538,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error || 'Failed to save content');
+        throw new Error(await describeHttpError(res, 'Failed to save content'));
       }
 
       const json = (await res.json()) as {
