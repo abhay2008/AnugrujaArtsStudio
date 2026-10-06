@@ -3,6 +3,7 @@
  *   1. Painting detection & resolving against CMS data (findPaintings)
  *   2. Page & section link detection (findPageLinks)
  *   3. Touch/mobile & desktop edge cases
+ *   4. URL and hash normalization
  *
  * Run: node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chat-attachments.ts
  */
@@ -10,6 +11,7 @@ import initialSiteData from '../content/site.json';
 import {
   findPaintings,
   findPageLinks,
+  normalizeHref,
   GALLERY_LOCATIONS,
   type ChatGalleries,
 } from '../src/components/chat/chatRefs';
@@ -55,6 +57,15 @@ assert(
   'correct IDs for list: p1, p3, p5',
 );
 
+// Numbered range expansion: "paintings 1 to 3" and "paintings #1-#3"
+const hitRange1 = findPaintings('Take a look at paintings 1 to 3 in our catalog.', galleries);
+assert(hitRange1.length === 3, 'expands range "paintings 1 to 3" to 3 paintings');
+assert(hitRange1.map((p) => p.id).join(',') === 'p1,p2,p3', 'correct IDs for "1 to 3": p1, p2, p3');
+
+const hitRange2 = findPaintings('Check out paintings #1-#3 in the gallery.', galleries);
+assert(hitRange2.length === 3, 'expands range "paintings #1-#3" to 3 paintings');
+assert(hitRange2.map((p) => p.id).join(',') === 'p1,p2,p3', 'correct IDs for "#1-#3": p1, p2, p3');
+
 // Artwork / Piece phrases
 const hitArtwork = findPaintings('You might love artwork #2 from our featured collection.', galleries);
 assert(hitArtwork.length === 1 && hitArtwork[0]?.id === 'g2', 'matches "artwork #2" from featured collection');
@@ -62,13 +73,28 @@ assert(hitArtwork.length === 1 && hitArtwork[0]?.id === 'g2', 'matches "artwork 
 const hitPieces = findPaintings('We have pieces #2 and #4 available in the studio.', galleries);
 assert(hitPieces.length === 2, 'matches "pieces #2 and #4"');
 
-// Bulleted list mentions
+// Gallery affinity: commissions, student works, featured
+const hitCommNum = findPaintings('Take a look at commission #1 for custom work.', galleries);
+assert(hitCommNum.length === 1 && hitCommNum[0]?.id === 'c1', 'matches "commission #1" to commission gallery c1');
+assert(hitCommNum[0]?.gallery === 'commission', 'gallery is commission');
+
+const hitStudentNum = findPaintings('Here is student piece #3 from our studio classes.', galleries);
+assert(hitStudentNum.length === 1 && hitStudentNum[0]?.id === 't3', 'matches "student piece #3" to testimonial gallery t3');
+
+// Bulleted & numbered markdown lists
 const hitBullet = findPaintings(
   'Here are top options:\n- #7: Vibrant landscape\n- #12: Serene florals',
   galleries,
 );
 assert(hitBullet.length === 2, 'matches bulleted list "#7" and "#12"');
 assert(hitBullet[0]?.id === 'p7' && hitBullet[1]?.id === 'p12', 'correct bullet IDs');
+
+const hitNumMd = findPaintings(
+  'Here are options:\n1. #7: Sunset lake\n2. #12: Forest river',
+  galleries,
+);
+assert(hitNumMd.length === 2, 'matches numbered markdown list "1. #7" and "2. #12"');
+assert(hitNumMd[0]?.id === 'p7' && hitNumMd[1]?.id === 'p12', 'correct numbered markdown list IDs');
 
 // Deduplication: mention both exact title and number for the same painting
 const hitDedup = findPaintings(
@@ -125,18 +151,36 @@ assert(linkClasses.length === 2, 'detects multiple section anchors');
 assert(linkClasses[0]?.href === '/classes#water', 'first section correct');
 assert(linkClasses[1]?.href === '/classes#online', 'second section correct');
 
-// Trailing slashes
+// Trailing slashes (bare and with hash)
 const linkTrailing = findPageLinks('Visit /sale/ or /about/ today.');
 assert(linkTrailing.some((l) => l.href === '/sale'), 'normalizes /sale/ trailing slash');
 assert(linkTrailing.some((l) => l.href === '/about'), 'normalizes /about/ trailing slash');
+
+const linkHashSlash = findPageLinks('Check out /sale/#commission and /classes/#water.');
+assert(linkHashSlash.length === 2, 'detects anchors with trailing slash before hash');
+assert(linkHashSlash[0]?.href === '/sale#commission', 'normalizes /sale/#commission');
+assert(linkHashSlash[1]?.href === '/classes#water', 'normalizes /classes/#water');
+
+// Absolute URLs
+const linkAbsUrl = findPageLinks('Visit https://anugrujaarts.com/sale for more details.');
+assert(linkAbsUrl.length === 1 && linkAbsUrl[0]?.href === '/sale', 'detects and normalizes absolute domain URL');
+
+const linkAbsHash = findPageLinks('Read more at https://anugrujaarts.com/classes#water today.');
+assert(linkAbsHash.length === 1 && linkAbsHash[0]?.href === '/classes#water', 'detects absolute URL with hash anchor');
 
 // Markdown links
 const linkMd = findPageLinks('Explore our [Paintings for Sale](/sale) collection.');
 assert(linkMd.length === 1 && linkMd[0]?.href === '/sale', 'detects markdown link [text](/sale)');
 
+const linkMdAbs = findPageLinks('See our [Classes](https://anugrujaarts.com/classes) today.');
+assert(linkMdAbs.length === 1 && linkMdAbs[0]?.href === '/classes', 'detects markdown link with absolute URL');
+
 // Plain phrases
 const phraseComm = findPageLinks('You can order commissioned artworks anytime.');
 assert(phraseComm.length === 1 && phraseComm[0]?.href === '/sale#commission', 'detects "commissioned artworks" phrase');
+
+const phraseCustomComm = findPageLinks('We accept custom commissions for portraits.');
+assert(phraseCustomComm.length === 1 && phraseCustomComm[0]?.href === '/sale#commission', 'detects "custom commissions" phrase');
 
 const phraseWork = findPageLinks('Check out our upcoming workshops section for dates.');
 assert(phraseWork.length === 1 && phraseWork[0]?.href === '/#workshops', 'detects "workshops section" phrase');
@@ -147,6 +191,9 @@ assert(phraseJourn.length === 1 && phraseJourn[0]?.href === '/#journey', 'detect
 const phraseAccol = findPageLinks('See our awards section for honours.');
 assert(phraseAccol.length === 1 && phraseAccol[0]?.href === '/#achievements', 'detects "awards section" phrase');
 
+const phraseFeat = findPageLinks('View our featured paintings in the showcase.');
+assert(phraseFeat.length === 1 && phraseFeat[0]?.href === '/#buy-paintings', 'detects "featured paintings" phrase');
+
 // Deduplication
 const linkDup = findPageLinks('Visit our /sale page, check out /sale, and browse /sale.');
 assert(linkDup.length === 1, 'deduplicates repeated links to the same destination');
@@ -155,7 +202,16 @@ assert(linkDup.length === 1, 'deduplicates repeated links to the same destinatio
 const linkMany = findPageLinks('/sale /classes /about /#workshops /#journey');
 assert(linkMany.length <= 3, 'enforces MAX_LINKS cap of 3');
 
-// ── 3. Gallery Locations Sanity ───────────────────────────────────────────
+// ── 3. URL Normalization Helper (normalizeHref) ───────────────────────────
+section('URL Normalization Helper (normalizeHref)');
+assert(normalizeHref('/sale') === '/sale', 'keeps simple path /sale');
+assert(normalizeHref('/sale/') === '/sale', 'strips trailing slash /sale/ -> /sale');
+assert(normalizeHref('/sale/#commission') === '/sale#commission', 'normalizes /sale/#commission');
+assert(normalizeHref('/#buy-paintings') === '/#buy-paintings', 'preserves root hash /#buy-paintings');
+assert(normalizeHref('https://anugrujaarts.com/about') === '/about', 'strips origin https://.../about');
+assert(normalizeHref('http://localhost:3000/classes#water') === '/classes#water', 'strips port origin');
+
+// ── 4. Gallery Locations Sanity ───────────────────────────────────────────
 section('Gallery Locations Sanity');
 for (const [key, loc] of Object.entries(GALLERY_LOCATIONS)) {
   assert(typeof loc.href === 'string' && loc.href.startsWith('/'), `gallery ${key} has valid href ${loc.href}`);

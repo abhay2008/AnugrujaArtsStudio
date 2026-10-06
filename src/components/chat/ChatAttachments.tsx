@@ -9,7 +9,9 @@ import {
   Expand,
   ExternalLink,
   Images,
+  Maximize2,
   MessageCircle,
+  RotateCcw,
   Share2,
   X,
   ZoomIn,
@@ -34,15 +36,18 @@ function statusOf(art: ChatPainting): string | null {
 }
 
 function getWhatsAppEnquiryUrl(art: ChatPainting, waBase: string): string {
+  const price = priceLabel(art);
   let text = `Hi! I saw "${art.title}" on the Anugruja Arts Studio website.`;
   if (art.gallery === 'sale') {
-    text = `Hi! I'm interested in purchasing the original painting "${art.title}" from your sale collection. Is it available?`;
+    text = price
+      ? `Hi! I'm interested in purchasing the original painting "${art.title}" (${price}) from your sale collection. Is it available?`
+      : `Hi! I'm interested in purchasing the original painting "${art.title}" from your sale collection. Could you share price and availability?`;
   } else if (art.gallery === 'commission') {
-    text = `Hi! I'd love to commission a custom artwork similar to "${art.title}".`;
+    text = `Hi! I'd love to commission a custom artwork inspired by "${art.title}". Could you share details on sizing and timelines?`;
   } else if (art.gallery === 'classes' || art.gallery === 'watercolor') {
-    text = `Hi! I'm interested in the art classes related to "${art.title}". Could you share details?`;
+    text = `Hi! I'm interested in the art courses related to "${art.title}". Could you share batch details and syllabus?`;
   } else if (art.gallery === 'workshop') {
-    text = `Hi! I'd love to learn more about workshops related to "${art.title}".`;
+    text = `Hi! I'd love to learn more about upcoming workshops related to "${art.title}".`;
   }
   return `${waBase}?text=${encodeURIComponent(text)}`;
 }
@@ -62,6 +67,27 @@ function ChatImg({ src, alt, width, className }: { src: string; alt: string; wid
       className={className}
     />
   );
+}
+
+/** Fallback clipboard copier using a detached input if navigator.clipboard is unavailable. */
+function copyToClipboardFallback(text: string): boolean {
+  if (typeof document === 'undefined') return false;
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    ta.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 /** Index of the slide whose left edge is closest to the track's scroll position. */
@@ -158,6 +184,7 @@ export function ChatPaintingCarousel({
   return (
     <section
       className={`chat-carousel${single ? ' chat-carousel--single' : ''}`}
+      role="region"
       aria-roledescription={single ? undefined : 'carousel'}
       aria-label={single ? items[0].title : `${items.length} artworks`}
     >
@@ -179,6 +206,7 @@ export function ChatPaintingCarousel({
           className="chat-carousel-track"
           data-scrollable="true"
           tabIndex={single ? -1 : 0}
+          role="group"
           aria-label={single ? undefined : 'Artworks carousel; swipe or use arrow keys to browse'}
           onScroll={onScroll}
           onKeyDown={(e) => {
@@ -200,6 +228,15 @@ export function ChatPaintingCarousel({
           {items.map((art, i) => {
             const price = priceLabel(art);
             const status = statusOf(art);
+            const accessibleLabel = [
+              `View ${art.title}`,
+              status ? `Status: ${status}` : null,
+              price ? `Price: ${price}` : null,
+              art.medium ? `Medium: ${art.medium}` : null,
+            ]
+              .filter(Boolean)
+              .join(' — ');
+
             return (
               <div
                 key={`${art.gallery}:${art.id}`}
@@ -212,7 +249,8 @@ export function ChatPaintingCarousel({
                   type="button"
                   className="chat-slide-btn"
                   onClick={() => onOpen(i)}
-                  aria-label={`View ${art.title} larger`}
+                  onFocus={() => setActive(i)}
+                  aria-label={accessibleLabel}
                 >
                   <ChatImg src={art.src} alt={art.title} width={480} className="chat-slide-img" />
                   {status && <span className={`chat-slide-status chat-status--${status.toLowerCase()}`}>{status}</span>}
@@ -302,6 +340,7 @@ export function ChatPaintingViewer({
   onIndex,
   onClose,
   onNavigate,
+  onOpenLightbox,
 }: {
   items: ChatPainting[];
   index: number;
@@ -310,23 +349,43 @@ export function ChatPaintingViewer({
   onIndex: (i: number) => void;
   onClose: () => void;
   onNavigate: (href: string) => void;
+  onOpenLightbox?: (art: ChatPainting) => void;
 }) {
   const art = items[index];
   const closeRef = useRef<HTMLButtonElement>(null);
   const touch = useRef<{ x: number; y: number; target: HTMLElement | null } | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const panStartRef = useRef<{ clientX: number; clientY: number; startPanX: number; startPanY: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
   const [copied, setCopied] = useState(false);
   const count = items.length;
 
-  const prev = useCallback(() => {
+  const resetZoom = useCallback(() => {
     setIsZoomed(false);
+    setPan({ x: 0, y: 0 });
+    setIsDragging(false);
+  }, []);
+
+  const prev = useCallback(() => {
+    resetZoom();
     onIndex((index - 1 + count) % count);
-  }, [index, count, onIndex]);
+  }, [index, count, onIndex, resetZoom]);
 
   const next = useCallback(() => {
-    setIsZoomed(false);
+    resetZoom();
     onIndex((index + 1) % count);
-  }, [index, count, onIndex]);
+  }, [index, count, onIndex, resetZoom]);
+
+  const toggleZoom = useCallback(() => {
+    if (isZoomed) {
+      resetZoom();
+    } else {
+      setIsZoomed(true);
+      setPan({ x: 0, y: 0 });
+    }
+  }, [isZoomed, resetZoom]);
 
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -336,29 +395,41 @@ export function ChatPaintingViewer({
 
   // Reset zoom on index change
   useEffect(() => {
-    setIsZoomed(false);
-  }, [index]);
+    resetZoom();
+  }, [index, resetZoom]);
 
-  // Capture phase so Escape closes the viewer only — not the whole chat —
-  // and Tab cycles within the viewer instead of the (hidden) transcript.
+  // Keyboard navigation: Escape exits zoom first or closes dialog; Tab trapped in dialog
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         e.preventDefault();
-        onClose();
-      } else if (count > 1 && e.key === 'ArrowRight') {
+        if (isZoomed) {
+          resetZoom();
+        } else {
+          onClose();
+        }
+      } else if (!isZoomed && count > 1 && e.key === 'ArrowRight') {
         e.preventDefault();
         next();
-      } else if (count > 1 && e.key === 'ArrowLeft') {
+      } else if (!isZoomed && count > 1 && e.key === 'ArrowLeft') {
         e.preventDefault();
         prev();
-      } else if (count > 1 && e.key === 'Home') {
+      } else if (!isZoomed && count > 1 && e.key === 'Home') {
         e.preventDefault();
         onIndex(0);
-      } else if (count > 1 && e.key === 'End') {
+      } else if (!isZoomed && count > 1 && e.key === 'End') {
         e.preventDefault();
         onIndex(count - 1);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setIsZoomed(true);
+      } else if (e.key === '-') {
+        e.preventDefault();
+        resetZoom();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        resetZoom();
       } else if (e.key === 'Tab' && rootRef.current) {
         const focusableEls = Array.from(
           rootRef.current.querySelectorAll<HTMLElement>(
@@ -381,7 +452,7 @@ export function ChatPaintingViewer({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [onClose, next, prev, onIndex, count]);
+  }, [onClose, next, prev, onIndex, count, isZoomed, resetZoom]);
 
   // Neighbour preload so swiping feels instant.
   useEffect(() => {
@@ -401,22 +472,60 @@ export function ChatPaintingViewer({
       text: `Check out "${art.title}" by Master Artist Anuradha Govarthanan at Anugruja Arts Studio.`,
       url,
     };
-    if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
-        await navigator.share(shareData);
-        return;
+        if (!navigator.canShare || navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
       } catch (err) {
         if ((err as Error)?.name === 'AbortError') return;
       }
     }
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
       try {
         await navigator.clipboard.writeText(url);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 2200);
+        return;
       } catch {}
     }
+
+    // Direct DOM copy fallback for older browsers or restricted permissions
+    if (copyToClipboardFallback(url)) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    }
   }, [art]);
+
+  // Pan interaction handlers when zoomed
+  const handleStageMouseDown = (e: React.MouseEvent) => {
+    if (!isZoomed) return;
+    setIsDragging(true);
+    panStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      startPanX: pan.x,
+      startPanY: pan.y,
+    };
+  };
+
+  const handleStageMouseMove = (e: React.MouseEvent) => {
+    if (!isZoomed || !isDragging || !panStartRef.current) return;
+    const dx = e.clientX - panStartRef.current.clientX;
+    const dy = e.clientY - panStartRef.current.clientY;
+    setPan({
+      x: Math.max(-140, Math.min(140, panStartRef.current.startPanX + dx)),
+      y: Math.max(-140, Math.min(140, panStartRef.current.startPanY + dy)),
+    });
+  };
+
+  const handleStageMouseUp = () => {
+    setIsDragging(false);
+    panStartRef.current = null;
+  };
 
   if (!art) return null;
   const price = priceLabel(art);
@@ -438,15 +547,41 @@ export function ChatPaintingViewer({
             y: e.touches[0].clientY,
             target: e.target as HTMLElement | null,
           };
+          if (isZoomed) {
+            setIsDragging(true);
+            panStartRef.current = {
+              clientX: e.touches[0].clientX,
+              clientY: e.touches[0].clientY,
+              startPanX: pan.x,
+              startPanY: pan.y,
+            };
+          }
+        }
+      }}
+      onTouchMove={(e) => {
+        if (isZoomed && isDragging && panStartRef.current && e.touches.length === 1) {
+          const dx = e.touches[0].clientX - panStartRef.current.clientX;
+          const dy = e.touches[0].clientY - panStartRef.current.clientY;
+          setPan({
+            x: Math.max(-140, Math.min(140, panStartRef.current.startPanX + dx)),
+            y: Math.max(-140, Math.min(140, panStartRef.current.startPanY + dy)),
+          });
         }
       }}
       onTouchEnd={(e) => {
         const start = touch.current;
         touch.current = null;
+        setIsDragging(false);
+        panStartRef.current = null;
+
         if (!start || e.changedTouches.length !== 1) return;
         const dx = e.changedTouches[0].clientX - start.x;
         const dy = e.changedTouches[0].clientY - start.y;
         const isInfoSection = Boolean(start.target?.closest('.chat-viewer-info'));
+
+        // If zoomed in, do NOT switch slides or dismiss to protect detail inspection
+        if (isZoomed) return;
+
         if (count > 1 && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.2) {
           (dx < 0 ? next : prev)();
         } else if (!isInfoSection && dy > 70 && Math.abs(dy) > Math.abs(dx) * 1.2) {
@@ -457,18 +592,29 @@ export function ChatPaintingViewer({
       <div className="chat-viewer-bar">
         <span className="chat-viewer-count">{count > 1 ? `${index + 1} / ${count}` : 'Artwork'}</span>
         <span className="chat-viewer-kbd-hint" aria-hidden>
-          <kbd>Esc</kbd> close &nbsp; <kbd>←</kbd> <kbd>→</kbd> browse
+          <kbd>Esc</kbd> close &nbsp; <kbd>←</kbd> <kbd>→</kbd> browse &nbsp; <kbd>+</kbd> <kbd>-</kbd> zoom
         </span>
         <div className="chat-viewer-bar-actions">
           <button
             type="button"
-            className="chat-viewer-bar-btn"
-            onClick={() => setIsZoomed(!isZoomed)}
-            aria-label={isZoomed ? 'Zoom out' : 'Zoom in to inspect details'}
-            title={isZoomed ? 'Zoom out' : 'Zoom in to inspect details'}
+            className={`chat-viewer-bar-btn${isZoomed ? ' is-active' : ''}`}
+            onClick={toggleZoom}
+            aria-label={isZoomed ? 'Zoom out (reset zoom)' : 'Zoom in to inspect details'}
+            title={isZoomed ? 'Zoom out (reset zoom)' : 'Zoom in to inspect details'}
           >
             {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
           </button>
+          {onOpenLightbox && (
+            <button
+              type="button"
+              className="chat-viewer-bar-btn"
+              onClick={() => onOpenLightbox(art)}
+              aria-label="Open in full studio lightbox"
+              title="Open in full studio lightbox"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          )}
           <a
             href={art.src}
             target="_blank"
@@ -491,15 +637,62 @@ export function ChatPaintingViewer({
         </div>
       </div>
 
-      <div className="chat-viewer-stage" onClick={() => setIsZoomed(!isZoomed)}>
-        <ChatImg
-          key={art.src}
-          src={art.src}
-          alt={art.title}
-          width={960}
-          className={`chat-viewer-img${isZoomed ? ' is-zoomed' : ''}`}
-        />
-        {count > 1 && (
+      <div
+        className={`chat-viewer-stage${isZoomed ? ' is-zoomed' : ''}${isDragging ? ' is-dragging' : ''}`}
+        onMouseDown={handleStageMouseDown}
+        onMouseMove={handleStageMouseMove}
+        onMouseUp={handleStageMouseUp}
+        onMouseLeave={handleStageMouseUp}
+        onClick={(e) => {
+          // Double-click/double-tap to toggle zoom
+          const now = Date.now();
+          if (now - lastTapRef.current < 320) {
+            e.stopPropagation();
+            toggleZoom();
+            lastTapRef.current = 0;
+            return;
+          }
+          lastTapRef.current = now;
+          if (!isZoomed) toggleZoom();
+        }}
+      >
+        <div
+          className="chat-viewer-img-wrap"
+          style={
+            isZoomed
+              ? {
+                  transform: `scale(1.8) translate(${pan.x / 1.8}px, ${pan.y / 1.8}px)`,
+                }
+              : undefined
+          }
+        >
+          <ChatImg
+            key={art.src}
+            src={art.src}
+            alt={art.title}
+            width={960}
+            className={`chat-viewer-img${isZoomed ? ' is-zoomed' : ''}`}
+          />
+        </div>
+
+        {isZoomed && (
+          <div className="chat-viewer-zoom-badge" aria-live="polite">
+            <span>1.8x · Drag to pan</span>
+            <button
+              type="button"
+              className="chat-viewer-zoom-reset"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetZoom();
+              }}
+              aria-label="Reset zoom"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset
+            </button>
+          </div>
+        )}
+
+        {!isZoomed && count > 1 && (
           <>
             <button
               type="button"
@@ -584,7 +777,7 @@ export function ChatPaintingViewer({
         </div>
       </div>
 
-      {count > 1 && count <= 12 && (
+      {!isZoomed && count > 1 && count <= 12 && (
         <div className="chat-viewer-dots" aria-hidden>
           {items.map((a, i) => (
             <span

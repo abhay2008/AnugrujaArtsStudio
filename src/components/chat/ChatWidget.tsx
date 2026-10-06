@@ -20,6 +20,8 @@ import { createSseParser, type SseEvent } from './sse';
 import { MAX_SESSION_MESSAGES } from '@/lib/chatbot/guardrails';
 import { useChatNudge } from './useChatNudge';
 import { readPerfTier } from '@/lib/perfTier';
+import { useLightbox } from '@/components/LightboxContext';
+import { isPriceConfirmed } from '@/lib/price';
 import { useDialogFocus, useScrollLock } from '@/lib/scrollLock';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { renderRich } from './markdown';
@@ -117,6 +119,7 @@ export default function ChatWidget() {
   // In-panel artwork viewer opened from a reply carousel.
   const [viewer, setViewer] = useState<{ items: ChatPainting[]; index: number } | null>(null);
   const router = useRouter();
+  const { openLightbox } = useLightbox();
   useScrollLock(open);
   useDialogFocus(panelRef, open);
 
@@ -570,8 +573,9 @@ export default function ChatWidget() {
                  sm:inset-x-auto sm:bottom-40 sm:right-6 sm:w-[min(calc(100vw-3rem),400px)] sm:h-[min(72dvh,580px)] sm:max-h-[calc(100dvh-11rem)]"
       style={{ '--chat-vvh': viewport ? `${viewport.height}px` : '100dvh', '--chat-vtop': `${viewport?.top ?? 0}px`, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' } as React.CSSProperties}
     >
-      {/* Mobile drag handle indicator */}
-      <div
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden" inert={viewer ? true : undefined}>
+        {/* Mobile drag handle indicator */}
+        <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className="flex w-full cursor-grab justify-center pt-2 pb-0.5 sm:hidden"
@@ -751,7 +755,8 @@ export default function ChatWidget() {
             <Send className="h-5 w-5" />
           </button>
         )}
-      </form>
+        </form>
+      </div>
 
       {viewer && (
         <ChatPaintingViewer
@@ -761,6 +766,17 @@ export default function ChatWidget() {
           onIndex={(index) => setViewer((v) => (v ? { ...v, index } : v))}
           onClose={closeViewer}
           onNavigate={navigateTo}
+          onOpenLightbox={(art) =>
+            openLightbox(
+              art.src,
+              art.title,
+              art.description,
+              art.price,
+              art.category,
+              art.medium,
+              isPriceConfirmed(art)
+            )
+          }
         />
       )}
     </div>
