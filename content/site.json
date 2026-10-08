@@ -504,14 +504,16 @@
         "src": "/images/p1.jpeg",
         "title": "Original Fine Art Painting #1",
         "category": "Paintings for Sale",
-        "description": "Original watercolour on paper — one of a kind, signed by the artist."
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "status": "Available"
       },
       {
         "id": "p2",
         "src": "/images/p2.jpeg",
         "title": "Original Fine Art Painting #2",
         "category": "Paintings for Sale",
-        "description": "Original watercolour on paper — one of a kind, signed by the artist."
+        "description": "Original watercolour on paper — one of a kind, signed by the artist.",
+        "status": "Available"
       },
       {
         "id": "p3",
@@ -992,5 +994,5 @@
       }
     ]
   },
-  "lastUpdated": "2026-10-06T17:31:44.598Z"
+  "lastUpdated": "2026-10-08T14:50:41.582Z"
 }
