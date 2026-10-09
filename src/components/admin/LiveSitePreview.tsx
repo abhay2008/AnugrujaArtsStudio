@@ -143,7 +143,7 @@ export default function LiveSitePreview() {
           </div>
           <div data-preview-interactive className="min-h-[18rem]">
             {sale.length ? (
-              <Carousel3D items={sale.slice(0, 14)} variant="spotlight" autoAdvanceIntervalMs={0} />
+              <Carousel3D items={sale} variant="spotlight" autoAdvanceIntervalMs={0} />
             ) : (
               <PreviewEmpty label="No paintings for sale yet" />
             )}

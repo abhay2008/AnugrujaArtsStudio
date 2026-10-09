@@ -8,9 +8,20 @@ import { saleGallery, commissionGallery, studioMeta } from '@/data/artData';
 import { useLightbox } from '@/components/LightboxContext';
 import { isPriceConfirmed, PRICE_PENDING_NOTE, publicPriceLabel } from '@/lib/price';
 import { ShoppingBag, Sparkles, ExternalLink } from 'lucide-react';
+import { artworkAvailability } from '@/lib/artworkAvailability';
 
 export default function SaleClient() {
-  const { openLightbox } = useLightbox();
+  const { openGallery } = useLightbox();
+  const openPainting = (index: number) => openGallery(saleGallery.map((art) => ({
+    src: art.src,
+    title: art.title,
+    description: art.description,
+    price: art.price,
+    priceConfirmedAt: art.priceConfirmedAt ?? false,
+    category: art.category,
+    medium: art.medium,
+    status: art.status,
+  })), index);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-16">
@@ -37,7 +48,7 @@ export default function SaleClient() {
           <div className="flex items-center gap-2.5">
             <ShoppingBag className="w-6 h-6 text-studio-sunset" />
             <h2 className="font-decorative text-2xl sm:text-3xl text-studio-gold font-bold">
-              Available Paintings ({saleGallery.length} Pieces)
+              Painting Catalogue ({saleGallery.length} Pieces)
             </h2>
           </div>
         </div>
@@ -47,12 +58,12 @@ export default function SaleClient() {
 
         {/* Browsable full-catalog grid (lazy loaded, tap to zoom) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {saleGallery.map((art) => (
-            <div
+          {saleGallery.map((art, index) => (
+            <button
               key={art.id}
-              onClick={() =>
-                openLightbox(art.src, art.title, art.description, art.price, art.category, art.medium, art.priceConfirmedAt ?? false)
-              }
+              type="button"
+              aria-label={`Enlarge image of ${art.title}`}
+              onClick={() => openPainting(index)}
               className="group relative h-48 sm:h-56 rounded-2xl overflow-hidden glass-card border border-theme hover:border-studio-sunset/60 shadow-md hover:shadow-[0_12px_30px_rgba(249,115,22,0.25)] transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-studio-dark/90"
             >
               <Image
@@ -66,6 +77,9 @@ export default function SaleClient() {
                 loading="lazy"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
+              <span className="c3d-status" data-status={art.status?.toLowerCase() ?? 'unknown'}>
+                {artworkAvailability(art)}
+              </span>
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col gap-0.5 p-2.5">
                 <span className="text-xs font-decorative font-bold text-studio-gold truncate">
                   {art.title}
@@ -79,7 +93,7 @@ export default function SaleClient() {
                   )}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 

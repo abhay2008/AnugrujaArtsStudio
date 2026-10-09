@@ -1,8 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createWheelNavigator, gestureDirection } from '@/lib/carouselInput';
+import { artworkAvailability } from '@/lib/artworkAvailability';
+import { circularOffset, wrapIndex as wrapSlideIndex } from '@/lib/carouselPosition';
+import { flushSync } from 'react-dom';
+
 import Image from 'next/image';
-import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2, Pause, Play } from 'lucide-react';
 import { useLightbox } from '@/components/LightboxContext';
 import { ArtItem } from '@/data/artData';
@@ -142,24 +146,6 @@ const IMAGE_SIZES: Record<CarouselVariant, string> = {
 const WHATSAPP_ICON_PATH =
   'M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z';
 
-const captionVariants: Variants = {
-  initial: { y: 14, opacity: 0 },
-  animate: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] },
-  },
-  exit: { y: -8, opacity: 0, transition: { duration: 0.2 } },
-};
-
-function circularOffset(index: number, pos: number, count: number) {
-  if (count <= 0) return 0;
-  let d = index - pos;
-  while (d > count / 2) d -= count;
-  while (d < -count / 2) d += count;
-  return d;
-}
-
 interface CardLayout {
   scale: number;
   rotateY: number;
@@ -228,9 +214,6 @@ export default function Carousel3D({
   const variant = VARIANT_LOOKUP[variantProp] ?? 'rail';
   const beat = BEATS[variant];
   const count = items.length;
-  /* Variant never changes for a mounted instance; a ref lets deep callbacks
-     (keydown/click handlers) branch without re-creating them. */
-  const isSpotlightRef = useRef(variant === 'spotlight');
   const { openGallery } = useLightbox();
   const reducedMotion = useReducedMotion();
 
@@ -271,6 +254,7 @@ export default function Carousel3D({
   const targetRef = useRef(0);
   const velRef = useRef(0);
   const indexRef = useRef(0);
+  const previousItemsRef = useRef(items);
   /* Handle on the shared page frame loop — detached whenever the carousel has
      settled, so a parked carousel costs exactly zero script time. */
   const frameSubRef = useRef<FrameSubscription | null>(null);
@@ -294,9 +278,9 @@ export default function Carousel3D({
   const vitrineRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
+  const wheelNavigatorRef = useRef(createWheelNavigator());
   const progressRef = useRef(0);
   const progressBarRef = useRef<HTMLDivElement>(null);
-  const lastTickRef = useRef<number | null>(null);
 
   /** Stable callback ref — an inline arrow would null the ref on every render. */
   const attachRoot = useCallback((node: HTMLDivElement | null) => {
@@ -306,8 +290,7 @@ export default function Carousel3D({
 
   const wrapIndex = useCallback(
     (i: number) => {
-      if (count <= 0) return 0;
-      return ((Math.round(i) % count) + count) % count;
+      return wrapSlideIndex(i, count);
     },
     [count]
   );
@@ -420,13 +403,14 @@ export default function Carousel3D({
       }
     }
 
-    applyTransforms();
-
     const idx = wrapIndex(posRef.current);
     if (idx !== indexRef.current) {
       indexRef.current = idx;
-      setIndex(idx);
+      // The frame loop is outside React: commit the matching image metadata
+      // before painting its transform, never leave the previous plaque behind.
+      flushSync(() => setIndex(idx));
     }
+    applyTransforms();
 
     const settled =
       !dragRef.current.active &&
@@ -560,12 +544,32 @@ export default function Carousel3D({
     const ro = new ResizeObserver(update);
     ro.observe(stage);
     return () => ro.disconnect();
-  }, [beat.spacingFactor, beat.spacingMax, beat.spacingMin]);
+  }, [beat.spacingFactor, beat.spacingMax, beat.spacingMin, count]);
+
+  useLayoutEffect(() => {
+    if (previousItemsRef.current !== items) {
+      // Live admin edits can remove/reorder cards. Preserve the selected work
+      // by identity, and reset physics rather than retaining an invalid index.
+      const selectedId = previousItemsRef.current[indexRef.current]?.id;
+      const found = items.findIndex((item) => item.id === selectedId);
+      const nextIndex = found >= 0 ? found : Math.min(indexRef.current, Math.max(0, count - 1));
+      previousItemsRef.current = items;
+      park();
+      posRef.current = targetRef.current = nextIndex;
+      velRef.current = 0;
+      indexRef.current = nextIndex;
+      setIndex(nextIndex);
+    }
+    // React owns card sizing, the frame loop owns transforms. Repaint before
+    // the browser can show a rerendered card at its initial hidden transform.
+    writeCacheRef.current = [];
+    applyTransforms();
+  }, [applyTransforms, count, index, items, loadedRatios, park, stageSize]);
 
   useEffect(() => {
-    applyTransforms();
     wake();
-  }, [applyTransforms, items, wake]);
+    return park;
+  }, [items, park, wake]);
 
   useEffect(() => {
     const onVis = () => setTabHidden(document.hidden);
@@ -634,15 +638,12 @@ export default function Carousel3D({
   useEffect(() => {
     if (!autoplayEnabled || !isPlaying || hasEngaged || tabHidden || isDragging || !inView || count < 2) return;
 
-    lastTickRef.current = null;
     /* The timer only moves a progress bar, so 30fps is indistinguishable and
        halves the work the autoplay costs on a weak device. */
     const sub = subscribe(
-      (now) => {
-        if (lastTickRef.current == null) lastTickRef.current = now;
-        const dt = now - lastTickRef.current;
-        lastTickRef.current = now;
-        if (!dragRef.current.active && Math.abs(velRef.current) < 0.01) {
+      (_now, dt) => {
+        if (!dragRef.current.active && Math.abs(velRef.current) < 0.01 &&
+            Math.abs(targetRef.current - posRef.current) < 0.002) {
           progressRef.current += (dt / autoAdvanceIntervalMs) * 100;
           if (progressRef.current >= 100) {
             progressRef.current = 0;
@@ -711,7 +712,7 @@ export default function Carousel3D({
        onPointerMove and steal the arrow's own click. Only real <button>/<a>
        elements bail out here — the cards are divs with role="button", so they
        still start a drag/swipe as before. */
-    if ((e.target as HTMLElement).closest?.('button, a')) return;
+    if (!e.isPrimary || e.button !== 0 || (e.target as HTMLElement).closest?.('button, a')) return;
     /* Do NOT setPointerCapture here. Capture retargets the subsequent click
        to the stage, so the image's onClick (enlarge) never fires. Capture is
        taken lazily in onPointerMove once a real drag is confirmed. */
@@ -729,7 +730,6 @@ export default function Carousel3D({
     };
     velRef.current = 0;
     setIsDragging(true);
-    engage();
     wake();
   };
 
@@ -747,15 +747,14 @@ export default function Carousel3D({
     const totalDy = e.clientY - d.startY;
 
     if (!d.isDirectionLocked) {
-      if (Math.hypot(totalDx, totalDy) > 6) {
-        d.isDirectionLocked = true;
-        d.isHorizontal = Math.abs(totalDx) >= Math.abs(totalDy);
-      }
+      const direction = gestureDirection(totalDx, totalDy);
+      if (direction === 'pending') return;
+      d.isDirectionLocked = true;
+      d.isHorizontal = direction === 'horizontal';
     }
 
-    if (d.isDirectionLocked && !d.isHorizontal) {
-      return;
-    }
+    if (!d.isHorizontal) return;
+    engage();
 
     if (Math.abs(totalDx) > 8) {
       d.locked = true;
@@ -770,17 +769,24 @@ export default function Carousel3D({
     }
 
     posRef.current -= dx / spacing;
-    const instantVel = (-dx / dt) * 12;
+    const instantVel = (-dx / spacing / dt) * 16.67;
     velRef.current = velRef.current * 0.3 + instantVel * 0.7;
   };
 
-  const endDrag = () => {
+  const endDrag = (cancelled = false) => {
     const d = dragRef.current;
     if (!d.active) return;
     d.active = false;
     setIsDragging(false);
-    engage();
     wake();
+
+    if (cancelled || !d.isHorizontal) {
+      velRef.current = 0;
+      targetRef.current = Math.round(posRef.current);
+      if (cancelled) d.locked = true;
+      return;
+    }
+    engage();
 
     const totalDx = d.lastX - d.startX;
     const totalDt = Math.max(1, performance.now() - d.startTime);
@@ -795,44 +801,36 @@ export default function Carousel3D({
       (speed > 0.22 && Math.abs(totalDx) >= 15) ||
       Math.abs(velRef.current) > 0.25;
 
-    if (isSwipe && (d.isHorizontal || !d.isDirectionLocked)) {
-      const dir = totalDx !== 0 ? (totalDx < 0 ? 1 : -1) : velRef.current > 0 ? 1 : -1;
-      commitStep(dir);
-      velRef.current = 0;
-    } else {
-      const snapped = Math.round(posRef.current);
-      const currentTarget = Math.round(targetRef.current);
-      if (snapped !== currentTarget) {
-        commitStep(snapped > currentTarget ? 1 : -1);
-      } else {
-        targetRef.current = snapped;
-      }
-    }
+    const start = Math.round(targetRef.current);
+    const dir = totalDx < 0 ? 1 : -1;
+    targetRef.current = isSwipe
+      ? (dir > 0 ? Math.max(start + 1, Math.round(posRef.current)) : Math.min(start - 1, Math.round(posRef.current)))
+      : Math.round(posRef.current);
+    velRef.current = 0;
+    resetProgress();
 
-    window.setTimeout(() => {
-      dragRef.current.locked = false;
-    }, 150);
+    // Keep the swipe's synthetic click suppressed until the next pointerdown.
+    // Touch browsers can dispatch that click after the old 150ms timeout.
   };
 
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
-    let accum = 0;
+    const navigateWheel = wheelNavigatorRef.current;
     const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (count < 2 || e.ctrlKey || e.metaKey) return;
+      const input = navigateWheel(e.deltaX, e.deltaY, e.deltaMode, performance.now(), stage.clientWidth);
+      if (!input.horizontal) return;
       e.preventDefault();
       engage();
-      accum += e.deltaX;
-      if (Math.abs(accum) > 56) {
-        commitStep(accum > 0 ? 1 : -1);
-        accum = 0;
-      }
+      if (input.step) commitStep(input.step);
     };
     stage.addEventListener('wheel', onWheel, { passive: false });
     return () => stage.removeEventListener('wheel', onWheel);
-  }, [commitStep, engage]);
+  }, [commitStep, count, engage]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.target as HTMLElement).closest?.('button, a')) return;
     if (e.key === 'ArrowRight') {
       e.preventDefault();
       engage();
@@ -843,7 +841,8 @@ export default function Carousel3D({
       prev();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openImageAt(index);
+      engage();
+      openImageAt(indexRef.current);
     }
   };
 
@@ -858,12 +857,13 @@ export default function Carousel3D({
     }
   };
 
-  /** Any deliberate image click opens that exact image; card captions still only navigate. */
+  /** Side images focus their own painting; the centre image enlarges it. */
   const onImageClick = (e: React.MouseEvent, i: number) => {
     if (dragRef.current.locked) return;
     e.stopPropagation();
     engage();
-    openImageAt(i);
+    if (i !== indexRef.current) goTo(i);
+    else openImageAt(i);
   };
 
   const current = items[index];
@@ -967,8 +967,13 @@ export default function Carousel3D({
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={() => endDrag()}
+        onPointerCancel={() => endDrag(true)}
+        onLostPointerCapture={(event) => {
+          // Touch starts with implicit capture on the image. Its loss bubbles
+          // when the stage takes capture; that handoff is not a cancelled swipe.
+          if (event.target === event.currentTarget) endDrag(true);
+        }}
         className={`c3d-stage c3d-stage--${variant} relative w-full overflow-hidden outline-none touch-pan-y ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         } focus-visible:ring-2 focus-visible:ring-studio-gold/60`}
@@ -1078,7 +1083,9 @@ export default function Carousel3D({
                   onClick={(e) => onImageClick(e, i)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
                       e.stopPropagation();
+                      dragRef.current.locked = false;
                       onImageClick(e as unknown as React.MouseEvent, i);
                     }
                   }}
@@ -1134,9 +1141,9 @@ export default function Carousel3D({
                     />
                   )}
                   {isSpotlight && <span className="c3d-gloss" aria-hidden />}
-                  {item.status && (
-                    <span className="c3d-status" data-status={item.status.toLowerCase()}>
-                      {item.status}
+                  {isSpotlight && (
+                    <span className="c3d-status" data-status={item.status?.toLowerCase() ?? 'unknown'}>
+                      {artworkAvailability(item)}
                     </span>
                   )}
                   {isDeck && (
@@ -1174,13 +1181,8 @@ export default function Carousel3D({
       {/* ---------------- per-variant metadata ---------------- */}
 
       {showInfo && current && isSpotlight && (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current.id}
-            variants={reducedMotion ? undefined : captionVariants}
-            initial={reducedMotion ? false : 'initial'}
-            animate="animate"
-            exit="exit"
+          <div
+            data-c3d-caption-id={current.id}
             className="c3d-plaque--spotlight relative mx-auto mt-3 w-full max-w-xl px-1 sm:mt-4"
           >
             <p className="c3d-spot-name">{current.title}</p>
@@ -1211,12 +1213,11 @@ export default function Carousel3D({
                   <path d={WHATSAPP_ICON_PATH} />
                 </svg>
                 <span>{current.status === 'Sold' ? 'Discuss this artwork' :
-                  current.status === 'Reserved' ? 'Ask about availability' : 'Make this artwork yours'}</span>
+                  current.status !== 'Available' ? 'Ask about availability' : 'Make this artwork yours'}</span>
               </a>
             </div>
             <p className="collector-enquiry-note">A personal conversation, not a checkout. Confirm price, framing and delivery with the studio.</p>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {showInfo && current && isRail && (
@@ -1225,18 +1226,12 @@ export default function Carousel3D({
             Plate {pad2(index + 1)}
           </span>
           <div className="min-w-0 flex-1">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={current.id}
-                variants={reducedMotion ? undefined : captionVariants}
-                initial={reducedMotion ? false : 'initial'}
-                animate="animate"
-                exit="exit"
+              <p
+                data-c3d-caption-id={current.id}
                 className="truncate font-decorative text-xs font-bold tracking-[0.08em] text-studio-gold sm:text-sm"
               >
                 {current.title}
-              </motion.p>
-            </AnimatePresence>
+              </p>
             <p className="truncate text-[11px] tracking-[0.14em] text-theme-subtle uppercase">
               {cardBlurb(current) || 'Original studio work'}
             </p>
@@ -1270,22 +1265,14 @@ export default function Carousel3D({
 
       {showInfo && current && isPolaroid && (
         <div className="mt-2.5 text-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current.id}
-              variants={reducedMotion ? undefined : captionVariants}
-              initial={reducedMotion ? false : 'initial'}
-              animate="animate"
-              exit="exit"
-            >
+            <div data-c3d-caption-id={current.id}>
               <p className="font-editorial text-studio-gold italic text-[clamp(1.05rem,2.6vh,1.55rem)]">
                 {current.title}
               </p>
               <p className="c3d-card-meta mt-1 text-[clamp(0.68rem,1.5vh,0.8rem)] tracking-[0.12em] text-theme-subtle uppercase">
                 {cardBlurb(current) || 'Student work'}
               </p>
-            </motion.div>
-          </AnimatePresence>
+            </div>
         </div>
       )}
 
@@ -1293,6 +1280,9 @@ export default function Carousel3D({
 
       {isSpotlight && (
         <div className="relative mt-2.5 flex items-center justify-center gap-3 pb-0.5 sm:mt-3">
+          <span className="c3d-counter shrink-0 tabular-nums" aria-label={`Artwork ${index + 1} of ${count}`}>
+            {pad2(index + 1)}<em>/ {pad2(count)}</em>
+          </span>
           <div className="c3d-cluster inline-flex items-center gap-0.5 rounded-full px-1.5 py-1">
             <button type="button" onClick={prev} aria-label="Previous artwork" className="c3d-arrow">
               <ChevronLeft className="h-5 w-5" />
@@ -1321,7 +1311,7 @@ export default function Carousel3D({
                   role="tab"
                   aria-selected={i === index}
                   aria-label={`Show ${it.title}`}
-                  onClick={() => goTo(i)}
+                  onClick={() => { engage(); goTo(i); }}
                   className={`c3d-thumb${i === index ? ' is-active' : ''}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}

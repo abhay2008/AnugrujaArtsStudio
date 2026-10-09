@@ -26,17 +26,11 @@ export function getGalleryItems(key: keyof SiteContent['galleries']) {
 export const quickNavListings: PageListing[] =
   currentContent().sections?.pageMeta?.quickNav ?? [];
 
-/**
- * Selection for the Buy Paintings spotlight: the newest priced originals from
- * the sale catalog. Derived content lives here — never in page components — so
- * this rail and the page's other sections stay disjoint by construction.
- */
-export const buyShowcaseItems: ArtItem[] = (() => {
-  const priced = [...saleGallery].reverse().filter((a) => a.price);
-  const fallback = [...saleGallery].reverse();
-  const picked = priced.length >= 3 ? priced : fallback;
-  return picked.slice(0, 14);
-})();
+/** Full catalogue in its published order: swiping left reveals the next work. */
+export function selectBuyShowcaseItems(catalogue: ArtItem[]): ArtItem[] {
+  return [...catalogue];
+}
+export const buyShowcaseItems = selectBuyShowcaseItems(saleGallery);
 
 // Studio Contact, Brand and Social Links
 const cur = currentContent();

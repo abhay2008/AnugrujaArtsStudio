@@ -19,6 +19,8 @@
     "audit:perf": "node scripts/audit-perf.mjs",
     "perf:build": "NEXT_DIST_DIR=.next-perf next build",
     "perf:serve": "NEXT_DIST_DIR=.next-perf next start -p 3311",
+    "test:carousels:browser": "node scripts/test-carousel-browser.mjs",
+    "test:carousels": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-carousels.ts",
     "test:framing": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-photo-framing.ts",
     "test:chat": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chatbot.ts",
     "test:chat:attachments": "node --import ./scripts/ts-node-boot.mjs --no-warnings scripts/test-chat-attachments.ts",

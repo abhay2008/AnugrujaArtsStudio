@@ -8,7 +8,6 @@ import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import {
   workshopGallery,
   testimonialGallery,
-  saleGallery,
   buyShowcaseItems,
   quickNavListings,
   studioMeta,
@@ -56,7 +55,7 @@ export default function HomePage() {
         </div>
 
         <Reveal variant="fade" delay={120} className="flex min-h-0 w-full flex-1 items-stretch">
-          {/* Catalog spotlight — disjoint from the hero flagship rail by construction. */}
+          {/* Complete sale catalogue — including works with prices pending. */}
           <Carousel3D items={buyShowcaseItems} variant="spotlight" autoAdvanceIntervalMs={4600} />
         </Reveal>
       </section>
