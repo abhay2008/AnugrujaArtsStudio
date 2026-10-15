@@ -52,3 +52,6 @@ server.log
 /Screenshot *.png
 /WhatsApp Video *.mp4
 
+
+# Test and benchmark reports
+reports/

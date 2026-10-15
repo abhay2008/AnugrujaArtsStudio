@@ -13,8 +13,9 @@
  * explicitly replaying. A pre-hydration safety timer releases the surface
  * even if the JavaScript bundle fails to arrive.
  *
- * The crest image is preloaded from here rather than as a static <link> in
- * the layout, so a visitor who will never see the intro never fetches it.
+ * The crest image and the two intro fonts are preloaded from here rather than
+ * as static <link>s in the layout, so a visitor who will never see the intro
+ * never fetches them (and the browser never warns about unused preloads).
  */
 export default function PreloaderScript() {
   const script = `(function(){try{
@@ -30,6 +31,7 @@ export default function PreloaderScript() {
         var l=document.createElement('link');
         l.rel='preload';l.as='image';l.href='/images/logo-intro.png';l.fetchPriority='high';
         document.head.appendChild(l);
+        ['/fonts/cinzel-decorative-700.woff2','/fonts/cormorant-garamond-italic.woff2'].forEach(function(h){var f=document.createElement('link');f.rel='preload';f.as='font';f.type='font/woff2';f.crossOrigin='anonymous';f.href=h;document.head.appendChild(f);});
       }catch(e){}
       d.setAttribute('data-preloader','on');
       d.classList.add('preloader-lock');

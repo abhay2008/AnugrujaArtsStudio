@@ -63,11 +63,17 @@ export const metadata: Metadata = {
     'Art commissions',
   ],
   authors: [{ name: 'Anuradha Govarthanan' }],
-  /* Small derivatives of the crest (npm run images:icons). The full-size
-     logo.png is 213 KB and is meant for next/image, which re-encodes it per
-     request — as a favicon it was fetched whole on every page load. */
+  /* Small derivatives of the crest (npm run images:icons).
+     Supports both light and dark browser tab themes with high contrast. */
   icons: {
-    icon: [{ url: '/images/logo-64.png', sizes: '64x64', type: 'image/png' }],
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/images/logo-dark-gold-64.png', sizes: '64x64', type: 'image/png', media: '(prefers-color-scheme: light)' },
+      { url: '/images/logo-64.png', sizes: '64x64', type: 'image/png', media: '(prefers-color-scheme: dark)' },
+      { url: '/images/logo-dark-gold-32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: light)' },
+      { url: '/images/logo-32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: dark)' },
+      { url: '/images/logo-64.png', sizes: '64x64', type: 'image/png' },
+    ],
     apple: [{ url: '/images/logo-180.png', sizes: '180x180', type: 'image/png' }],
   },
 };
@@ -95,24 +101,8 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#100318" />
-        {/* The preloader crest and name are the first paint — the two intro
-            fonts must not arrive after it. The crest image itself is
-            preloaded by PreloaderScript instead, because a `lite` device
-            never sees the intro and must not pay for its image. */}
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href="/fonts/cinzel-decorative-700.woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href="/fonts/cormorant-garamond-italic.woff2"
-          crossOrigin="anonymous"
-        />
+        {/* Intro fonts and the crest image are preloaded by PreloaderScript,
+            only on visits that actually show the intro. */}
         <ThemeScript />
         {/* Windows compositing fallbacks must be keyed before any paint. */}
         <OsTagScript />
