@@ -500,6 +500,17 @@
     ],
     "sale": [
       {
+        "id": "art-1792052986896-7mfm",
+        "title": "Test",
+        "category": "Paintings for Sale",
+        "description": "Test123",
+        "medium": "Acrylic",
+        "dimensions": "34 x 45",
+        "status": "Available",
+        "dateAdded": "2026-10-15T08:29:46.896Z",
+        "src": "/images/1000026002_1792052929407.webp"
+      },
+      {
         "id": "p1",
         "src": "/images/p1.jpeg",
         "title": "Original Fine Art Painting #1",
@@ -994,5 +1005,5 @@
       }
     ]
   },
-  "lastUpdated": "2026-10-08T14:50:41.582Z"
+  "lastUpdated": "2026-10-15T08:29:47.717Z"
 }
