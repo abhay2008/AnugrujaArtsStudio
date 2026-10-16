@@ -500,23 +500,13 @@
     ],
     "sale": [
       {
-        "id": "art-1792052986896-7mfm",
-        "title": "Test",
-        "category": "Paintings for Sale",
-        "description": "Test123",
-        "medium": "Acrylic",
-        "dimensions": "34 x 45",
-        "status": "Available",
-        "dateAdded": "2026-10-16T01:52:32.569Z",
-        "src": "/images/1000029707_1792115543009.webp"
-      },
-      {
         "id": "p1",
         "src": "/images/p1.jpeg",
         "title": "Original Fine Art Painting #1",
         "category": "Paintings for Sale",
         "description": "Original watercolour on paper — one of a kind, signed by the artist.",
-        "status": "Available"
+        "status": "Available",
+        "dateAdded": "2026-10-16T16:22:50.735Z"
       },
       {
         "id": "p2",
@@ -1005,5 +995,5 @@
       }
     ]
   },
-  "lastUpdated": "2026-10-16T01:52:42.234Z"
+  "lastUpdated": "2026-10-16T16:24:00.715Z"
 }
