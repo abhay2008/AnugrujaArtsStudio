@@ -506,7 +506,9 @@
         "category": "Paintings for Sale",
         "description": "Original watercolour on paper — one of a kind, signed by the artist.",
         "status": "Available",
-        "dateAdded": "2026-10-16T16:22:50.735Z"
+        "dateAdded": "2026-10-16T16:30:27.756Z",
+        "price": "10,000",
+        "priceConfirmedAt": "2026-10-16T16:30:27.757Z"
       },
       {
         "id": "p2",
@@ -995,5 +997,5 @@
       }
     ]
   },
-  "lastUpdated": "2026-10-16T16:24:00.715Z"
+  "lastUpdated": "2026-10-16T16:30:31.594Z"
 }
