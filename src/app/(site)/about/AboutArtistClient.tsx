@@ -5,10 +5,14 @@ import Image from 'next/image';
 import Carousel3D from '@/components/Carousel3D';
 import ContactActionButtons from '@/components/ContactActionButtons';
 import { achievementGallery } from '@/data/artData';
+import { studioData } from '@/data/studioData';
 import { Award, Globe, BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 export default function AboutArtistClient() {
   const [readMore, setReadMore] = useState(false);
+  const artist = studioData.artist;
+  const portrait = (artist as any).portraitImage || '/images/image.png';
+  const isRemote = portrait.startsWith('http') || portrait.startsWith('data:');
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-16">
@@ -22,7 +26,7 @@ export default function AboutArtistClient() {
           About us
         </h1>
         <p className="font-editorial text-xl sm:text-3xl text-amber-200 font-medium tracking-wide">
-          Anuradha Govarthanan &mdash; Master Artist &amp; Founder
+          {artist.name} &mdash; {(artist as any).role || 'Master Artist & Founder'}
         </p>
       </div>
 
@@ -37,11 +41,12 @@ export default function AboutArtistClient() {
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0 rounded-3xl overflow-hidden border-2 border-studio-gold shadow-[0_0_35px_rgba(249,115,22,0.25)] bg-black/40">
             <Image
-              src="/images/image.png"
-              alt="Anuradha Govarthanan Portrait"
+              src={portrait}
+              alt={(artist as any).portraitAlt || `${artist.name} Portrait`}
               fill
               sizes="(max-width: 768px) 192px, 224px"
               className="object-cover"
+              unoptimized={isRemote}
               priority
             />
           </div>

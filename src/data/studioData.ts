@@ -75,6 +75,100 @@ export interface StudioMetric {
  * artist · journey                                 → ArtistJourneySection ("The Master's Journey")
  * achievements · exhibitions · outreach            → AccoladesSection ("Achievements & Honours")
  */
+import initialSiteData from '../../content/site.json';
+
+const siteContent = initialSiteData as Record<string, any>;
+const aboutArtistData = siteContent?.sections?.aboutArtist;
+const brandData = siteContent?.brand;
+
+const defaultArtist = {
+  name: 'Anuradha Govarthanan',
+  title: 'Master Watercolorist & Atelier Founder',
+  role: 'Master Artist & Founder',
+  experience: '7+ Years of Studio Practice',
+  origin: 'Chennai, Tamil Nadu',
+  mantra: 'Discovering ourselves through colour and form',
+  portraitImage: '/images/image.png',
+  portraitAlt: 'Anuradha Govarthanan Portrait',
+  education: [
+    {
+      degree: 'Bachelor of Engineering (B.E.)',
+      institution: 'Vellore Institute of Technology (VIT)',
+    },
+    {
+      degree: 'Diploma in Fashion Design',
+      institution: 'Hamstech Institute of Fashion Design, Hyderabad',
+    },
+  ] as StudioEducation[],
+  narrative: {
+    prologue:
+      'Born and raised in Chennai, Anuradha graduated in engineering from VIT before family life shifted her horizons. Longing to reignite childhood fires, she found sanctuary stealing away to her art room amidst domestic whirlwinds.',
+    turningPoint:
+      'Supported by family, she completed fashion design at Hamstech and ran her own boutique, yet fine art called relentlessly. When initial rejections mounted, she transformed watercolor — initially her fiercest adversary — into her greatest ally through ruthless discipline and realistic watercolor mastery.',
+    atelierFounding:
+      'From surviving critiques to receiving global acclaim from master artists, she established Anugruja Arts Studio. Today, she balances motherhood, studio mastery, and institutional mentorship worldwide.',
+  },
+};
+
+const defaultJourney = {
+  eyebrow: 'Biography & Studio Journey',
+  heading: 'The Master’s Journey',
+  metrics: [
+    { label: 'Experience', value: '7+ Years of Studio Practice' },
+    { label: 'Specialization', value: 'Realistic Watercolor' },
+    { label: 'Atelier', value: 'Founder & Lead Mentor' },
+  ] as StudioMetric[],
+  chapters: [
+    {
+      num: '01',
+      tag: 'The Spark',
+      title: 'The Engineering Mind & Creative Solitude',
+      subtitle: 'Chennai Roots • VIT Engineering Graduate',
+      body: 'Born and raised in Chennai, Anuradha graduated in engineering from VIT before family life shifted her horizons. Longing to reignite childhood fires, she found sanctuary stealing away to her art room amidst domestic whirlwinds.',
+    },
+    {
+      num: '02',
+      tag: 'The Crucible',
+      title: 'The Adversary Becomes the Bestie',
+      subtitle: 'Hamstech Fashion Alumna • Conquering Watercolor Realism',
+      body: 'Supported by family, she completed fashion design at Hamstech and ran her own boutique, yet fine art called relentlessly. When initial rejections mounted, she transformed watercolor — initially her fiercest adversary — into her greatest ally through ruthless discipline and realistic watercolor mastery.',
+    },
+    {
+      num: '03',
+      tag: 'Mastery',
+      title: 'Founding Anugruja Arts Studio',
+      subtitle: '7+ Years of Studio Practice • Global Masterclasses',
+      body: 'From surviving critiques to receiving global acclaim from master artists, she established Anugruja Arts Studio. Today, she balances motherhood, studio mastery, and institutional mentorship worldwide.',
+    },
+  ] as StudioChapter[],
+};
+
+const dynamicArtist = {
+  name: aboutArtistData?.name || brandData?.founder || defaultArtist.name,
+  title: aboutArtistData?.title || defaultArtist.title,
+  role: aboutArtistData?.role || defaultArtist.role,
+  experience: aboutArtistData?.experience || defaultArtist.experience,
+  origin: aboutArtistData?.origin || defaultArtist.origin,
+  mantra: aboutArtistData?.mantra || defaultArtist.mantra,
+  portraitImage: aboutArtistData?.portraitImage || defaultArtist.portraitImage,
+  portraitAlt: aboutArtistData?.portraitAlt || defaultArtist.portraitAlt,
+  education: (aboutArtistData?.education && aboutArtistData.education.length > 0)
+    ? (aboutArtistData.education as StudioEducation[])
+    : defaultArtist.education,
+  narrative: defaultArtist.narrative,
+};
+
+const dynamicJourney = {
+  eyebrow: aboutArtistData?.journey?.eyebrow || defaultJourney.eyebrow,
+  heading: aboutArtistData?.journey?.heading || defaultJourney.heading,
+  metrics: (aboutArtistData?.metrics && aboutArtistData.metrics.length > 0)
+    ? (aboutArtistData.metrics as StudioMetric[])
+    : defaultJourney.metrics,
+  chapters: (aboutArtistData?.journey?.chapters && aboutArtistData.journey.chapters.length > 0)
+    ? (aboutArtistData.journey.chapters as StudioChapter[])
+    : defaultJourney.chapters,
+};
+
 export const studioData = {
   hero: {
     overline: 'Fine Arts Studio & Academy',
@@ -83,68 +177,13 @@ export const studioData = {
     mantra: 'Discovering ourselves through colour and form',
   },
 
-  artist: {
-    name: 'Anuradha Govarthanan',
-    title: 'Master Watercolorist & Atelier Founder',
-    experience: '7+ Years of Studio Practice',
-    origin: 'Chennai, Tamil Nadu',
-    mantra: 'Discovering ourselves through colour and form',
-    education: [
-      {
-        degree: 'Bachelor of Engineering (B.E.)',
-        institution: 'Vellore Institute of Technology (VIT)',
-      },
-      {
-        degree: 'Diploma in Fashion Design',
-        institution: 'Hamstech Institute of Fashion Design, Hyderabad',
-      },
-    ] satisfies StudioEducation[],
-    narrative: {
-      prologue:
-        'Born and raised in Chennai, Anuradha graduated in engineering from VIT before family life shifted her horizons. Longing to reignite childhood fires, she found sanctuary stealing away to her art room amidst domestic whirlwinds.',
-      turningPoint:
-        'Supported by family, she completed fashion design at Hamstech and ran her own boutique, yet fine art called relentlessly. When initial rejections mounted, she transformed watercolor — initially her fiercest adversary — into her greatest ally through ruthless discipline and realistic watercolor mastery.',
-      atelierFounding:
-        'From surviving critiques to receiving global acclaim from master artists, she established Anugruja Arts Studio. Today, she balances motherhood, studio mastery, and institutional mentorship worldwide.',
-    },
-  },
+  artist: dynamicArtist,
 
   /**
    * "The Master's Journey" — copy for the sticky scroll timeline. Chapters are
    * data, not markup, so the admin portal can retitle or extend the biography.
    */
-  journey: {
-    eyebrow: 'Biography & Studio Journey',
-    heading: 'The Master’s Journey',
-    metrics: [
-      { label: 'Experience', value: '7+ Years of Studio Practice' },
-      { label: 'Specialization', value: 'Realistic Watercolor' },
-      { label: 'Atelier', value: 'Founder & Lead Mentor' },
-    ] satisfies StudioMetric[],
-    chapters: [
-      {
-        num: '01',
-        tag: 'The Spark',
-        title: 'The Engineering Mind & Creative Solitude',
-        subtitle: 'Chennai Roots • VIT Engineering Graduate',
-        body: 'Born and raised in Chennai, Anuradha graduated in engineering from VIT before family life shifted her horizons. Longing to reignite childhood fires, she found sanctuary stealing away to her art room amidst domestic whirlwinds.',
-      },
-      {
-        num: '02',
-        tag: 'The Crucible',
-        title: 'The Adversary Becomes the Bestie',
-        subtitle: 'Hamstech Fashion Alumna • Conquering Watercolor Realism',
-        body: 'Supported by family, she completed fashion design at Hamstech and ran her own boutique, yet fine art called relentlessly. When initial rejections mounted, she transformed watercolor — initially her fiercest adversary — into her greatest ally through ruthless discipline and realistic watercolor mastery.',
-      },
-      {
-        num: '03',
-        tag: 'Mastery',
-        title: 'Founding Anugruja Arts Studio',
-        subtitle: '7+ Years of Studio Practice • Global Masterclasses',
-        body: 'From surviving critiques to receiving global acclaim from master artists, she established Anugruja Arts Studio. Today, she balances motherhood, studio mastery, and institutional mentorship worldwide.',
-      },
-    ] satisfies StudioChapter[],
-  },
+  journey: dynamicJourney,
 
   spotlight: {
     isActive: true,

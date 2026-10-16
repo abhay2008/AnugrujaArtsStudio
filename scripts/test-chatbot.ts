@@ -619,7 +619,9 @@ const base = getFreshContentSync();
 const baseRev = retrieveContext('How much is painting 1?').revision;
 
 const mutated: SiteContent = JSON.parse(JSON.stringify(base));
-const target = mutated.galleries?.sale?.[0];
+const target =
+  mutated.galleries?.sale?.find((p) => p.title.includes('#1')) ||
+  mutated.galleries?.sale?.[0];
 if (target) {
   // An admin publish stamps the price as confirmed — simulate exactly that.
   target.price = 123456;
@@ -640,7 +642,10 @@ if (target) {
   // Background GitHub refresh must never regress the adopted content while
   // the remote is behind (pendingRemoteSync latch from the publish route).
   refreshFreshContent();
-  assert(getFreshContentSync().galleries?.sale?.[0]?.price === 123456, 'adopted content holds across background refresh attempts');
+  assert(
+    getFreshContentSync().galleries?.sale?.find((p) => p.id === target.id)?.price === 123456,
+    'adopted content holds across background refresh attempts'
+  );
 
   // Restore for subsequent sections.
   resetFreshContent();

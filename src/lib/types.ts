@@ -254,6 +254,47 @@ export interface ChatbotConfig {
   faqs: ChatbotFaq[];
 }
 
+export interface StudioMetric {
+  label: string;
+  value: string;
+}
+
+export interface StudioEducation {
+  degree: string;
+  institution: string;
+}
+
+export interface StudioChapter {
+  num: string;
+  tag: string;
+  title: string;
+  subtitle: string;
+  body: string;
+}
+
+export interface MasterJourneyData {
+  eyebrow?: string;
+  heading?: string;
+  metrics?: StudioMetric[];
+  chapters?: StudioChapter[];
+}
+
+export interface AboutArtistSection {
+  portraitImage: string;
+  portraitAlt: string;
+  headline: string;
+  subheading: string;
+  name?: string;
+  title?: string;
+  role?: string;
+  mantra?: string;
+  origin?: string;
+  experience?: string;
+  metrics?: StudioMetric[];
+  education?: StudioEducation[];
+  journey?: MasterJourneyData;
+}
+
 export interface SiteSections {
   banner: {
     title: string;
@@ -263,12 +304,7 @@ export interface SiteSections {
     bgImage: string;
     logo: string;
   };
-  aboutArtist: {
-    portraitImage: string;
-    portraitAlt: string;
-    headline: string;
-    subheading: string;
-  };
+  aboutArtist: AboutArtistSection;
   courses: {
     title: string;
     subtitle: string;

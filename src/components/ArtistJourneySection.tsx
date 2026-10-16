@@ -79,17 +79,22 @@ export default function ArtistJourneySection() {
           <div className="sticky-profile-card">
             <div className="profile-portrait">
               <Image
-                src="/images/image.png"
-                alt={`Portrait of ${artist.name}`}
+                src={(artist as any).portraitImage || '/images/image.png'}
+                alt={(artist as any).portraitAlt || `Portrait of ${artist.name}`}
                 fill
                 sizes="(max-width: 1023px) 40vw, 320px"
                 className="object-cover"
+                unoptimized={Boolean(
+                  (artist as any).portraitImage &&
+                    ((artist as any).portraitImage.startsWith('http') ||
+                      (artist as any).portraitImage.startsWith('data:'))
+                )}
               />
             </div>
 
             <span className="profile-eyebrow">{artist.title}</span>
             <h3 className="profile-name font-editorial">{artist.name}</h3>
-            <p className="profile-role">Master Artist &amp; Founder</p>
+            <p className="profile-role">{(artist as any).role || 'Master Artist & Founder'}</p>
 
             <p className="profile-mantra font-editorial">
               <Quote className="profile-mantra-mark h-3.5 w-3.5" aria-hidden />
@@ -111,7 +116,7 @@ export default function ArtistJourneySection() {
                 {artist.education.map((edu, i) => {
                   const Icon = EDUCATION_ICONS[i] ?? Palette;
                   return (
-                    <li key={edu.degree}>
+                    <li key={`${edu.degree}-${i}`}>
                       <Icon className="credentials-icon h-4 w-4" aria-hidden />
                       <span>
                         <strong>{edu.degree}</strong>
@@ -127,13 +132,13 @@ export default function ArtistJourneySection() {
             <div className="chapter-rail" aria-hidden>
               {chapters.map((chapter, i) => (
                 <span
-                  key={chapter.num}
+                  key={chapter.num || i}
                   className="chapter-rail-tick"
                   data-active={i === activeIndex}
                 />
               ))}
               <span className="chapter-rail-label">
-                Chapter {chapters[activeIndex]?.num} / {String(chapters.length).padStart(2, '0')}
+                Chapter {chapters[activeIndex]?.num || String(activeIndex + 1).padStart(2, '0')} / {String(chapters.length).padStart(2, '0')}
                 <em>{chapters[activeIndex]?.tag}</em>
               </span>
             </div>
@@ -144,7 +149,7 @@ export default function ArtistJourneySection() {
         <div className="journey-chapters-col">
           {chapters.map((chapter, index) => (
             <motion.article
-              key={chapter.num}
+              key={chapter.num || `chapter-${index}`}
               ref={(el) => {
                 cardRefs.current[index] = el;
               }}
