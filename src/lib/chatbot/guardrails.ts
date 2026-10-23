@@ -125,9 +125,9 @@ export function validateInput(raw: string): InputVerdict {
   if (text.length > MAX_MESSAGE_CHARS) return { ok: false, reason: 'too_long' };
   if (INJECTION_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'injection' };
   if (BANNED_TOPIC_PATTERNS.some((re) => re.test(text))) return { ok: false, reason: 'banned_topic' };
-  if (isOffTopicInput(text)) return { ok: false, reason: 'off_topic' };
-  if (isGibberishInput(text)) return { ok: false, reason: 'gibberish' };
 
+  // Allow natural conversation (casual chat, typos, price/cost questions, greetings)
+  // to proceed to the model where smart in-context guardrails guide the conversation.
   return { ok: true, text: text.slice(0, MAX_MESSAGE_CHARS) };
 }
 

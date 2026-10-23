@@ -397,9 +397,12 @@ export default function ChatWidget() {
       setJumpVisible(false);
       setShowChips(false);
       const userMsg: ChatMsg = { role: 'user', content: trimmed };
-      // Error/pending bubbles are local UI state only — the API must receive
-      // a clean conversation, or it would echo our own error copy back.
-      const history = [...messages.filter((m) => !m.pending && !m.error), userMsg];
+      // Error/pending bubbles and empty messages are filtered out — the API receives
+      // a clean conversation of valid text turns.
+      const history = [
+        ...messages.filter((m) => !m.pending && !m.error && typeof m.content === 'string' && m.content.trim().length > 0),
+        userMsg,
+      ];
       setMessages([...history, { role: 'assistant', content: '', pending: true }]);
       setInput('');
       setStreaming(true);
