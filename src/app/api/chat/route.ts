@@ -20,11 +20,11 @@ export const dynamic = 'force-dynamic';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function primaryModel(): string {
-  return process.env.OPENROUTER_MODEL || 'inclusionai/ling-3.0-flash-sante:free';
+  return process.env.OPENROUTER_MODEL || 'openrouter/free';
 }
 
 function fallbackModels(): string[] {
-  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'apodex/apodex-1.1-mini:free,liquid/lfm-2.5-2.6b:free,openrouter/free';
+  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'google/gemma-4-26b-a4b-it:free,nvidia/nemotron-3.5-lightning:free';
   return raw
     .split(',')
     .map((m) => m.trim())
@@ -254,7 +254,6 @@ export async function POST(req: NextRequest) {
           stream: true,
           temperature: 0.4,
           max_tokens: 600,
-          ...(!model.includes('liquid') ? { reasoning: { effort: 'none' } } : {}),
           messages: [
             { role: 'system', content: systemPrompt(liveContext, langHint) },
             ...trimmedHistory.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 400) })),
@@ -300,6 +299,12 @@ export async function POST(req: NextRequest) {
   let full = '';
   let started = false;
   let refused = false;
+  // Many free OpenRouter models now use a reasoning-first response format:
+  // Phase 1: content="" + reasoning="internal thinking..." (skip)
+  // Phase 2: content="actual reply" (emit to visitor)
+  // If a model finishes with ZERO content and only reasoning, we fall back to
+  // the reasoning text as a last resort (it often contains a usable answer).
+  let reasoningFull = '';
 
   let cancelled = false;
   const stream = new ReadableStream<Uint8Array>({
@@ -328,14 +333,18 @@ export async function POST(req: NextRequest) {
             if (payload === '[DONE]') continue;
             try {
               const json = JSON.parse(payload) as {
-                choices?: { delta?: { content?: string }; finish_reason?: string | null }[];
+                choices?: { delta?: { content?: string; reasoning?: string }; finish_reason?: string | null }[];
                 error?: { code?: number; message?: string };
               };
               if (json.error) {
                 refused = true;
                 continue;
               }
-              const delta = json.choices?.[0]?.delta?.content;
+              const choice = json.choices?.[0];
+              const delta = choice?.delta?.content;
+              // Collect reasoning text as a backup in case content never arrives.
+              const reasoning = choice?.delta?.reasoning;
+              if (reasoning) reasoningFull += reasoning;
               if (delta) {
                 full += delta;
                 if (!started) {
@@ -350,6 +359,16 @@ export async function POST(req: NextRequest) {
         }
 
         // ── 7. Output guardrails on the assembled reply ─────────────────
+        // Many free OpenRouter models now reason-then-answer: they emit
+        // reasoning deltas first (content=""), then real content deltas.
+        // If the model finished with ZERO content but did produce reasoning,
+        // use the reasoning text — it often contains the actual usable answer
+        // from reasoning-native models that never emit a separate content phase.
+        if (!started && !full.trim() && reasoningFull.trim()) {
+          full = reasoningFull.trim();
+          started = true;
+          emit('delta', { text: full });
+        }
         if (!started || refused || !full.trim()) {
           const local = extractMapsTag(extractImgTag(extractWaTag(enhancedFallbackReply(verdict.text)).text).text);
           emit('meta', { layer: 'fallback', wa: whatsappLink(liveContent.brand, verdict.text) });
