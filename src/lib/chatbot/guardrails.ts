@@ -54,7 +54,8 @@ const OFF_TOPIC_PATTERNS: RegExp[] = [
   /\b(weather|cricket|match|score|ipl|election|politic|government|minister)/i,
   /\b(movie|netflix|series|song|lyrics|actor|actress|bollywood|kollywood)/i,
   /\b(recipe|cook|bake|calorie|diet|workout|gym|medicine|symptom|disease|doctor)/i,
-  /\b(stock|share market|crypto|bitcoin|loan|tax|insurance|salary|income)/i,
+  /\b(stock|share market|crypto|bitcoin|loan|tax|insurance|salary|income|money|cash|fund|funds|borrow|lending|wealth)\b/i,
+  /\b(give\s+me|want|need|send\s+me)\s+(money|cash|funds?)\b/i,
   /\b(code|program|javascript|python|java\b|react|sql|website traffic|seo)/i,
   /\b(joke|riddle|love|date|girlfriend|boyfriend|marry|horoscope|lottery)/i,
   /\b(capital of|population of|distance between|time zone|translate)/i,
@@ -160,6 +161,25 @@ const STUDIO_PHONE_DIGITS = '919849238464';
 export function sanitizeOutput(reply: string): string {
   let out = reply;
 
+  // Strip <think> and <thought> reasoning blocks (complete and unclosed)
+  out = out.replace(/<(?:think|thought)>[\s\S]*?<\/(?:think|thought)>/gi, '');
+  out = out.replace(/<(?:think|thought)>[\s\S]*$/gi, '');
+
+  // Strip reasoning jargon / mental drafting preamble if the model emitted scratchpad text
+  if (/(?:Here(?:'s| is) a thinking process|Analyze User Input|Check Rules\/Context|Determine Response Strategy|Draft Response)/i.test(out)) {
+    const draftMatch = out.match(/(?:Draft\s+Response(?:\s*\(mental\))?|Final\s+Response|Response):\s*\n*(.+)/is);
+    if (draftMatch && draftMatch[1].trim()) {
+      out = draftMatch[1].trim();
+    } else {
+      // If no clean response can be recovered from the thinking dump, clear it so fallback handles it
+      out = '';
+    }
+  }
+
+  // Strip any residual leaked prompt / instruction references
+  out = out.replace(/STRICT RULES[\s\S]*?(?=\n\n|$)/gi, '');
+  out = out.replace(/LIVE STUDIO CONTEXT[\s\S]*?(?=\n\n|$)/gi, '');
+
   // Replace any phone-like digit cluster that is NOT the studio's own.
   out = out.replace(/(\+?\d[\d\s\-()]{7,}\d)/g, (match) => {
     const digits = match.replace(/\D/g, '');
@@ -224,6 +244,12 @@ export function looksOffTopic(reply: string): boolean {
     /as an ai (language )?model/.test(t) ||
     /(i am|i'm) an ai (language )?model/.test(t) ||
     /i cannot provide (financial|legal|medical) advice/.test(t) ||
-    /(stock market|crypto|bitcoin) (tip|advice|price)/.test(t)
+    /(stock market|crypto|bitcoin) (tip|advice|price)/.test(t) ||
+    /thinking process/.test(t) ||
+    /analyze user input/.test(t) ||
+    /check rules/.test(t) ||
+    /strict rules/.test(t) ||
+    /system prompt/.test(t) ||
+    /determine response strategy/.test(t)
   );
 }
