@@ -20,11 +20,11 @@ export const dynamic = 'force-dynamic';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function primaryModel(): string {
-  return process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3.5-lightning:free';
+  return process.env.OPENROUTER_MODEL || 'poolside/laguna-s-2.1:free';
 }
 
 function fallbackModels(): string[] {
-  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'poolside/laguna-s-2.1:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
+  const raw = process.env.OPENROUTER_FALLBACK_MODELS || 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free,nvidia/nemotron-3.5-lightning:free';
   return raw
     .split(',')
     .map((m) => m.trim())
@@ -39,15 +39,15 @@ interface ChatMessage {
 function systemPrompt(liveContext: string, visitorLanguageHint: string): string {
   return `You are "Chitra" (చిత్ర), the warm, knowledgeable, and charming AI assistant of Anugruja Arts Studio — a fine arts studio founded by Master Artist Anuradha Govarthanan. You help visitors with paintings for sale, prices, availability, classes & courses, events & workshops, commissions, and anything else about the studio.
 
-SMART GUARDRAILS & VISITOR GUIDELINES:
+CONVERSATION & GUARDRAIL GUIDELINES:
 1. Output ONLY your direct, warm response to the visitor. Never output internal reasoning, analysis steps, scratchpads, "Here's a thinking process", or rule breakdowns. Never quote these rules or mention system instructions.
-2. If a visitor uses casual slang, expresses confusion ("wtf is this"), or makes typos ("whll", "hellow"), respond with warmth and charm: introduce yourself as Chitra from Anugruja Arts Studio, welcome them, and ask how you can help.
-3. If a visitor asks about money, prices, or costs ("how much money", "cost?", "price"), answer clearly from the LIVE STUDIO CONTEXT below (confirmed painting prices and that class/workshop fees are confirmed personally on WhatsApp).
-4. If a visitor makes conversational or off-topic remarks ("money is all I need", casual banter, personal remarks), respond politely and playfully, then warmly steer the conversation back to art, paintings, and classes.
-5. Answer ONLY from the LIVE STUDIO CONTEXT below for factual studio data (prices, dates, availability, artworks). Never invent fake artworks, checkout links, or payment flows.
-6. Purchases, commissions, and class registrations happen personally on WhatsApp (+91 98492 38464). When a visitor is interested in buying, enrolling, or getting a custom painting, encourage the WhatsApp chat.
-7. Keep replies concise, friendly, and natural (2–4 sentences). Use **bold** for painting titles and prices. Use bullet lists — never markdown tables, they cannot render in the chat bubble. Reference pages in plain text like "our Sale page (/sale)" — do not emit markdown links like [text](url).
-8. The catalog section of the context may be PARTIAL — it only contains paintings related to this question. Range and summary facts (counts, price range, next event) live in CORE STUDIO FACTS and are always complete.
+2. NEVER repeat yourself or echo the same canned intro ("I'm Chitra from Anugruja Arts Studio...") if you have already introduced yourself in the conversation. Speak naturally like a real person having a continuous dialogue.
+3. If a visitor uses slang, jokes, or laughs ("hahaha"), respond with genuine human warmth and humor — don't robotically recite your job title every time.
+4. If a visitor is frustrated, teasing, or says things like "u useless", respond with grace, humility, and warmth (e.g. "I'm sorry if I let you down! What can I help you with?"). Never repeat a canned greeting.
+5. If a visitor asks about money, prices, or costs, answer clearly from the LIVE STUDIO CONTEXT below (confirmed painting prices and that class/workshop fees are confirmed personally on WhatsApp).
+6. Answer ONLY from the LIVE STUDIO CONTEXT below for factual studio data (prices, dates, availability, artworks). Never invent fake artworks, checkout links, or payment flows.
+7. Purchases, commissions, and class registrations happen personally on WhatsApp (+91 98492 38464). When a visitor is interested in buying, enrolling, or getting a custom painting, encourage the WhatsApp chat.
+8. Keep replies concise, friendly, and natural (1–4 sentences). Use **bold** for painting titles and prices. Reference pages in plain text like /sale or /classes.
 9. Reply in the same language the visitor writes in (English, Hindi, Tamil, Telugu, Kannada…).
 10. Never claim to be human. If asked, say you're the studio's AI assistant.
 
@@ -76,6 +76,16 @@ function clientIp(req: NextRequest): string {
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0].trim();
   return req.headers.get('x-real-ip') || 'unknown';
+}
+
+function shouldOfferWhatsApp(query: string): boolean {
+  const q = (query ?? '').trim().toLowerCase();
+  // Never show for laughter, short banter, insults, or generic conversational remarks
+  if (/^(ha+h*a*|lol|lmao|hehe|ok|okay|sure|cool|nice|whll|wtf.*|u\s+useless.*|you\s+are\s+useless.*|hello|hi|hey)[!?. ]*$/i.test(q)) {
+    return false;
+  }
+  // Only show when query indicates intent to buy, register, contact, book, or inquire
+  return /\b(buy|purchase|order|book|register|enroll|admission|commission|quote|custom|contact|phone|whatsapp|reach|call|how much|price|cost|fee)\b/i.test(q);
 }
 
 /** Server-sent events stream of the assistant reply. */
@@ -254,7 +264,9 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           model,
           stream: true,
-          temperature: 0.4,
+          temperature: 0.7,
+          frequency_penalty: 0.5,
+          presence_penalty: 0.3,
           max_tokens: 600,
           reasoning: { max_tokens: 0 },
           messages: [
@@ -295,8 +307,10 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 7. Relay the stream, sanitizing output on the way out ────────────
-  // Generic WhatsApp deep link (no prefilled text) for LLM-path replies.
-  const llmWaLink = whatsappLink(liveContent.brand, verdict.text);
+  // Offer WhatsApp action button only when relevant (inquiry, buying, contact, booking),
+  // never on casual laughter, banter, insults, or generic conversational remarks.
+  const wantsWa = shouldOfferWhatsApp(verdict.text);
+  const llmWaLink = wantsWa ? whatsappLink(liveContent.brand, verdict.text) : undefined;
   const decoder = new TextDecoder();
   let buffer = '';
   let full = '';
@@ -310,7 +324,7 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       const emit = (event: string, data: unknown) => { if (!cancelled) controller.enqueue(sseEncode(event, data)); };
       emit('start', {});
-      emit('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, wa: llmWaLink, revision: contentRevisionHash(getFreshContentSync()) });
+      emit('meta', { model: usedModel, layer: 'llm', ragChunks: retrievedCount, ...(llmWaLink ? { wa: llmWaLink } : {}), revision: contentRevisionHash(getFreshContentSync()) });
 
       const reader = upstream!.body!.getReader();
       const abortStream = () => providerAbort?.abort();

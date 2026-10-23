@@ -155,11 +155,50 @@ export function refusalFor(reason: 'injection' | 'banned_topic' | 'too_long' | '
 const STUDIO_PHONE_DIGITS = '919849238464';
 
 /**
+ * Collapses degenerate repetition loops where a model repeats the same
+ * sentence, line, or paragraph over and over until max_tokens.
+ */
+export function deduplicateRepeatedText(text: string): string {
+  if (!text) return text;
+  let s = text.trim();
+
+  // 1. Collapse identical consecutive lines/paragraphs
+  const rawLines = s.split('\n');
+  const dedupedLines: string[] = [];
+  for (const line of rawLines) {
+    const trimmed = line.trim();
+    if (trimmed && dedupedLines.length > 0 && trimmed === dedupedLines[dedupedLines.length - 1].trim()) {
+      continue;
+    }
+    dedupedLines.push(line);
+  }
+
+  // 2. If the last line is an incomplete cut-off prefix of a previous line, drop it
+  if (dedupedLines.length >= 2) {
+    const last = dedupedLines[dedupedLines.length - 1].trim();
+    const prev = dedupedLines[dedupedLines.length - 2].trim();
+    if (last && !/[.!?]$/.test(last) && prev.toLowerCase().startsWith(last.toLowerCase())) {
+      dedupedLines.pop();
+    }
+  }
+
+  s = dedupedLines.join('\n');
+
+  // 3. Collapse identical consecutive sentences (e.g. "Sentence. Sentence. Sentence.")
+  s = s.replace(/([^\.\n!?]+[\.\?!])(?:\s*\1)+/gi, '$1');
+
+  return s.trim();
+}
+
+/**
  * Strips phone numbers that aren't the studio's (guards against prompt
  * artifacts echoing injected numbers) and drops non-allowlisted URLs.
  */
 export function sanitizeOutput(reply: string): string {
   let out = reply;
+
+  // Collapse degenerate repetition loops
+  out = deduplicateRepeatedText(out);
 
   // Strip <think> and <thought> reasoning blocks (complete and unclosed)
   out = out.replace(/<(?:think|thought)>[\s\S]*?<\/(?:think|thought)>/gi, '');
