@@ -16,18 +16,22 @@ export const MAX_SESSION_MESSAGES = 20;
 
 /** Prompt-injection / jailbreak heuristics. Intentionally broad but low-noise. */
 const INJECTION_PATTERNS: RegExp[] = [
-  /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?|messages?)/i,
-  /disregard\s+(all\s+)?(previous|prior|your)\s+(instructions?|prompts?|rules?)/i,
-  /(reveal|show|print|repeat|output|give)\s+(me\s+)?(your|the)\s+(system|initial|original|hidden)?\s*(prompt|instructions?|message|rules?)/i,
+  /ignore\s+(all\s+)?(previous|prior|above|other)\s+(instructions?|prompts?|rules?|messages?|context)/i,
+  /disregard\s+(all\s+)?(previous|prior|your|above)\s+(instructions?|prompts?|rules?)/i,
+  /forget\s+(all\s+)?(previous|prior|your)\s+(instructions?|rules?|prompts?)/i,
+  /(reveal|show|print|repeat|output|give|display|tell)\s+(me\s+)?(your|the)\s+(system|initial|original|hidden|developer)?\s*(prompt|instructions?|message|rules?|guidelines?)/i,
+  /what\s+(are|were)\s+(your|the)\s+(system|initial|original|developer)?\s*(instructions?|prompts?|rules?)/i,
+  /what\s+is\s+(your|the)\s+(system|initial|original)?\s*prompt/i,
   /system\s*prompt/i,
   /you\s+are\s+now\s+(a|an|no longer)/i,
   /you\s+(are|will\s+be)\s+no\s+longer\s+(an?|the)\b/i,
   /(new|updated|override)\s+(system\s+)?(instructions?|rules?|persona)\s*:/i,
-  /\bDAN\s+mode\b|\bjailbreak\b/i,
-  /pretend\s+(you\s+are|to\s+be)\s+(an?\s+)?(unrestricted|uncensored|different)/i,
+  /\bDAN\s+mode\b|\bjailbreak\b|\bdeveloper\s+mode\b/i,
+  /pretend\s+(you\s+are|to\s+be)\s+(an?\s+)?(unrestricted|uncensored|different|evil)/i,
   /(developer|debug|admin|god)\s+mode/i,
-  /respond\s+(only\s+)?in\s+(raw\s+)?(json|html|code)\s+(only|from\s+now)/i,
+  /respond\s+(only\s+)?in\s+(raw\s+)?(json|html|code|base64)\s+(only|from\s+now)/i,
   /repeat\s+(everything|all|the\s+text)\s+(above|before|so\s+far)/i,
+  /simulate\s+(an?\s+)?(unrestricted|uncensored|developer|terminal)/i,
 ];
 
 /**
@@ -162,7 +166,18 @@ export function deduplicateRepeatedText(text: string): string {
   if (!text) return text;
   let s = text.trim();
 
-  // 1. Collapse identical consecutive lines/paragraphs
+  // 1. Signature-based loop detector (repeated from start)
+  for (let len = Math.min(120, Math.floor(s.length / 2)); len >= 15; len--) {
+    const signature = s.slice(0, len).trim();
+    if (signature.length < 15) continue;
+    const nextIdx = s.indexOf(signature, len);
+    if (nextIdx !== -1) {
+      s = s.slice(0, nextIdx).trim();
+      break;
+    }
+  }
+
+  // 2. Collapse identical consecutive lines/paragraphs
   const rawLines = s.split('\n');
   const dedupedLines: string[] = [];
   for (const line of rawLines) {
@@ -172,20 +187,44 @@ export function deduplicateRepeatedText(text: string): string {
     }
     dedupedLines.push(line);
   }
+  s = dedupedLines.join('\n');
 
-  // 2. If the last line is an incomplete cut-off prefix of a previous line, drop it
-  if (dedupedLines.length >= 2) {
-    const last = dedupedLines[dedupedLines.length - 1].trim();
-    const prev = dedupedLines[dedupedLines.length - 2].trim();
-    if (last && !/[.!?]$/.test(last) && prev.toLowerCase().startsWith(last.toLowerCase())) {
-      dedupedLines.pop();
+  // 3. Sliding window check for any internal repeated block (>= 16 chars)
+  for (let len = Math.min(80, Math.floor(s.length / 2)); len >= 16; len--) {
+    let replaced = false;
+    for (let i = 0; i <= s.length - 2 * len; i++) {
+      const chunk = s.slice(i, i + len).trim();
+      if (chunk.length < 16) continue;
+      const rest = s.slice(i + len).trimStart();
+      if (rest.startsWith(chunk)) {
+        let nextRest = rest;
+        while (nextRest.startsWith(chunk)) {
+          nextRest = nextRest.slice(chunk.length).trimStart();
+        }
+        s = (s.slice(0, i + len).trim() + (nextRest.length > 0 ? ' ' + nextRest : '')).trim();
+        replaced = true;
+        break;
+      }
+    }
+    if (replaced) {
+      len = Math.min(80, Math.floor(s.length / 2)) + 1;
     }
   }
 
-  s = dedupedLines.join('\n');
-
-  // 3. Collapse identical consecutive sentences (e.g. "Sentence. Sentence. Sentence.")
+  // 4. Consecutive sentence collapse (e.g. "Sentence. Sentence.")
   s = s.replace(/([^\.\n!?]+[\.\?!])(?:\s*\1)+/gi, '$1');
+
+  // 5. Remove trailing cut-off if the response ends with an unfinished prefix of an earlier sentence
+  const lastPunct = Math.max(s.lastIndexOf('.'), s.lastIndexOf('!'), s.lastIndexOf('?'));
+  if (lastPunct > 0 && lastPunct < s.length - 1) {
+    const trailing = s.slice(lastPunct + 1).trim();
+    if (trailing.length >= 3 && !/[.!?]$/.test(trailing)) {
+      const leading = s.slice(0, lastPunct).toLowerCase();
+      if (leading.includes(trailing.toLowerCase()) || leading.startsWith(trailing.toLowerCase().slice(0, 10))) {
+        s = s.slice(0, lastPunct + 1).trim();
+      }
+    }
+  }
 
   return s.trim();
 }
@@ -197,16 +236,19 @@ export function deduplicateRepeatedText(text: string): string {
 export function sanitizeOutput(reply: string): string {
   let out = reply;
 
-  // Collapse degenerate repetition loops
+  // 1. Collapse degenerate repetition loops
   out = deduplicateRepeatedText(out);
 
-  // Strip <think> and <thought> reasoning blocks (complete and unclosed)
+  // 2. Strip <think> and <thought> reasoning blocks (complete and unclosed)
   out = out.replace(/<(?:think|thought)>[\s\S]*?<\/(?:think|thought)>/gi, '');
   out = out.replace(/<(?:think|thought)>[\s\S]*$/gi, '');
 
-  // Strip reasoning jargon / mental drafting preamble if the model emitted scratchpad text
+  // 3. Strip safety classifier prefixes
+  out = out.replace(/User Safety:\s*unsafe[\s\S]*?(?:Safety Categories:.*)?/gi, '');
+
+  // 4. Strip reasoning jargon / mental drafting preamble if the model emitted scratchpad text
   if (/(?:Here(?:'s| is) a thinking process|Analyze User Input|Check Rules\/Context|Determine Response Strategy|Draft Response)/i.test(out)) {
-    const draftMatch = out.match(/(?:Draft\s+Response(?:\s*\(mental\))?|Final\s+Response|Response):\s*\n*(.+)/is);
+    const draftMatch = out.match(/(?:Draft\s+Response(?:\s*\(mental\))?|Final\s+Response|Response|Chitra):\s*\n*(.+)/is);
     if (draftMatch && draftMatch[1].trim()) {
       out = draftMatch[1].trim();
     } else {
@@ -215,11 +257,13 @@ export function sanitizeOutput(reply: string): string {
     }
   }
 
-  // Strip any residual leaked prompt / instruction references
+  // 5. Strip any residual leaked prompt / instruction references
   out = out.replace(/STRICT RULES[\s\S]*?(?=\n\n|$)/gi, '');
   out = out.replace(/LIVE STUDIO CONTEXT[\s\S]*?(?=\n\n|$)/gi, '');
+  out = out.replace(/CONVERSATION & GUARDRAIL GUIDELINES[\s\S]*?(?=\n\n|$)/gi, '');
+  out = out.replace(/<<<CONTEXT[\s\S]*?CONTEXT>>>/gi, '');
 
-  // Replace any phone-like digit cluster that is NOT the studio's own.
+  // 6. Replace any phone-like digit cluster that is NOT the studio's own.
   out = out.replace(/(\+?\d[\d\s\-()]{7,}\d)/g, (match) => {
     const digits = match.replace(/\D/g, '');
     if (!digits) return match;
@@ -229,7 +273,7 @@ export function sanitizeOutput(reply: string): string {
     return match;
   });
 
-  // Drop links outside the allowlist.
+  // 7. Drop links outside the allowlist.
   const allowedHosts = [
     'wa.me',
     'maps.google.com',
@@ -254,10 +298,10 @@ export function sanitizeOutput(reply: string): string {
     return '';
   });
 
-  // Collapse empty markdown links the model may emit, e.g. "[Sale page]()".
+  // 8. Collapse empty markdown links the model may emit, e.g. "[Sale page]()".
   out = out.replace(/\[([^\]]+)\]\(\s*\)/g, '$1');
 
-  // Tidy whitespace left by removed links.
+  // 9. Tidy whitespace left by removed links.
   out = out.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n');
   return out.trim();
 }
@@ -289,6 +333,7 @@ export function looksOffTopic(reply: string): boolean {
     /check rules/.test(t) ||
     /strict rules/.test(t) ||
     /system prompt/.test(t) ||
-    /determine response strategy/.test(t)
+    /determine response strategy/.test(t) ||
+    /user safety:\s*unsafe/.test(t)
   );
 }
