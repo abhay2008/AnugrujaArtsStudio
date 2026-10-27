@@ -212,7 +212,7 @@ AnugrujaArtsStudio/
 ## 👨‍💻 Developer
 
 **Abhay Kashyap**
-*Undergraduate, Computer Science & Business Systems @ BMSCE Bangalore*
+*Undergraduate, Electronics & Communication Engineering (ECE) @ BMSCE Bangalore*
 [GitHub Profile](https://github.com/abhay2008)
 
 *Historical note: the studio's first website (2024, static HTML/jQuery) was handcrafted before modern AI tooling; this repo is its full production successor.*
